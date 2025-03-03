@@ -178,3 +178,4 @@ data/
 .idea
 models/
 repomix-output.txt
+*.pyc
