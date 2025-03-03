@@ -25,8 +25,8 @@ Future stages (e.g., multilingual support, browser extension) are considered for
 This SDD is intended for the project developer, potential collaborators, and stakeholders requiring a technical understanding of the system’s design and implementation.
 
 ### 1.4 References
-- Project Vision Document: [Link to vision.md]
-- Software Requirements Specification (SRS): [Link to srs.md]
+- Project Vision Document: [vision.md](vision.md)
+- Software Requirements Specification (SRS): [srs.md](srs.md)
 
 ---
 
