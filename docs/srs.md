@@ -1,5 +1,12 @@
 # Software Requirements Specification Document
 
+**Project Title:** Automated Multilingual News Aggregation, Summarization & Bias Detection Tool  
+**Document Version:** 1.0 (Initial Draft)  
+**Author**: Ameed Othman    
+**Date:** 03.03.2025
+
+---
+
 ## 1. Introduction
 
 ### 1.1 Purpose

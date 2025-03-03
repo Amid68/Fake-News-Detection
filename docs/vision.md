@@ -1,5 +1,13 @@
 # Project Vision Document
 
+
+**Project Title:** Automated Multilingual News Aggregation, Summarization & Bias Detection Tool  
+**Document Version:** 1.0 (Initial Draft)  
+**Author**: Ameed Othman    
+**Date:** 03.03.2025
+
+---
+
 ## Project Title
 Automated Multilingual News Aggregation, Summarization, and Bias Detection Tool
 
