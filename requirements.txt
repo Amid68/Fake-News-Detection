@@ -1,0 +1,8 @@
+django
+djangorestframework
+celery
+redis
+requests
+beautifulsoup4
+transformers
+torch
