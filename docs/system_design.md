@@ -1,9 +1,8 @@
 # System Design Document
 
 **Project Title:** Automated Multilingual News Aggregation, Summarization & Bias Detection Tool  
-**Document Version:** 2.0 (Revised)  
-**Author:** Ameed Othman  
-**Supervisor Review:** Completed  
+**Document Version:** 2.0  
+**Author:** Ameed Othman
 **Date:** 04.03.2025
 
 ## 1. Introduction
