@@ -25,7 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-+7-azsk6(-)k&a&j!qln8u(e#e=-4)59x(!-ma&qa)q94cuzbq')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+# Override DEBUG setting for development
+DEBUG = True  # TEMPORARY: Remove this override before deployment
+# DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
@@ -201,6 +203,10 @@ CACHES = {
     }
 }
 
+# Ensure logs directory exists
+logs_dir = os.path.join(BASE_DIR, 'logs')
+os.makedirs(logs_dir, exist_ok=True)
+
 # Logging configuration
 LOGGING = {
     'version': 1,
@@ -224,7 +230,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
+            'filename': os.path.join(logs_dir, 'debug.log'),
             'formatter': 'verbose',
         },
     },
@@ -254,7 +260,7 @@ LOGGING = {
 
 # Security settings
 if not DEBUG:
-    # HTTPS settings
+    # HTTPS settings - Only apply in production
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -264,3 +270,8 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+else:
+    # Disable HTTPS enforcement in development
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
