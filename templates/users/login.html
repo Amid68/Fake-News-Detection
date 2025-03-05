@@ -7,7 +7,8 @@
 </head>
 <body>
   <h2>Login</h2>
-  <form action="/login" method="post">
+  <form method="post">
+    {% csrf_token %}
     <label for="username">Username:</label><br>
     <input type="text" id="username" name="username" required><br><br>
 
@@ -16,6 +17,6 @@
 
     <input type="submit" value="Login">
   </form>
-  <p>Don't have an account? <a href="/register">Register here</a>.</p>
+  <p>Don't have an account? <a href="{% url 'register' %}">Register here</a>.</p>
 </body>
 </html>
