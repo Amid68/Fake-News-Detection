@@ -1,34 +1,34 @@
 # Project Vision Document
 
-**Project Title:** Automated Multilingual News Aggregation, Summarization & Bias Detection Tool  
-**Document Version:** 2.0  
+**Project Title:** Automated News Aggregation, Summarization & Topic Analysis Tool  
+**Document Version:** 3.0  
 **Author:** Ameed Othman
-**Date:** 04.03.2025
+**Date:** 10.03.2025
 
 ## 1. Introduction & Project Goal
 
 ### Project Description
-This project aims to develop a web application that aggregates news articles from reliable English language sources, generates concise summaries using large language models (LLMs), analyzes potential political bias, and provides a personalized news feed based on user preferences.
+This project will develop a web application that aggregates news articles from reliable sources, generates concise summaries using large language models (LLMs), analyzes content topics, and provides a personalized news feed with interactive visualizations based on user preferences.
 
 ### Problem Statement
-In an era of information overload and pervasive misinformation, individuals struggle to efficiently process news from diverse sources and identify biases. Many users lack the time to read full articles from multiple perspectives, leading to information silos and uncritical news consumption.
+In today's information-rich environment, people struggle to efficiently process news from diverse sources and understand content trends. Many users lack the time to read full articles and miss out on recognizing patterns in news coverage that could provide valuable context.
 
 ### Solution Approach
 This tool addresses these challenges by:
 - Centralizing news from diverse, reliable sources
 - Providing concise, accurate summaries of key information
-- Offering transparent bias analysis to promote critical thinking
-- Personalizing content while avoiding filter bubbles
+- Analyzing content topics and trends through visualizations
+- Personalizing content while highlighting broader patterns
 
 ### Ultimate Goal
-The project will deliver a functional web application that demonstrates proficiency in data engineering, machine learning integration, and software development. While the long-term vision includes multilingual capabilities, the graduation project will focus on delivering a robust English-language foundation.
+The project will deliver a functional web application that demonstrates proficiency in data engineering, machine learning integration, visualization, and software development. It will enable users to consume news more efficiently while gaining insights into content trends.
 
 ## 2. Target Users
 
 The tool targets:
 
 - **Busy professionals** who need efficient news consumption
-- **Critical thinkers** concerned about media bias
+- **Data enthusiasts** interested in content pattern analysis
 - **Students and researchers** studying media and information systems
 - **Technology enthusiasts** interested in AI/ML applications for news
 
@@ -38,15 +38,16 @@ The Minimum Viable Product (MVP) will deliver:
 
 ### Essential Features
 - **User Authentication:** Secure registration and login system
-- **News Aggregation:** Articles from 3-5 reliable English sources with appropriate attribution
-- **Basic Summarization:** LLM-generated concise summaries (3-5 sentences)
-- **Simple Bias Detection:** Basic classification of political leaning
+- **News Aggregation:** Articles from 3-5 reliable sources with proper attribution
+- **Enhanced Summarization:** LLM-generated concise summaries in multiple formats
+- **Topic Analysis:** Classification and extraction of key topics and entities
+- **Visualization Dashboard:** Interactive charts showing topic trends and patterns
 - **Topic-Based Filtering:** User-selected news categories
 - **Responsive Web Interface:** Clean, intuitive design
 
 ### Stretch Goals (Time Permitting)
-- **Enhanced Summarization:** Fine-tuned model for improved quality
-- **Advanced Bias Detection:** Multi-dimensional bias analysis
+- **Sentiment Analysis:** Understanding emotional tone of articles
+- **Enhanced Entity Recognition:** Identifying and tracking key people, organizations, and locations
 - **Recommendation System:** Learning from user interactions
 
 ## 4. Success Criteria and Evaluation
@@ -56,12 +57,13 @@ Success will be measured by:
 ### Technical Metrics
 - **Aggregation:** Successfully collecting 95%+ of available articles from selected sources
 - **Summarization Quality:** Achieving >70% ROUGE score against human-written summaries
-- **Bias Detection Accuracy:** >65% agreement with human expert classifications
-- **System Performance:** Page load times <3 seconds, summarization processing <10 seconds
+- **Topic Analysis Accuracy:** >75% accuracy in topic classification
+- **System Performance:** Page load times <3 seconds, processing <10 seconds
 
 ### User-Centered Metrics
 - **Usability:** Completion of key tasks by test users without assistance
-- **Utility:** Positive feedback on value from a small user test group (10-15 users)
+- **Information Value:** Positive feedback on insights gained from visualizations
+- **User Engagement:** Time spent exploring visualizations and topic connections
 
 ## 5. Project Phases and Timeline
 
@@ -75,25 +77,25 @@ Success will be measured by:
 - Develop news aggregation module
 - Create database schema and models
 
-### Phase 3: ML Integration (Weeks 6-8)
-- Implement summarization model
-- Develop bias detection system
-- Create evaluation framework
+### Phase 3: ML & Analysis Integration (Weeks 6-8)
+- Implement summarization functionality
+- Develop topic analysis system
+- Create entity extraction pipeline
 
-### Phase 4: Frontend Development (Weeks 9-10)
+### Phase 4: Visualization Development (Weeks 9-10)
+- Build data processing for visualizations
+- Create interactive dashboard components
+- Implement responsive visualization design
+
+### Phase 5: Frontend Development (Weeks 11-12)
 - Build responsive user interface
 - Implement personalization features
 - Connect to backend APIs
 
-### Phase 5: Testing & Refinement (Weeks 11-12)
+### Phase 6: Testing & Refinement (Weeks 13-14)
 - Conduct system testing
 - Perform user acceptance testing
 - Optimize performance
-
-### Phase 6: Documentation & Delivery (Weeks 13-14)
-- Complete project documentation
-- Prepare demonstration
-- Deploy production version
 
 ## 6. Technologies
 
@@ -105,12 +107,12 @@ Success will be measured by:
 ### Frontend
 - **Framework:** React.js
 - **Styling:** Tailwind CSS
-- **State Management:** Redux
+- **Visualization:** Recharts, D3.js
 
 ### Natural Language Processing
 - **Summarization:** BART or T5 via Hugging Face Transformers
-- **Bias Detection:** Fine-tuned BERT or RoBERTa classifier
-- **Text Processing:** spaCy, NLTK
+- **Topic Analysis:** spaCy, Zero-shot classification with transformers
+- **Text Processing:** NLTK, TextBlob
 
 ### Data Management
 - **Database:** PostgreSQL
@@ -127,7 +129,8 @@ Success will be measured by:
 ### Technical Challenges
 - **Computational Requirements:** LLMs require significant resources
 - **API Limitations:** News source APIs have rate limits and potential costs
-- **Model Accuracy:** Summarization and bias detection have inherent limitations
+- **Topic Analysis Quality:** Ensuring meaningful and accurate categorization
+- **Visualization Performance:** Handling large datasets in interactive visualizations
 
 ### Project Constraints
 - **Time Limitations:** 14-week project timeline restricts scope
@@ -150,11 +153,11 @@ Success will be measured by:
 
 After completing the MVP for graduation:
 
-- **Multilingual Support:** Add German and Arabic sources
-- **Advanced Bias Detection:** Multi-dimensional analysis beyond political spectrum
+- **Enhanced Topic Modeling:** More sophisticated topic extraction using LDA or BERTopic
+- **Temporal Analysis:** Tracking how topics evolve over time
+- **Entity Network Analysis:** Visualizing connections between entities
 - **Mobile Application:** Native mobile experience
 - **Browser Extension:** Quick access to summaries while browsing
-- **Semantic Search:** Advanced content discovery
 
 ## 10. Legal and Ethical Considerations
 
@@ -162,5 +165,5 @@ The project will address:
 
 - **Copyright Compliance:** Proper attribution and fair use of news content
 - **User Privacy:** GDPR-compliant data handling
-- **Bias Transparency:** Clear communication about model limitations
+- **Algorithm Transparency:** Clear communication about model limitations
 - **Ethical AI Use:** Consideration of potential harmful impacts
