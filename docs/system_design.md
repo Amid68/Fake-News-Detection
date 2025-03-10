@@ -1,17 +1,17 @@
 # System Design Document
 
-**Project Title:** Automated Multilingual News Aggregation, Summarization & Bias Detection Tool  
-**Document Version:** 2.0  
+**Project Title:** Automated News Aggregation, Summarization & Topic Analysis Tool  
+**Document Version:** 3.0  
 **Author:** Ameed Othman
-**Date:** 04.03.2025
+**Date:** 10.03.2025
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This System Design Document (SDD) provides a comprehensive technical blueprint for implementing the Automated News Aggregation, Summarization & Bias Detection Tool. It transforms the requirements into an actionable architecture and technical design.
+This System Design Document (SDD) provides a technical blueprint for implementing the News Aggregation, Summarization & Topic Analysis Tool. It transforms the requirements into an actionable architecture and design.
 
 ### 1.2 Scope
-This document covers the complete system architecture, data design, interfaces, and implementation considerations for the MVP as specified in the Software Requirements Specification (SRS).
+This document covers the system architecture, data design, interfaces, and implementation considerations for the MVP as specified in the Software Requirements Specification (SRS).
 
 ### 1.3 Definitions, Acronyms, and Abbreviations
 - **API:** Application Programming Interface
@@ -24,8 +24,8 @@ This document covers the complete system architecture, data design, interfaces, 
 - **REST:** Representational State Transfer
 
 ### 1.4 References
-- Project Vision Document v2.0
-- Software Requirements Specification v2.0
+- Project Vision Document v3.0
+- Software Requirements Specification v3.0
 - Evaluation and Testing Plan
 - [Django Documentation](https://docs.djangoproject.com/)
 - [React Documentation](https://reactjs.org/docs/getting-started.html)
@@ -38,7 +38,7 @@ This document covers the complete system architecture, data design, interfaces, 
 The system follows a modern web application architecture with the following key components:
 
 #### 2.1.1 High-Level Architecture
-- **Frontend Layer:** React-based single-page application
+- **Frontend Layer:** React-based single-page application with visualization components
 - **Backend Layer:** Django REST API
 - **Database Layer:** PostgreSQL relational database
 - **Processing Layer:** Asynchronous task processing with Celery and Redis
@@ -72,7 +72,7 @@ The system follows a modern web application architecture with the following key 
          │                 │              ┌──────────────┴───────────────┐
          └─────────┬───────┘              │                              │
                    │                      │       Celery Workers         │
-                   └─────────────────────►│  (Summarization, Bias)       │
+                   └─────────────────────►│ (Summarization, Topic Analysis) │
                                          │                              │
                                          └──────────────────────────────┘
 ```
@@ -83,16 +83,18 @@ The system follows a modern web application architecture with the following key 
 
 **Core Components:**
 - **Authentication Module:** Handles user registration, login, and session management
-- **News Feed Component:** Displays personalized article list with summaries and bias indicators
+- **News Feed Component:** Displays personalized article list with summaries and topic indicators
 - **Article Detail Component:** Shows full article information with enhanced metadata
+- **Topic Analysis Component:** Displays topic classification and entity extraction results
+- **Visualization Dashboard:** Interactive data visualizations for content analysis
 - **User Preferences Component:** Manages topic selections and other user settings
-- **Search Component:** Provides content discovery functionality
 
 **Technical Implementation:**
 - React function components with hooks
 - Redux for state management
 - React Router for navigation
 - Axios for API communication
+- Recharts for data visualization
 - Tailwind CSS for styling
 
 #### 2.2.2 Backend Components
@@ -101,8 +103,9 @@ The system follows a modern web application architecture with the following key 
 - **User Management:** Authentication, authorization, and profile management
 - **News Aggregation Service:** Fetches and processes articles from sources
 - **Summarization Service:** Generates article summaries using LLMs
-- **Bias Detection Service:** Analyzes and classifies article bias
+- **Topic Analysis Service:** Analyzes and classifies article content
 - **Feed Management:** Generates personalized feeds based on preferences
+- **Visualization Data Service:** Aggregates and processes data for visualizations
 - **API Gateway:** Provides REST endpoints for frontend communication
 
 **Technical Implementation:**
@@ -111,6 +114,7 @@ The system follows a modern web application architecture with the following key 
 - Celery for asynchronous task processing
 - JWT for authentication
 - Hugging Face Transformers for LLM integration
+- spaCy for natural language processing
 
 #### 2.2.3 Database Components
 
@@ -120,7 +124,8 @@ The system follows a modern web application architecture with the following key 
 - News sources
 - Articles
 - Summaries
-- Bias assessments
+- Topic analysis results
+- Entity recognition results
 - System logs
 
 ### 2.3 Interaction and Communication
@@ -146,7 +151,7 @@ The system follows a modern web application architecture with the following key 
 
 PostgreSQL was selected for the following reasons:
 - Full SQL compliance and advanced features
-- Excellent performance for concurrent operations
+- Excellent support for JSON/JSONB fields (useful for topic data)
 - Strong support for Django ORM
 - Free and open-source
 - Robust backup and recovery options
@@ -236,22 +241,30 @@ CREATE TABLE article_topics (
 CREATE TABLE summaries (
     id SERIAL PRIMARY KEY,
     article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
-    summary_text TEXT NOT NULL,
+    headline_summary TEXT NULL,
+    standard_summary TEXT NOT NULL,
+    detailed_summary TEXT NULL,
     model_used VARCHAR(100) NOT NULL,
     generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    quality_metrics JSONB NULL,
     UNIQUE (article_id)
 );
 ```
 
-**BiasAssessments Table**
+**TopicAnalysisResults Table**
 ```sql
-CREATE TABLE bias_assessments (
+CREATE TABLE topic_analysis_results (
     id SERIAL PRIMARY KEY,
     article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
-    bias_score FLOAT NOT NULL, -- Range from -1.0 (left) to 1.0 (right)
-    confidence FLOAT NOT NULL, -- Range from 0.0 to 1.0
+    primary_topic VARCHAR(100) NOT NULL,
+    confidence FLOAT NOT NULL,
+    secondary_topics JSONB NULL,
+    keywords JSONB NULL,
+    entities JSONB NULL,
+    sentiment_score FLOAT NULL,
     model_used VARCHAR(100) NOT NULL,
-    assessed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    processing_time FLOAT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE (article_id)
 );
 ```
@@ -273,15 +286,24 @@ CREATE TABLE user_saved_articles (
 1. Scheduled task triggers article collection
 2. System fetches articles from configured sources
 3. Articles processed, deduplicated, and stored
-4. Tasks queued for summarization and bias detection
+4. Tasks queued for summarization and topic analysis
 5. Processed articles become available in feeds
 
-#### 3.3.2 User Interaction Flow
-1. User authenticates and loads personalized feed
-2. System queries articles matching user preferences
-3. Article data enriched with summaries and bias scores
-4. Paginated results returned to frontend
-5. User interactions tracked for potential future enhancements
+#### 3.3.2 Topic Analysis Flow
+1. New articles are queued for topic analysis
+2. Topic analysis processor extracts primary and secondary topics
+3. Entity recognition identifies people, organizations, and locations
+4. Keywords are extracted and ranked by relevance
+5. Simple sentiment analysis assigns a sentiment score
+6. Results stored in TopicAnalysisResults table
+
+#### 3.3.3 Visualization Data Flow
+1. Frontend requests visualization data
+2. Backend aggregates article metadata
+3. Topic distribution calculated from analysis results
+4. Time-based trends extracted from publication dates
+5. Data formatted for visualization components
+6. Cached responses used for improved performance
 
 ## 4. Interface Design
 
@@ -306,48 +328,54 @@ CREATE TABLE user_saved_articles (
 #### 4.1.3 Content APIs
 - `GET /api/articles` - Get articles with filtering
 - `GET /api/articles/{id}` - Get article details
+- `GET /api/articles/{id}/insights` - Get article topic insights
 - `GET /api/topics` - Get available topics
 - `GET /api/sources` - Get available sources
+
+#### 4.1.4 Visualization APIs
+- `GET /api/dashboard/stats` - Get dashboard statistics
+- `GET /api/dashboard/topic-trends` - Get topic trend data
+- `GET /api/dashboard/source-distribution` - Get source distribution data
+- `GET /api/dashboard/sentiment-analysis` - Get sentiment analysis data
 
 ### 4.2 User Interface Design
 
 #### 4.2.1 Wireframes
 
-##### Home/Feed Page
+##### Analytics Dashboard
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ ┌─────┐ News Analyzer                       [User ▼] [🔍]   │
 │ │ Logo│                                                     │
 │ └─────┘                                                     │
 ├─────────────────────────────────────────────────────────────┤
-│ [Politics▼] [Business▼] [Technology▼] [More▼]  [Sort by▼]   │
+│ [Week ▼] [Month ▼] [All Time ▼] [Refresh]                   │
 ├─────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ Article Title 1                                   [src] │ │
-│ │ [Summary of the article goes here...]                   │ │
-│ │                                                         │ │
-│ │ [Bias Indicator]            [Read More] [Save] [Share]  │ │
-│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────┐  ┌─────────────────────────┐   │
+│ │                         │  │                         │   │
+│ │    Topic Distribution   │  │    Sentiment Analysis   │   │
+│ │    [Bar Chart]          │  │    [Pie Chart]          │   │
+│ │                         │  │                         │   │
+│ └─────────────────────────┘  └─────────────────────────┘   │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐ │
-│ │ Article Title 2                                   [src] │ │
-│ │ [Summary of the article goes here...]                   │ │
 │ │                                                         │ │
-│ │ [Bias Indicator]            [Read More] [Save] [Share]  │ │
+│ │                 Topic Trends Over Time                  │ │
+│ │                 [Line Chart]                            │ │
+│ │                                                         │ │
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                             │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ Article Title 3                                   [src] │ │
-│ │ [Summary of the article goes here...]                   │ │
-│ │                                                         │ │
-│ │ [Bias Indicator]            [Read More] [Save] [Share]  │ │
-│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────┐  ┌─────────────────────────┐   │
+│ │                         │  │                         │   │
+│ │    Source Distribution  │  │    Keyword Cloud        │   │
+│ │    [Bar Chart]          │  │    [Tag Cloud]          │   │
+│ │                         │  │                         │   │
+│ └─────────────────────────┘  └─────────────────────────┘   │
 │                                                             │
-│ [Load More]                                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-##### Article Detail Page
+##### Article Detail with Topic Analysis
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ ┌─────┐ News Analyzer                       [User ▼] [🔍]   │
@@ -360,24 +388,26 @@ CREATE TABLE user_saved_articles (
 │ Source: [Source Name] | Published: [Date] | Author: [Name]  │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐ │
-│ │                                                         │ │
-│ │ [Summary Box]                                           │ │
-│ │                                                         │ │
-│ │ AI-Generated Summary:                                   │ │
-│ │ [Detailed summary text...]                              │ │
-│ │                                                         │ │
+│ │ [Summary] [Topic Analysis] [Original Article]           │ │
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐ │
 │ │                                                         │ │
-│ │ [Bias Analysis Box]                                     │ │
+│ │ Primary Topic: Technology (85% confidence)              │ │
 │ │                                                         │ │
-│ │ Political Leaning Assessment:                           │ │
-│ │ [Visual spectrum indicator]                             │ │
+│ │ Secondary Topics:                                       │ │
+│ │ • Business (45%)                                        │ │
+│ │ • Science (30%)                                         │ │
 │ │                                                         │ │
-│ │ Confidence: [Score]                                     │ │
+│ │ Key Terms:                                              │ │
+│ │ [artificial intelligence] [machine learning] [data]     │ │
 │ │                                                         │ │
-│ │ [Was this assessment helpful? [👍] [👎]]                │ │
+│ │ Named Entities:                                         │ │
+│ │ • Organizations: Google, OpenAI, Microsoft              │ │
+│ │ • People: Sam Altman, Sundar Pichai                     │ │
+│ │ • Locations: San Francisco, Seattle                     │ │
+│ │                                                         │ │
+│ │ Sentiment: Slightly Positive (0.32)                     │ │
 │ │                                                         │ │
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                             │
@@ -395,6 +425,7 @@ CREATE TABLE user_saved_articles (
 - **State Management:** Redux Toolkit
 - **Routing:** React Router 6
 - **UI Framework:** Tailwind CSS
+- **Visualization:** Recharts, D3.js
 - **HTTP Client:** Axios
 - **Testing:** Jest, React Testing Library
 
@@ -409,26 +440,31 @@ CREATE TABLE user_saved_articles (
 - **RDBMS:** PostgreSQL 15
 - **Migration Tool:** Django Migrations
 
-### 5.2 External Services and Libraries
+### 5.2 NLP Stack
 
-#### 5.2.1 News Sources
+#### 5.2.1 Core NLP Libraries
+- **spaCy:** General NLP tasks, entity recognition
+- **Hugging Face Transformers:** For LLM-based tasks
+- **NLTK:** Text processing utilities
+- **TextBlob:** Simple sentiment analysis
+- **scikit-learn:** Optional for machine learning components
+
+#### 5.2.2 NLP Models
+- **Summarization:** BART-large-cnn or T5
+- **Topic Classification:** Zero-shot classification with transformer models
+- **Entity Recognition:** spaCy English model (en_core_web_md)
+- **Sentiment Analysis:** TextBlob or fine-tuned classifier
+
+### 5.3 External Services and Libraries
+
+#### 5.3.1 News Sources
 - Primary: NewsAPI (https://newsapi.org/)
 - Alternatives:
   - The Guardian API
   - New York Times API
   - Custom web scrapers (with proper attribution)
 
-#### 5.2.2 NLP Components
-- **Summarization:** Hugging Face Transformers
-  - Models considered: BART, T5, PEGASUS
-  - Initial selection: BART-large-cnn (fine-tuned for news summarization)
-  
-- **Bias Detection:**
-  - Base: BERT-base or RoBERTa-base
-  - Fine-tuning required on labeled dataset
-  - Fallback: Rule-based approach for MVP
-
-#### 5.2.3 Monitoring and Logging
+#### 5.3.2 Monitoring and Logging
 - **Application Logging:** Python logging with rotating file handler
 - **Error Tracking:** Sentry
 - **Metrics:** Prometheus (optional)
@@ -448,11 +484,12 @@ CREATE TABLE user_saved_articles (
 3. Develop authentication system
 4. Build news aggregation service
 5. Implement LLM integration for summarization
-6. Develop bias detection system
-7. Create personalized feed system
-8. Build frontend components
-9. Connect frontend to backend APIs
-10. Test, optimize, and refine
+6. Develop topic analysis system
+7. Create visualization data processing
+8. Build frontend dashboard components
+9. Implement enhanced article detail view
+10. Connect frontend to backend APIs
+11. Test, optimize, and refine
 
 ### 6.3 Deployment Strategy
 
@@ -476,7 +513,7 @@ CREATE TABLE user_saved_articles (
 - **Integration Testing:** Component interactions
 - **API Testing:** Endpoint functionality
 - **UI Testing:** Frontend component testing
-- **Performance Testing:** Load and response time testing
+- **Performance Testing:** Visualization and data processing performance
 
 ### 7.2 Testing Tools
 - **Backend:** Pytest, Django Test Client
@@ -509,16 +546,16 @@ CREATE TABLE user_saved_articles (
 ### 9.1 Optimization Techniques
 - Database query optimization
 - Efficient ORM usage
-- Redis caching for frequent queries
+- Redis caching for visualization data
 - Asynchronous processing for resource-intensive tasks
 - Frontend optimizations (code splitting, lazy loading)
 
-### 9.2 Scalability Approach
-- Horizontal scaling for web tier
-- Vertical scaling for database tier initially
-- Efficient caching strategy
-- Optimized database indexes
-- Background workers for processing tasks
+### 9.2 Visualization Performance
+- Data aggregation performed on backend
+- Caching of visualization datasets
+- Progressive loading for large datasets
+- Time-based data partitioning
+- Client-side data transformations minimized
 
 ## 10. Maintenance and Support
 
@@ -545,6 +582,7 @@ CREATE TABLE user_saved_articles (
 ### 11.1 Technical Risks and Mitigations
 - **LLM Performance:** Fall back to simpler models if needed
 - **API Rate Limits:** Implement caching and retries
+- **Visualization Performance:** Implement data pagination and aggregation
 - **Resource Constraints:** Optimize and prioritize features
 - **Data Quality:** Implement robust validation and error handling
 
@@ -553,12 +591,3 @@ CREATE TABLE user_saved_articles (
 - **Data Loss:** Regular backups and recovery testing
 - **Security Breaches:** Regular security reviews and updates
 - **Performance Issues:** Monitoring and optimization plan
-
-## 12. Glossary
-- **API:** Application Programming Interface
-- **JWT:** JSON Web Token
-- **LLM:** Large Language Model
-- **MVP:** Minimum Viable Product
-- **NLP:** Natural Language Processing
-- **ORM:** Object-Relational Mapping
-- **SPA:** Single Page Application
