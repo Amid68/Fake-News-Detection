@@ -1,21 +1,22 @@
 # Software Requirements Specification
 
-**Project Title:** Automated Multilingual News Aggregation, Summarization & Bias Detection Tool  
-**Document Version:** 2.0  
+**Project Title:** Automated News Aggregation, Summarization & Topic Analysis Tool  
+**Document Version:** 3.0  
 **Author:** Ameed Othman
-**Date:** 04.03.2025
+**Date:** 10.03.2025
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This document defines the functional and non-functional requirements for the Automated News Aggregation, Summarization, and Bias Detection Tool. It serves as a comprehensive guide for implementation, ensuring a clear understanding of system capabilities and constraints.
+This document defines the functional and non-functional requirements for the Automated News Aggregation, Summarization, and Topic Analysis Tool. It serves as a comprehensive guide for implementation.
 
 ### 1.2 Scope
 This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 - User authentication and preference management
-- News aggregation from reliable English language sources
-- Article summarization using LLMs
-- Basic bias detection
+- News aggregation from reliable sources
+- Article summarization with quality metrics
+- Topic analysis and entity extraction
+- Topic trend visualization
 - Personalized news feed generation
 - Web-based user interface
 
@@ -28,8 +29,8 @@ This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 - **UI/UX:** User Interface/User Experience
 
 ### 1.4 References
-- Project Vision Document v2.0
-- System Design Document v2.0
+- Project Vision Document v3.0
+- System Design Document v3.0
 - Evaluation and Testing Plan
 - [NewsAPI Documentation](https://newsapi.org/docs)
 - [Hugging Face Transformers Documentation](https://huggingface.co/docs/transformers/index)
@@ -61,7 +62,7 @@ This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 ### 2.2 News Aggregation
 
 #### 2.2.1 Content Collection
-- **FR-4.1:** The system shall aggregate news from at least three reliable English sources.
+- **FR-4.1:** The system shall aggregate news from at least three reliable sources.
 - **FR-4.2:** The system shall fetch articles based on user-selected topics.
 - **FR-4.3:** The system shall update content at least once per hour.
 - **FR-4.4:** The system shall properly attribute content to its original source.
@@ -78,71 +79,89 @@ This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 ### 2.3 Article Summarization
 
 #### 2.3.1 Summary Generation
-- **FR-6.1:** The system shall generate concise summaries (3-5 sentences) of news articles.
-- **FR-6.2:** The system shall use an appropriate LLM for summarization.
+- **FR-6.1:** The system shall generate summaries of articles in multiple formats:
+  - Headline (1-2 sentences)
+  - Standard (3-5 sentences)
+  - Detailed (6-8 sentences)
+- **FR-6.2:** The system shall use appropriate LLMs for summarization.
 - **FR-6.3:** The system shall process newly aggregated articles automatically.
-- **FR-6.4:** The system shall handle summarization failures gracefully.
+- **FR-6.4:** The system shall calculate quality metrics for generated summaries.
 - **FR-6.5:** The system shall maintain the key information from the original article.
 
 #### 2.3.2 Summary Management
 - **FR-7.1:** The system shall store summaries with their source articles.
 - **FR-7.2:** The system shall display summaries with links to full articles.
 - **FR-7.3:** The system shall track summary generation timestamps.
-- **FR-7.4:** The system shall allow manual triggering of summarization when necessary.
+- **FR-7.4:** The system shall allow users to select preferred summary length.
 
-### 2.4 Bias Detection
+### 2.4 Topic Analysis
 
-#### 2.4.1 Bias Analysis
-- **FR-8.1:** The system shall analyze articles for political bias using an LLM.
-- **FR-8.2:** The system shall classify articles on a political spectrum scale.
-- **FR-8.3:** The system shall provide confidence scores with bias assessments.
-- **FR-8.4:** The system shall handle bias detection failures gracefully.
-- **FR-8.5:** The system shall include disclaimer language about bias detection limitations.
+#### 2.4.1 Topic Classification
+- **FR-8.1:** The system shall analyze articles for primary and secondary topics.
+- **FR-8.2:** The system shall extract key terms from articles.
+- **FR-8.3:** The system shall identify named entities (people, places, organizations).
+- **FR-8.4:** The system shall provide confidence scores for topic classifications.
+- **FR-8.5:** The system shall perform simple sentiment analysis on articles.
 
-#### 2.4.2 Bias Presentation
-- **FR-9.1:** The system shall display bias assessments visually (e.g., spectrum indicator).
-- **FR-9.2:** The system shall provide brief explanations of bias assessments.
-- **FR-9.3:** The system shall allow users to provide feedback on bias assessments.
+#### 2.4.2 Topic Presentation
+- **FR-9.1:** The system shall display topic information visually.
+- **FR-9.2:** The system shall provide a list of extracted entities.
+- **FR-9.3:** The system shall allow users to explore content through topic connections.
 
-### 2.5 Personalized News Feed
+### 2.5 Visualization Dashboard
 
-#### 2.5.1 Feed Generation
-- **FR-10.1:** The system shall filter articles based on user topic preferences.
-- **FR-10.2:** The system shall display recent articles first by default.
-- **FR-10.3:** The system shall provide alternate sorting options (relevance, source).
-- **FR-10.4:** The system shall provide pagination or infinite scrolling.
-- **FR-10.5:** The system shall update the feed when new content is available.
+#### 2.5.1 Dashboard Components
+- **FR-10.1:** The system shall provide a topic distribution visualization.
+- **FR-10.2:** The system shall display topic trends over time.
+- **FR-10.3:** The system shall visualize source distribution of articles.
+- **FR-10.4:** The system shall present keyword frequency visualization.
+- **FR-10.5:** The system shall show sentiment distribution across content.
 
-#### 2.5.2 Feed Interaction
-- **FR-11.1:** The system shall allow users to save articles for later reading.
-- **FR-11.2:** The system shall track read/unread status of articles.
-- **FR-11.3:** The system shall allow users to hide specific articles.
-- **FR-11.4:** The system shall support basic search functionality.
+#### 2.5.2 Dashboard Interaction
+- **FR-11.1:** The system shall allow filtering visualizations by date range.
+- **FR-11.2:** The system shall support drilling down into specific topics.
+- **FR-11.3:** The system shall provide tooltips with additional information.
+- **FR-11.4:** The system shall export visualization data if requested.
 
-### 2.6 User Interface
+### 2.6 Personalized News Feed
 
-#### 2.6.1 General UI Requirements
-- **FR-12.1:** The system shall provide an intuitive, responsive web interface.
-- **FR-12.2:** The system shall implement a clean, readable design for news content.
-- **FR-12.3:** The system shall support both light and dark mode.
-- **FR-12.4:** The system shall provide consistent navigation across all pages.
-- **FR-12.5:** The system shall display appropriate loading indicators.
+#### 2.6.1 Feed Generation
+- **FR-12.1:** The system shall filter articles based on user topic preferences.
+- **FR-12.2:** The system shall display recent articles first by default.
+- **FR-12.3:** The system shall provide alternate sorting options (relevance, source).
+- **FR-12.4:** The system shall provide pagination or infinite scrolling.
+- **FR-12.5:** The system shall update the feed when new content is available.
 
-#### 2.6.2 Specific UI Views
-- **FR-13.1:** The system shall include a login/registration page.
-- **FR-13.2:** The system shall include a personalized feed page.
-- **FR-13.3:** The system shall include an article detail view.
-- **FR-13.4:** The system shall include a user preferences management page.
-- **FR-13.5:** The system shall include an about/information page.
+#### 2.6.2 Feed Interaction
+- **FR-13.1:** The system shall allow users to save articles for later reading.
+- **FR-13.2:** The system shall track read/unread status of articles.
+- **FR-13.3:** The system shall allow users to hide specific articles.
+- **FR-13.4:** The system shall support basic search functionality.
+
+### 2.7 User Interface
+
+#### 2.7.1 General UI Requirements
+- **FR-14.1:** The system shall provide an intuitive, responsive web interface.
+- **FR-14.2:** The system shall implement a clean, readable design for news content.
+- **FR-14.3:** The system shall support both light and dark mode.
+- **FR-14.4:** The system shall provide consistent navigation across all pages.
+- **FR-14.5:** The system shall display appropriate loading indicators.
+
+#### 2.7.2 Specific UI Views
+- **FR-15.1:** The system shall include a login/registration page.
+- **FR-15.2:** The system shall include a personalized feed page.
+- **FR-15.3:** The system shall include an article detail view with topic insights.
+- **FR-15.4:** The system shall include a user preferences management page.
+- **FR-15.5:** The system shall include an analytics dashboard page.
 
 ## 3. Non-Functional Requirements
 
 ### 3.1 Performance Requirements
 - **NFR-1.1:** The system shall load the news feed within 3 seconds under normal conditions.
 - **NFR-1.2:** The system shall complete summarization within 10 seconds per article.
-- **NFR-1.3:** The system shall complete bias detection within 5 seconds per article.
-- **NFR-1.4:** The system shall support at least 50 concurrent users.
-- **NFR-1.5:** The system shall maintain responsiveness during background processing.
+- **NFR-1.3:** The system shall complete topic analysis within 5 seconds per article.
+- **NFR-1.4:** The system shall render visualizations within 2 seconds.
+- **NFR-1.5:** The system shall support at least 50 concurrent users.
 
 ### 3.2 Security Requirements
 - **NFR-2.1:** The system shall implement HTTPS for all communications.
@@ -173,7 +192,7 @@ This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 ### 3.6 Legal and Compliance Requirements
 - **NFR-6.1:** The system shall comply with GDPR for user data handling.
 - **NFR-6.2:** The system shall respect copyright of original news sources.
-- **NFR-6.3:** The system shall include appropriate disclaimers about bias detection.
+- **NFR-6.3:** The system shall include appropriate disclaimers about automated analysis.
 - **NFR-6.4:** The system shall provide terms of service and privacy policy.
 - **NFR-6.5:** The system shall implement appropriate data retention policies.
 
@@ -189,19 +208,20 @@ This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 5. User selects topics of interest
 6. System creates personalized feed
 
-#### 4.1.2 Viewing Personalized News Feed
+#### 4.1.2 Viewing Topic Insights Dashboard
 1. User logs into the application
-2. System displays personalized feed based on preferences
-3. User scrolls through summarized articles
-4. User selects an article of interest
-5. System displays article details with summary and bias analysis
+2. User navigates to the Analytics Dashboard
+3. System displays topic distribution visualization
+4. User selects a time range filter
+5. System updates visualizations based on filter
+6. User explores different visualization components
 
-#### 4.1.3 Managing Preferences
-1. User navigates to preferences page
-2. System displays current topic selections
-3. User modifies topic selections
-4. System updates preferences
-5. System regenerates feed based on new preferences
+#### 4.1.3 Reading Article with Topic Analysis
+1. User navigates to article detail page
+2. System displays article summary
+3. User views topic analysis tab
+4. System shows topic classification and entities
+5. User explores related content by clicking on topics
 
 ### 4.2 Data Dictionary
 
@@ -209,8 +229,9 @@ This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 |------|------------|--------|------------------|
 | User | Registered system user | Object | Valid email required |
 | Article | News article from source | Object | Must have title, content, source |
-| Summary | Condensed version of article | Text | 3-5 sentences |
-| Bias Score | Political leaning assessment | Float | Range from -1.0 (left) to 1.0 (right) |
+| Summary | Condensed version of article | Text | Variable length based on type |
+| Topic Analysis | Topic classification results | Object | Must have primary topic |
+| Entity | Named entity in article | Object | Type and text required |
 | Topic | News category | String | From predefined list |
 | Source | News provider | Object | Must be from approved list |
 
@@ -233,15 +254,15 @@ This specification covers the Minimum Viable Product (MVP) scope, focusing on:
 - Entertainment
 - World/International
 
-### 5.3 Bias Classification Scale
-- -1.0 to -0.6: Strong left-leaning
-- -0.6 to -0.2: Moderate left-leaning
-- -0.2 to 0.2: Centrist/Neutral
-- 0.2 to 0.6: Moderate right-leaning
-- 0.6 to 1.0: Strong right-leaning
+### 5.3 Topic Analysis Components
+- Primary and secondary topic classification
+- Named entity recognition (people, organizations, locations)
+- Key term extraction
+- Simple sentiment analysis
 
-### 5.4 Limitations and Constraints
-- Article processing limited by available computational resources
-- News API rate limits and potential costs
-- Inherent limitations in automated bias detection accuracy
-- User account limit for MVP (100 maximum concurrent users)
+### 5.4 Visualization Components
+- Topic distribution charts
+- Topic trends over time
+- Source distribution analysis
+- Keyword frequency visualization
+- Sentiment distribution
