@@ -1,27 +1,28 @@
 # Evaluation and Testing Plan
 
-**Project Title:** Automated Multilingual News Aggregation, Summarization & Bias Detection Tool  
-**Document Version:** 1.0
+**Project Title:** Lightweight Fake News Detection System  
+**Document Version:** 2.0  
 **Author:** Ameed Othman   
-**Date:** 04.03.2025
+**Date:** 27.03.2025
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This document outlines the comprehensive testing and evaluation approach for the Automated News Aggregation, Summarization, and Bias Detection Tool. It establishes methodologies for assessing both technical functionality and the quality of AI-generated outputs, ensuring the system meets its requirements and delivers value to users.
+This document outlines the comprehensive testing and evaluation approach for the Lightweight Fake News Detection System. It establishes methodologies for assessing both technical functionality and the quality of fake news detection outputs, with special focus on resource efficiency and detection accuracy.
 
 ### 1.2 Scope
 This plan covers:
 - Testing strategies for all system components
-- Evaluation methodologies for LLM-generated content
+- Evaluation methodologies for lightweight model detection quality
+- Resource usage benchmarking
 - User acceptance testing procedures
-- Performance benchmarking
+- Performance testing in resource-constrained environments
 - Ongoing quality monitoring
 
 ### 1.3 References
-- Project Vision Document v2.0
-- Software Requirements Specification v2.0
-- System Design Document v2.0
+- Project Vision Document v1.0
+- Software Requirements Specification v1.0
+- System Design Document v1.0
 
 ## 2. Testing Approach Overview
 
@@ -54,18 +55,19 @@ This plan covers:
 ### 2.2 Testing Types
 
 #### 2.2.1 Functional Testing
-- Authentication
-- News aggregation
-- Summarization
-- Bias detection
-- News feed generation
+- User authentication
+- Text input processing
+- URL content extraction
+- Fake news detection
 - User preference management
+- Results visualization
 
 #### 2.2.2 Performance Testing
-- Load testing
-- Response time
-- Resource utilization
-- Scalability limits
+- Model inference time
+- Memory usage during analysis
+- CPU utilization
+- Response time under load
+- Resource usage in constrained environments
 
 #### 2.2.3 Security Testing
 - Authentication/authorization
@@ -80,93 +82,107 @@ This plan covers:
 - Accessibility compliance
 - User journey completion
 
-## 3. LLM Output Evaluation
+## 3. Model Evaluation
 
-### 3.1 Summarization Quality Evaluation
+### 3.1 Fake News Detection Quality Evaluation
 
 #### 3.1.1 Automated Metrics
-- **ROUGE Scores:** Measure overlap with reference summaries
-  - ROUGE-1: Unigram overlap
-  - ROUGE-2: Bigram overlap
-  - ROUGE-L: Longest common subsequence
-- **BERTScore:** Semantic similarity to reference
+- **Accuracy:** Percentage of correctly classified articles
+- **Precision:** True positives / (True positives + False positives)
+- **Recall:** True positives / (True positives + False negatives)
+- **F1 Score:** Harmonic mean of precision and recall
+- **ROC AUC:** Area under the Receiver Operating Characteristic curve
 - **Target Benchmarks:**
-  - ROUGE-1: >0.40
-  - ROUGE-2: >0.20
-  - ROUGE-L: >0.35
-  - BERTScore: >0.85
+  - Accuracy: >85%
+  - F1 Score: >0.80
+  - ROC AUC: >0.85
 
 #### 3.1.2 Human Evaluation
 - **Dimensions:**
-  - **Informativeness:** Does the summary contain key information?
-  - **Coherence:** Is the summary well-structured and readable?
-  - **Factual Accuracy:** Does the summary contain factual errors?
-  - **Conciseness:** Is the summary appropriately brief?
+  - **False Positive Rate:** How often legitimate content is flagged
+  - **False Negative Rate:** How often fake content is missed
+  - **Result Interpretation:** How clearly results are presented
+  - **Confidence Calibration:** How well confidence scores align with accuracy
 - **Methodology:**
-  - 5-point Likert scale for each dimension
-  - Blind comparison with reference summaries
-  - Minimum 50 articles evaluated
-  - At least 3 evaluators per article
+  - Blind evaluation of 50+ articles with known ground truth
+  - Minimum 3 evaluators per article
+  - Comparison across different models
+  - Focus on challenging edge cases
 - **Success Criteria:**
-  - Average score ≥4.0 on all dimensions
-  - ≥90% of summaries without factual errors
+  - False positive rate <15%
+  - False negative rate <20%
+  - >80% agreement with ground truth
 
 #### 3.1.3 Test Dataset Creation
-- Collection of 100 diverse news articles
-- Human-written reference summaries
+- Collection of 200 diverse news articles (100 real, 100 fake)
 - Variety of topics, lengths, and sources
-- Both straightforward and complex articles
+- Both obvious and subtle misinformation
+- Articles not included in training data
+- Stratified by difficulty level
 
-### 3.2 Bias Detection Evaluation
+### 3.2 Resource Efficiency Evaluation
 
-#### 3.2.1 Benchmark Dataset
-- Media Bias/Fact Check (MBFC) labeled articles
-- AllSides Media Bias Ratings
-- Ad Fontes Media Bias Chart
-- Custom dataset with expert annotations (if feasible)
+#### 3.2.1 Memory Usage Benchmarking
+- **Metrics:**
+  - Peak memory usage during model loading
+  - Average memory usage during inference
+  - Memory leakage over multiple requests
+- **Testing Methodology:**
+  - Memory profiling with psutil
+  - Stress testing with repeated requests
+  - Testing on reference hardware platforms
+- **Target Benchmarks:**
+  - Peak memory: <500MB
+  - Average memory: <250MB 
+  - No measurable memory leaks
 
-#### 3.2.2 Classification Metrics
-- **Accuracy:** Overall correct classifications
-- **Precision:** Correct positive predictions / all positive predictions
-- **Recall:** Correct positive predictions / all actual positives
-- **F1 Score:** Harmonic mean of precision and recall
-- **Target benchmarks:**
-  - Accuracy: >0.70
-  - F1 Score: >0.65
+#### 3.2.2 Processing Speed Benchmarking
+- **Metrics:**
+  - Model loading time
+  - Inference time per article
+  - End-to-end processing time
+- **Testing Methodology:**
+  - Timed processing of standard article lengths
+  - Distribution of processing times across test dataset
+  - Comparison across different hardware profiles
+- **Target Benchmarks:**
+  - Model loading: <3 seconds
+  - Inference time: <2 seconds per 1000 words
+  - End-to-end processing: <5 seconds
 
-#### 3.2.3 Human Validation
-- **Methodology:**
-  - Blind comparison of system vs. human expert classifications
-  - Structured disagreement analysis
-  - Confidence assessment
-- **Success Criteria:**
-  - >70% agreement with human experts
-  - Confidence correctly calibrated (higher confidence correlates with accuracy)
-
-#### 3.2.4 Error Analysis
-- Systematic categorization of errors
-- Identification of bias blindspots
-- Documentation of challenging cases for future improvement
+#### 3.2.3 CPU Utilization
+- **Metrics:**
+  - Average CPU usage during inference
+  - Peak CPU usage
+  - CPU usage distribution over time
+- **Testing Methodology:**
+  - CPU profiling during standard workloads
+  - Measurement on reference hardware
+  - Multi-core vs. single-core performance
+- **Target Benchmarks:**
+  - Average CPU usage: <50% on reference hardware
+  - Function on single-core processors
+  - No processing timeouts
 
 ## 4. System Performance Evaluation
 
 ### 4.1 Response Time Benchmarks
-- **Page Load Time:** <3 seconds for news feed
-- **Article Processing Time:**
-  - Summarization: <10 seconds per article
-  - Bias Detection: <5 seconds per article
-- **API Response Time:** <500ms for 95% of requests
+- **Page Load Time:** <2 seconds for main interface
+- **Text Processing Time:** <1 second for input processing
+- **URL Extraction Time:** <3 seconds for content extraction
+- **Model Inference Time:** <5 seconds for analysis
+- **API Response Time:** <500ms for 95% of non-ML requests
 
 ### 4.2 Scalability Testing
-- Concurrent user simulation (target: 50 users)
-- Batch article processing (target: 100 articles/hour)
-- Database query performance under load
+- Concurrent user simulation (target: 10 users)
+- Batch article processing (target: 20 articles/hour)
 - Resource utilization monitoring
+- Performance degradation patterns
 
 ### 4.3 Reliability Testing
 - System uptime measurement (target: >99%)
 - Error rate monitoring (target: <1% of requests)
-- Failover and recovery testing
+- Recovery testing after resource exhaustion
 - External API failure handling
 
 ## 5. Test Environments
@@ -178,29 +194,32 @@ This plan covers:
 - Mocked external services where appropriate
 
 ### 5.2 Integration Testing Environment
-- Dedicated test server
-- Test database (PostgreSQL)
-- Limited external service integration
+- Dedicated test server (minimal resources)
+- Test database (SQLite)
 - Controlled test data
 
-### 5.3 Production-like Testing Environment
-- Cloud-based staging environment
-- Production-equivalent configuration
-- Full external service integration
-- Anonymized production-like data
+### 5.3 Resource-Constrained Testing Environment
+- 1GB RAM virtual machine
+- Single-core CPU configuration
+- Limited storage (2GB)
+- Throttled network connection
 
 ## 6. Test Data Management
 
 ### 6.1 Test Data Requirements
 - Representative user profiles
-- Diverse news articles
-- Various topic distributions
+- Diverse news articles (real and fake)
+- Various text lengths and complexities
 - Edge cases and special scenarios
+- Multilingual content (if supported)
 
 ### 6.2 Test Data Sources
 - Manually created test cases
-- Anonymized production data (when available)
-- Public news datasets
+- Public fake news datasets:
+  - LIAR dataset
+  - FakeNewsNet
+  - ISOT Fake News dataset
+- Web-scraped recent news articles
 - Synthetic data generation
 
 ### 6.3 Test Data Maintenance
@@ -236,119 +255,276 @@ This plan covers:
 - Root cause analysis
 - Verification process for fixes
 
-## 8. LLM Evaluation Tools and Scripts
+## 8. Model Evaluation Tools and Scripts
 
-### 8.1 Summarization Evaluation Script
-
-```python
-# Example summarization evaluation script
-import rouge
-from bert_score import score
-import pandas as pd
-
-def evaluate_summaries(generated_summaries, reference_summaries):
-    """
-    Evaluate generated summaries against references using ROUGE and BERTScore
-    
-    Args:
-        generated_summaries: List of generated summaries
-        reference_summaries: List of reference summaries
-    
-    Returns:
-        DataFrame with evaluation metrics
-    """
-    # Calculate ROUGE scores
-    rouge_evaluator = rouge.Rouge(metrics=['rouge-n', 'rouge-l'],
-                                 max_n=2,
-                                 limit_length=True,
-                                 length_limit=100,
-                                 length_limit_type='words',
-                                 apply_avg=True,
-                                 apply_best=False)
-    
-    rouge_scores = rouge_evaluator.evaluate(generated_summaries, reference_summaries)
-    
-    # Calculate BERTScore
-    P, R, F1 = score(generated_summaries, reference_summaries, lang='en', verbose=True)
-    bert_scores = F1.numpy()
-    
-    # Compile results
-    results = {
-        'rouge-1': rouge_scores['rouge-1']['f'],
-        'rouge-2': rouge_scores['rouge-2']['f'],
-        'rouge-l': rouge_scores['rouge-l']['f'],
-        'bert_score': bert_scores.mean()
-    }
-    
-    return pd.DataFrame([results])
-```
-
-### 8.2 Bias Detection Evaluation Script
+### 8.1 Fake News Detection Evaluation Script
 
 ```python
-# Example bias detection evaluation script
-from sklearn.metrics import classification_report, confusion_matrix
+# Example fake news detection evaluation script
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def evaluate_bias_detection(predicted_labels, true_labels, predicted_confidences=None):
+def evaluate_model(model_name, y_true, y_pred, y_proba=None):
     """
-    Evaluate bias detection performance
+    Evaluate a fake news detection model
     
     Args:
-        predicted_labels: Model predictions (e.g., 'left', 'center', 'right')
-        true_labels: Ground truth labels
-        predicted_confidences: Confidence scores for predictions (optional)
+        model_name: Name of the model being evaluated
+        y_true: Ground truth labels (0=real, 1=fake)
+        y_pred: Predicted labels
+        y_proba: Prediction probabilities (optional)
     
     Returns:
-        Dictionary with evaluation metrics and plots
+        Dictionary with evaluation metrics
     """
     # Calculate classification metrics
-    report = classification_report(true_labels, predicted_labels, output_dict=True)
-    conf_matrix = confusion_matrix(true_labels, predicted_labels)
+    report = classification_report(y_true, y_pred, output_dict=True)
+    conf_matrix = confusion_matrix(y_true, y_pred)
     
-    # Create confusion matrix heatmap
-    plt.figure(figsize=(10, 8))
+    # ROC AUC if probabilities provided
+    auc_score = None
+    if y_proba is not None:
+        auc_score = roc_auc_score(y_true, y_proba)
+    
+    # Create confusion matrix visualization
+    plt.figure(figsize=(8, 6))
     sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues',
-                xticklabels=sorted(set(true_labels)),
-                yticklabels=sorted(set(true_labels)))
+                xticklabels=['Real', 'Fake'],
+                yticklabels=['Real', 'Fake'])
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
-    plt.title('Bias Detection Confusion Matrix')
+    plt.title(f'Confusion Matrix - {model_name}')
+    plt.savefig(f'confusion_matrix_{model_name}.png')
     
-    # Evaluate confidence calibration if available
-    calibration_data = None
-    if predicted_confidences is not None:
-        # Convert to numpy arrays
-        confidences = np.array(predicted_confidences)
-        correct = (np.array(predicted_labels) == np.array(true_labels)).astype(int)
-        
-        # Create calibration curve
-        confidence_bins = np.linspace(0, 1, 11)
-        bin_accuracies = []
-        bin_confidences = []
-        bin_counts = []
-        
-        for i in range(len(confidence_bins) - 1):
-            bin_mask = (confidences >= confidence_bins[i]) & (confidences < confidence_bins[i+1])
-            if np.sum(bin_mask) > 0:
-                bin_accuracies.append(np.mean(correct[bin_mask]))
-                bin_confidences.append(np.mean(confidences[bin_mask]))
-                bin_counts.append(np.sum(bin_mask))
-        
-        calibration_data = pd.DataFrame({
-            'bin_accuracy': bin_accuracies,
-            'bin_confidence': bin_confidences,
-            'bin_count': bin_counts
-        })
-    
-    return {
-        'classification_report': report,
+    # Compile results
+    metrics = {
+        'model': model_name,
+        'accuracy': report['accuracy'],
+        'precision_fake': report['1']['precision'],
+        'recall_fake': report['1']['recall'],
+        'f1_fake': report['1']['f1-score'],
+        'precision_real': report['0']['precision'],
+        'recall_real': report['0']['recall'],
+        'f1_real': report['0']['f1-score'],
+        'roc_auc': auc_score,
         'confusion_matrix': conf_matrix,
-        'calibration_data': calibration_data
     }
+    
+    return metrics
+
+def evaluate_all_models(models, test_data):
+    """
+    Evaluate multiple fake news detection models on test data
+    
+    Args:
+        models: Dictionary of model objects
+        test_data: Test dataset with texts and labels
+    
+    Returns:
+        DataFrame with comparative metrics
+    """
+    results = []
+    
+    for model_name, model in models.items():
+        # Get predictions
+        y_true = test_data['label']
+        y_pred = model.predict(test_data['text'])
+        y_proba = None
+        
+        if hasattr(model, 'predict_proba'):
+            y_proba = model.predict_proba(test_data['text'])[:, 1]
+        
+        # Evaluate model
+        metrics = evaluate_model(model_name, y_true, y_pred, y_proba)
+        results.append(metrics)
+    
+    # Combine into DataFrame
+    metrics_df = pd.DataFrame(results)
+    
+    # Create comparative visualization
+    plt.figure(figsize=(12, 8))
+    metrics_df[['model', 'accuracy', 'f1_fake', 'f1_real']].set_index('model').plot(kind='bar')
+    plt.title('Model Performance Comparison')
+    plt.ylabel('Score')
+    plt.ylim(0, 1)
+    plt.savefig('model_comparison.png')
+    
+    return metrics_df
+```
+
+### 8.2 Resource Usage Monitoring Script
+
+```python
+# Example resource monitoring script
+import time
+import psutil
+import pandas as pd
+import matplotlib.pyplot as plt
+from functools import wraps
+
+class ResourceMonitor:
+    """Monitor CPU and memory usage during model execution"""
+    
+    def __init__(self, interval=0.1):
+        """
+        Initialize the resource monitor
+        
+        Args:
+            interval: Sampling interval in seconds
+        """
+        self.interval = interval
+        self.cpu_usage = []
+        self.memory_usage = []
+        self.timestamps = []
+        self.running = False
+        
+    def start(self):
+        """Start monitoring resources"""
+        self.cpu_usage = []
+        self.memory_usage = []
+        self.timestamps = []
+        self.start_time = time.time()
+        self.running = True
+        
+        # Start monitoring in a separate thread
+        import threading
+        self.thread = threading.Thread(target=self._monitor)
+        self.thread.daemon = True
+        self.thread.start()
+        
+    def stop(self):
+        """Stop monitoring resources"""
+        self.running = False
+        if hasattr(self, 'thread'):
+            self.thread.join(timeout=1.0)
+        
+    def _monitor(self):
+        """Internal monitoring function"""
+        while self.running:
+            self.cpu_usage.append(psutil.cpu_percent())
+            self.memory_usage.append(psutil.Process().memory_info().rss / 1024 / 1024)  # MB
+            self.timestamps.append(time.time() - self.start_time)
+            time.sleep(self.interval)
+            
+    def get_metrics(self):
+        """Get the recorded metrics"""
+        return {
+            'timestamps': self.timestamps,
+            'cpu_usage': self.cpu_usage,
+            'memory_usage': self.memory_usage,
+            'peak_memory': max(self.memory_usage) if self.memory_usage else 0,
+            'avg_memory': sum(self.memory_usage) / len(self.memory_usage) if self.memory_usage else 0,
+            'peak_cpu': max(self.cpu_usage) if self.cpu_usage else 0,
+            'avg_cpu': sum(self.cpu_usage) / len(self.cpu_usage) if self.cpu_usage else 0,
+        }
+        
+    def plot(self, save_path=None):
+        """Plot the resource usage"""
+        metrics = self.get_metrics()
+        
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+        
+        # Plot CPU usage
+        ax1.plot(metrics['timestamps'], metrics['cpu_usage'])
+        ax1.set_title('CPU Usage')
+        ax1.set_ylabel('CPU %')
+        ax1.grid(True)
+        
+        # Plot memory usage
+        ax2.plot(metrics['timestamps'], metrics['memory_usage'])
+        ax2.set_title('Memory Usage')
+        ax2.set_xlabel('Time (seconds)')
+        ax2.set_ylabel('Memory (MB)')
+        ax2.grid(True)
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path)
+        else:
+            plt.show()
+            
+    def resource_usage_decorator(self, func):
+        """Decorator to monitor resource usage of a function"""
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            self.start()
+            try:
+                result = func(*args, **kwargs)
+                return result
+            finally:
+                self.stop()
+                
+        return wrapper
+
+
+def benchmark_model(model, test_texts, n_runs=5):
+    """
+    Benchmark a model's resource usage and speed
+    
+    Args:
+        model: The model to benchmark
+        test_texts: List of texts to process
+        n_runs: Number of benchmark runs
+    
+    Returns:
+        Dictionary of benchmark results
+    """
+    # Initialize results
+    load_times = []
+    inference_times = []
+    peak_memory = []
+    avg_memory = []
+    
+    for run in range(n_runs):
+        # Measure model loading
+        monitor = ResourceMonitor()
+        monitor.start()
+        load_start = time.time()
+        
+        # Simulate model loading (replace with actual model loading code)
+        # model.load()
+        time.sleep(0.5)  # Placeholder
+        
+        load_end = time.time()
+        monitor.stop()
+        
+        load_metrics = monitor.get_metrics()
+        load_times.append(load_end - load_start)
+        peak_memory.append(load_metrics['peak_memory'])
+        
+        # Measure inference
+        inference_monitor = ResourceMonitor()
+        all_inference_times = []
+        
+        for text in test_texts:
+            inference_monitor.start()
+            inference_start = time.time()
+            
+            # Run inference
+            _ = model.predict([text])
+            
+            inference_end = time.time()
+            inference_monitor.stop()
+            
+            all_inference_times.append(inference_end - inference_start)
+            
+        inference_metrics = inference_monitor.get_metrics()
+        inference_times.append(sum(all_inference_times) / len(all_inference_times))
+        avg_memory.append(inference_metrics['avg_memory'])
+    
+    # Compile results
+    benchmark_results = {
+        'avg_load_time': sum(load_times) / len(load_times),
+        'avg_inference_time': sum(inference_times) / len(inference_times),
+        'peak_memory_mb': sum(peak_memory) / len(peak_memory),
+        'avg_memory_mb': sum(avg_memory) / len(avg_memory),
+    }
+    
+    return benchmark_results
 ```
 
 ## 9. User Experience Testing
@@ -361,11 +537,11 @@ def evaluate_bias_detection(predicted_labels, true_labels, predicted_confidences
 
 ### 9.2 Key User Journeys for Testing
 1. Registration and preference setting
-2. Browsing personalized news feed
-3. Reading article summaries and bias assessments
-4. Adjusting preferences and observing feed changes
-5. Searching for specific topics
-6. Saving and retrieving articles
+2. Pasting text for analysis
+3. Submitting URL for extraction and analysis
+4. Interpreting detection results
+5. Comparing model performance
+6. Viewing analysis history
 
 ### 9.3 Accessibility Testing
 - WCAG 2.1 AA compliance verification
@@ -380,7 +556,7 @@ def evaluate_bias_detection(predicted_labels, true_labels, predicted_confidences
 - Test coverage reports
 - Pass/fail statistics
 - Performance benchmark results
-- LLM evaluation metrics
+- Model evaluation metrics
 - User acceptance testing findings
 
 ### 10.2 Defect Management
@@ -401,7 +577,7 @@ def evaluate_bias_detection(predicted_labels, true_labels, predicted_confidences
 - User feedback collection and analysis
 - Bug report monitoring
 - Performance issue tracking
-- LLM output quality assessment
+- Detection quality assessment
 
 ### 11.2 Test Automation Enhancement
 - Expanding automated test coverage
@@ -436,83 +612,85 @@ Expected Results:
 - User able to log in
 ```
 
-#### A.2 LLM Evaluation Test Case Template
+#### A.2 Model Evaluation Test Case Template
 ```
-Test ID: LLM-001
-Test Title: News Article Summarization Quality
-Test Data: Article ID A123 from test dataset
+Test ID: MODEL-001
+Test Title: DistilBERT Model Accuracy Evaluation
+Test Data: ISOT Fake News test dataset
 Evaluation Metrics:
-- ROUGE-1, ROUGE-2, ROUGE-L scores
-- BERTScore
-- Human evaluation (informativeness, coherence, accuracy)
+- Accuracy
+- F1 Score
+- Memory usage
+- Inference time
 Acceptance Criteria:
-- ROUGE-L score > 0.35
-- No factual errors
-- Human rating average > 4.0
+- Accuracy > 85%
+- F1 Score > 0.80
+- Memory usage < 500MB
+- Inference time < 2s per article
 ```
 
 ### Appendix B: Human Evaluation Forms
 
-#### B.1 Summarization Quality Evaluation Form
+#### B.1 Detection Quality Evaluation Form
 ```
 Article ID: _________
 Original Article Title: _________
-Generated Summary: _________
+Model Used: _________
+Detection Result: _________
+Confidence Score: _________
 
 Please rate on a scale of 1-5 (1 = Poor, 5 = Excellent):
 
-Informativeness: How well does the summary capture key information?
+Detection Accuracy: How accurate was the model's assessment?
 1 [ ] 2 [ ] 3 [ ] 4 [ ] 5 [ ]
 
-Coherence: How well-structured and readable is the summary?
+Confidence Alignment: How well did the confidence score align with result quality?
 1 [ ] 2 [ ] 3 [ ] 4 [ ] 5 [ ]
 
-Factual Accuracy: Does the summary contain factual errors?
-No errors [ ] Minor errors [ ] Major errors [ ]
+True Classification: In your assessment, this article is:
+[ ] Genuine news  [ ] Fake news  [ ] Uncertain
 
-Conciseness: Is the summary appropriately brief?
-1 [ ] 2 [ ] 3 [ ] 4 [ ] 5 [ ]
-
-Additional Comments: _________
+Explanation: _________
 ```
 
-#### B.2 Bias Detection Evaluation Form
+#### B.2 Resource Efficiency Evaluation Form
 ```
-Article ID: _________
-Article Title: _________
-System's Bias Rating: _________
-Confidence Score: _________
+Model ID: _________
+Hardware Configuration: _________
+Test Dataset: _________
 
-Your Assessment:
-[ ] Strong Left   [ ] Moderate Left   [ ] Neutral   [ ] Moderate Right   [ ] Strong Right
+Measured Metrics:
+- Average Memory Usage: _________ MB
+- Peak Memory Usage: _________ MB
+- Average Inference Time: _________ seconds
+- CPU Utilization: _________ %
 
-Agreement with System:
-[ ] Strongly Disagree   [ ] Disagree   [ ] Neutral   [ ] Agree   [ ] Strongly Agree
+Tester Assessment:
+[ ] Acceptable performance for target hardware
+[ ] Borderline performance - may struggle on target hardware
+[ ] Unacceptable performance - exceeds resource constraints
 
-Confidence in Your Assessment:
-[ ] Low   [ ] Medium   [ ] High
-
-Explanation for Disagreement (if any): _________
+Notes: _________
 ```
 
 ### Appendix C: Test Dataset Sources
 
-1. **AllSides Balanced News Dataset**
-   - Source: https://www.allsides.com/
-   - Content: News articles with bias ratings
-   - Usage: Bias detection evaluation
+1. **LIAR Dataset**
+   - Source: https://www.cs.ucsb.edu/~william/data/liar_dataset.zip
+   - Content: 12.8K labeled short statements
+   - Usage: Model accuracy evaluation
 
-2. **CNN/Daily Mail Dataset**
-   - Source: https://github.com/abisee/cnn-dailymail
-   - Content: News articles with human-written summaries
-   - Usage: Summarization evaluation
+2. **FakeNewsNet**
+   - Source: https://github.com/KaiDMML/FakeNewsNet
+   - Content: News content with social context
+   - Usage: Comprehensive evaluation
 
-3. **Media Bias/Fact Check (MBFC)**
-   - Source: https://mediabiasfactcheck.com/
-   - Content: Source-level bias ratings
-   - Usage: Bias detection calibration
+3. **ISOT Fake News Dataset**
+   - Source: https://www.uvic.ca/engineering/ece/isot/datasets/index.php
+   - Content: 44,898 articles (21,417 real, 23,481 fake)
+   - Usage: Large-scale testing
 
-4. **NELA-GT-2020**
-   - Source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/ZCXSKG
-   - Content: News articles with source-level annotations
-   - Usage: News aggregation and classification testing
+4. **Resource-Constrained Test Set**
+   - Source: Internally developed
+   - Content: 100 articles of varying length/complexity
+   - Usage: Performance testing in resource-limited environments
