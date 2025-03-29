@@ -1,32 +1,31 @@
 # System Design Document
 
-**Project Title:** Automated News Aggregation, Summarization & Topic Analysis Tool  
-**Document Version:** 3.0  
-**Author:** Ameed Othman
-**Date:** 10.03.2025
+**Project Title:** Lightweight Fake News Detection System  
+**Document Version:** 4.0  
+**Author:** Ameed Othman  
+**Date:** 29.03.2025
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This System Design Document (SDD) provides a technical blueprint for implementing the News Aggregation, Summarization & Topic Analysis Tool. It transforms the requirements into an actionable architecture and design.
+This System Design Document (SDD) provides a technical blueprint for implementing the Lightweight Fake News Detection System. It transforms the requirements into an actionable architecture optimized for resource efficiency.
 
 ### 1.2 Scope
-This document covers the system architecture, data design, interfaces, and implementation considerations for the MVP as specified in the Software Requirements Specification (SRS).
+This document covers the system architecture, data design, interfaces, and implementation considerations for the MVP as specified in the updated Project Vision Document.
 
 ### 1.3 Definitions, Acronyms, and Abbreviations
 - **API:** Application Programming Interface
 - **CRUD:** Create, Read, Update, Delete
+- **FND:** Fake News Detection
 - **JWT:** JSON Web Token
 - **LLM:** Large Language Model
 - **MVC:** Model-View-Controller
 - **NLP:** Natural Language Processing
-- **ORM:** Object-Relational Mapping
+- **PLM:** Pre-trained Language Model
 - **REST:** Representational State Transfer
 
 ### 1.4 References
-- Project Vision Document v3.0
-- Software Requirements Specification v3.0
-- Evaluation and Testing Plan
+- Project Vision Document v1.0
 - [Django Documentation](https://docs.djangoproject.com/)
 - [React Documentation](https://reactjs.org/docs/getting-started.html)
 - [Hugging Face Transformers Documentation](https://huggingface.co/docs/transformers/index)
@@ -35,46 +34,40 @@ This document covers the system architecture, data design, interfaces, and imple
 
 ### 2.1 Architectural Overview
 
-The system follows a modern web application architecture with the following key components:
+The system follows a lightweight web application architecture with the following key components:
 
 #### 2.1.1 High-Level Architecture
-- **Frontend Layer:** React-based single-page application with visualization components
-- **Backend Layer:** Django REST API
-- **Database Layer:** PostgreSQL relational database
-- **Processing Layer:** Asynchronous task processing with Celery and Redis
-- **External Services:** News APIs, LLM integration
+- **Frontend Layer:** React-based single-page application with minimal dependencies
+- **Backend Layer:** Django REST API with optimized endpoints
+- **Database Layer:** SQLite for resource efficiency
+- **ML Layer:** Lightweight pre-trained models for fake news detection
 
 #### 2.1.2 Architecture Diagram
 
 ```
-┌─────────────────┐    ┌──────────────────────────────────────┐    ┌────────────────┐
-│                 │    │                                      │    │                │
-│   Web Browser   │◄───┤             Nginx Server             │◄───┤  News APIs     │
-│   (React SPA)   │    │             (Load Balancer)          │    │                │
-│                 │    │                                      │    └────────────────┘
+┌─────────────────┐    ┌──────────────────────────────────────┐
+│                 │    │                                      │
+│   Web Browser   │◄───┤        Django Application            │
+│   (React SPA)   │    │        (REST API Backend)            │
+│                 │    │                                      │
 └────────┬────────┘    └──────────────────┬───────────────────┘
-         │                                │                         ┌────────────────┐
-         │                                │                         │                │
-         │                                │                         │  Hugging Face  │
-         │                                ▼                         │  Models        │
-         │              ┌──────────────────────────────────────┐   │                │
-         │              │                                      │   └────────┬───────┘
-         └─────────────►│         Django Application           │◄───────────┘
-                        │         (REST API Backend)           │
+         │                                │
+         │                                │
+         │                                ▼
+         │              ┌──────────────────────────────────────┐
+         │              │                                      │
+         └─────────────►│     Fake News Detection Models       │
+                        │     (Lightweight Pre-trained)        │
                         │                                      │
                         └──────────────────┬───────────────────┘
                                           │
                                           │
-         ┌─────────────────┐              │              ┌────────────────┐
-         │                 │              │              │                │
-         │  Redis Cache    │◄─────────────┴─────────────►│  PostgreSQL DB │
-         │  & Task Queue   │                             │                │
-         │                 │              ┌──────────────┴───────────────┐
-         └─────────┬───────┘              │                              │
-                   │                      │       Celery Workers         │
-                   └─────────────────────►│ (Summarization, Topic Analysis) │
-                                         │                              │
-                                         └──────────────────────────────┘
+                                          ▼
+                         ┌────────────────────────────────────┐
+                         │                                    │
+                         │           SQLite Database          │
+                         │                                    │
+                         └────────────────────────────────────┘
 ```
 
 ### 2.2 Component Design
@@ -83,63 +76,63 @@ The system follows a modern web application architecture with the following key 
 
 **Core Components:**
 - **Authentication Module:** Handles user registration, login, and session management
-- **News Feed Component:** Displays personalized article list with summaries and topic indicators
-- **Article Detail Component:** Shows full article information with enhanced metadata
-- **Topic Analysis Component:** Displays topic classification and entity extraction results
-- **Visualization Dashboard:** Interactive data visualizations for content analysis
-- **User Preferences Component:** Manages topic selections and other user settings
+- **Text Input Component:** Captures news content for analysis
+- **URL Fetcher Component:** Extracts text from news URLs
+- **Analysis Results Component:** Displays detection results with confidence scores
+- **Model Comparison Dashboard:** Shows performance metrics across models
+- **Resource Usage Display:** Visualizes computational resource consumption
+- **User History Component:** Displays previously analyzed content
 
 **Technical Implementation:**
 - React function components with hooks
-- Redux for state management
+- Minimal Redux for essential state management
 - React Router for navigation
 - Axios for API communication
-- Recharts for data visualization
-- Tailwind CSS for styling
+- Recharts for lightweight data visualization
+- Tailwind CSS for styling with minimal footprint
 
 #### 2.2.2 Backend Components
 
 **Core Components:**
 - **User Management:** Authentication, authorization, and profile management
-- **News Aggregation Service:** Fetches and processes articles from sources
-- **Summarization Service:** Generates article summaries using LLMs
-- **Topic Analysis Service:** Analyzes and classifies article content
-- **Feed Management:** Generates personalized feeds based on preferences
-- **Visualization Data Service:** Aggregates and processes data for visualizations
+- **Text Preprocessing Service:** Cleans and prepares text for analysis
+- **Model Management Service:** Loads and manages lightweight models
+- **Detection Service:** Coordinates analysis across multiple models
+- **Performance Metrics Service:** Measures and logs model performance
+- **Resource Monitoring Service:** Tracks computational resource usage
 - **API Gateway:** Provides REST endpoints for frontend communication
 
 **Technical Implementation:**
-- Django REST Framework for API development
-- Django ORM for database interactions
-- Celery for asynchronous task processing
+- Django REST Framework for API development (minimal middleware)
+- SQLite with Django ORM for database interactions
 - JWT for authentication
-- Hugging Face Transformers for LLM integration
-- spaCy for natural language processing
+- Hugging Face Transformers (optimized loading) for model integration
+- Memory and CPU usage monitoring
 
-#### 2.2.3 Database Components
+#### 2.2.3 ML Components
 
-**Core Entities:**
-- Users and authentication
-- User preferences
-- News sources
-- Articles
-- Summaries
-- Topic analysis results
-- Entity recognition results
-- System logs
+**Model Pipeline:**
+- **Text Preprocessing:** Tokenization, cleaning, feature extraction
+- **Model Selection:** Dynamic loading of appropriate lightweight model
+- **Inference Engine:** Optimized for memory efficiency
+- **Result Aggregation:** When using multiple models
+- **Performance Tracking:** Accuracy, speed, and resource usage metrics
+
+**Candidate Models:**
+- DistilBERT (66M parameters)
+- TinyBERT (14.5M parameters)
+- MobileBERT (25.3M parameters)
+- ALBERT (12M parameters)
+- FastText-based models (non-transformer alternatives)
 
 ### 2.3 Interaction and Communication
 
 #### 2.3.1 Internal Communication
-- **Frontend to Backend:** REST API calls
-- **Backend to Database:** ORM queries
-- **Backend to Processing:** Task queue messages
+- **Frontend to Backend:** REST API calls (optimized payload size)
+- **Backend to Models:** Direct Python function calls
+- **Backend to Database:** ORM queries with optimization
 
-#### 2.3.2 External Communication
-- **News Source Integration:** HTTP requests to APIs
-- **LLM Integration:** Hugging Face Transformers API
-
-#### 2.3.3 Authentication Flow
+#### 2.3.2 Authentication Flow
 1. User submits credentials via frontend
 2. Backend validates and issues JWT
 3. JWT included in subsequent API requests
@@ -149,13 +142,13 @@ The system follows a modern web application architecture with the following key 
 
 ### 3.1 Database Selection
 
-PostgreSQL was selected for the following reasons:
-- Full SQL compliance and advanced features
-- Excellent support for JSON/JSONB fields (useful for topic data)
-- Strong support for Django ORM
-- Free and open-source
-- Robust backup and recovery options
-- Scalability for future growth
+SQLite was selected for the following reasons:
+- Minimal resource footprint
+- Zero-configuration database
+- File-based storage suitable for lightweight applications
+- Excellent support for Django ORM
+- Sufficient performance for expected user load
+- Easy backup and migration
 
 ### 3.2 Database Schema
 
@@ -164,146 +157,92 @@ PostgreSQL was selected for the following reasons:
 **Users Table**
 ```sql
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     is_verified BOOLEAN DEFAULT FALSE,
-    date_joined TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_login TIMESTAMP WITH TIME ZONE NULL
+    date_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL
 );
 ```
 
 **UserPreferences Table**
 ```sql
 CREATE TABLE user_preferences (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    topic VARCHAR(100) NOT NULL,
-    UNIQUE (user_id, topic)
-);
-```
-
-**UserActivity Table**
-```sql
-CREATE TABLE user_activity (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    action_type VARCHAR(50) NOT NULL,
-    action_details JSONB,
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    ip_address VARCHAR(45) NULL
+    default_model VARCHAR(100) DEFAULT 'distilbert',
+    show_detailed_metrics BOOLEAN DEFAULT FALSE,
+    UNIQUE (user_id)
 );
 ```
 
 #### 3.2.2 Content-Related Tables
 
-**NewsSources Table**
+**AnalysisRequests Table**
 ```sql
-CREATE TABLE news_sources (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
-    url VARCHAR(255) NOT NULL,
-    api_details JSONB NULL,
-    reliability_score FLOAT NULL,
-    is_active BOOLEAN DEFAULT TRUE
+CREATE TABLE analysis_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    content_text TEXT NOT NULL,
+    content_url VARCHAR(512) NULL,
+    content_title VARCHAR(255) NULL,
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45) NULL
 );
 ```
 
-**Articles Table**
+**DetectionResults Table**
 ```sql
-CREATE TABLE articles (
-    id SERIAL PRIMARY KEY,
-    source_id INTEGER REFERENCES news_sources(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
-    url VARCHAR(512) UNIQUE NOT NULL,
-    author VARCHAR(255) NULL,
-    published_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    fetched_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    image_url VARCHAR(512) NULL
+CREATE TABLE detection_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id INTEGER REFERENCES analysis_requests(id) ON DELETE CASCADE,
+    model_name VARCHAR(100) NOT NULL,
+    fake_probability FLOAT NOT NULL,
+    real_probability FLOAT NOT NULL,
+    confidence_score FLOAT NOT NULL,
+    processing_time FLOAT NOT NULL,
+    memory_usage FLOAT NULL,
+    cpu_usage FLOAT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-**ArticleTopics Table**
+**ModelMetrics Table**
 ```sql
-CREATE TABLE article_topics (
-    id SERIAL PRIMARY KEY,
-    article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
-    topic VARCHAR(100) NOT NULL,
-    confidence FLOAT NULL,
-    UNIQUE (article_id, topic)
-);
-```
-
-**Summaries Table**
-```sql
-CREATE TABLE summaries (
-    id SERIAL PRIMARY KEY,
-    article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
-    headline_summary TEXT NULL,
-    standard_summary TEXT NOT NULL,
-    detailed_summary TEXT NULL,
-    model_used VARCHAR(100) NOT NULL,
-    generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    quality_metrics JSONB NULL,
-    UNIQUE (article_id)
-);
-```
-
-**TopicAnalysisResults Table**
-```sql
-CREATE TABLE topic_analysis_results (
-    id SERIAL PRIMARY KEY,
-    article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
-    primary_topic VARCHAR(100) NOT NULL,
-    confidence FLOAT NOT NULL,
-    secondary_topics JSONB NULL,
-    keywords JSONB NULL,
-    entities JSONB NULL,
-    sentiment_score FLOAT NULL,
-    model_used VARCHAR(100) NOT NULL,
-    processing_time FLOAT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE (article_id)
-);
-```
-
-**UserSavedArticles Table**
-```sql
-CREATE TABLE user_saved_articles (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
-    saved_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE (user_id, article_id)
+CREATE TABLE model_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_name VARCHAR(100) NOT NULL,
+    accuracy FLOAT NOT NULL,
+    precision_score FLOAT NOT NULL,
+    recall_score FLOAT NOT NULL,
+    f1_score FLOAT NOT NULL,
+    avg_processing_time FLOAT NOT NULL,
+    avg_memory_usage FLOAT NOT NULL,
+    parameter_count INTEGER NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (model_name)
 );
 ```
 
 ### 3.3 Data Flow
 
-#### 3.3.1 News Aggregation Flow
-1. Scheduled task triggers article collection
-2. System fetches articles from configured sources
-3. Articles processed, deduplicated, and stored
-4. Tasks queued for summarization and topic analysis
-5. Processed articles become available in feeds
+#### 3.3.1 Analysis Request Flow
+1. User submits text or URL for analysis
+2. System preprocesses and cleans the text
+3. Text is sent to one or more detection models
+4. Models generate credibility scores
+5. Results are stored in database
+6. Performance metrics are updated
+7. Results are returned to user interface
 
-#### 3.3.2 Topic Analysis Flow
-1. New articles are queued for topic analysis
-2. Topic analysis processor extracts primary and secondary topics
-3. Entity recognition identifies people, organizations, and locations
-4. Keywords are extracted and ranked by relevance
-5. Simple sentiment analysis assigns a sentiment score
-6. Results stored in TopicAnalysisResults table
-
-#### 3.3.3 Visualization Data Flow
-1. Frontend requests visualization data
-2. Backend aggregates article metadata
-3. Topic distribution calculated from analysis results
-4. Time-based trends extracted from publication dates
-5. Data formatted for visualization components
-6. Cached responses used for improved performance
+#### 3.3.2 Model Comparison Flow
+1. User requests model comparison
+2. System retrieves metrics for all models
+3. Comparison data is formatted for visualization
+4. Dashboard displays performance tradeoffs
+5. User can select preferred model for future analysis
 
 ## 4. Interface Design
 
@@ -321,97 +260,115 @@ CREATE TABLE user_saved_articles (
 - `PUT /api/user/profile` - Update user profile
 - `GET /api/user/preferences` - Get user preferences
 - `PUT /api/user/preferences` - Update user preferences
-- `GET /api/user/saved-articles` - Get user saved articles
-- `POST /api/user/saved-articles` - Save article
-- `DELETE /api/user/saved-articles/{id}` - Remove saved article
+- `GET /api/user/history` - Get analysis history
 
-#### 4.1.3 Content APIs
-- `GET /api/articles` - Get articles with filtering
-- `GET /api/articles/{id}` - Get article details
-- `GET /api/articles/{id}/insights` - Get article topic insights
-- `GET /api/topics` - Get available topics
-- `GET /api/sources` - Get available sources
-
-#### 4.1.4 Visualization APIs
-- `GET /api/dashboard/stats` - Get dashboard statistics
-- `GET /api/dashboard/topic-trends` - Get topic trend data
-- `GET /api/dashboard/source-distribution` - Get source distribution data
-- `GET /api/dashboard/sentiment-analysis` - Get sentiment analysis data
+#### 4.1.3 Analysis APIs
+- `POST /api/analyze/text` - Analyze text content
+- `POST /api/analyze/url` - Analyze content from URL
+- `GET /api/analyze/result/{id}` - Get specific analysis result
+- `GET /api/models` - Get available models info
+- `GET /api/models/comparison` - Get model comparison metrics
+- `GET /api/models/resources` - Get resource usage metrics
 
 ### 4.2 User Interface Design
 
 #### 4.2.1 Wireframes
 
-##### Analytics Dashboard
+##### Main Analysis Interface
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ ┌─────┐ News Analyzer                       [User ▼] [🔍]   │
+│ ┌─────┐ FakeNews Detector                    [User ▼] [🔍]   │
 │ │ Logo│                                                     │
 │ └─────┘                                                     │
 ├─────────────────────────────────────────────────────────────┤
-│ [Week ▼] [Month ▼] [All Time ▼] [Refresh]                   │
+│ [Text Analysis] [URL Analysis]                              │
 ├─────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────┐  ┌─────────────────────────┐   │
-│ │                         │  │                         │   │
-│ │    Topic Distribution   │  │    Sentiment Analysis   │   │
-│ │    [Bar Chart]          │  │    [Pie Chart]          │   │
-│ │                         │  │                         │   │
-│ └─────────────────────────┘  └─────────────────────────┘   │
 │                                                             │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │                                                         │ │
-│ │                 Topic Trends Over Time                  │ │
-│ │                 [Line Chart]                            │ │
-│ │                                                         │ │
-│ └─────────────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                                                     │   │
+│  │  Paste news text here or enter URL                  │   │
+│  │  [                                               ]  │   │
+│  │  [                                               ]  │   │
+│  │  [                                               ]  │   │
+│  │                                                     │   │
+│  └─────────────────────────────────────────────────────┘   │
 │                                                             │
-│ ┌─────────────────────────┐  ┌─────────────────────────┐   │
-│ │                         │  │                         │   │
-│ │    Source Distribution  │  │    Keyword Cloud        │   │
-│ │    [Bar Chart]          │  │    [Tag Cloud]          │   │
-│ │                         │  │                         │   │
-│ └─────────────────────────┘  └─────────────────────────┘   │
+│  Select model: [DistilBERT ▼]                              │
+│                                                             │
+│  [Analyze]    [Clear]                                       │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-##### Article Detail with Topic Analysis
+##### Results Display
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ ┌─────┐ News Analyzer                       [User ▼] [🔍]   │
+│ ┌─────┐ FakeNews Detector                    [User ▼] [🔍]   │
 │ │ Logo│                                                     │
 │ └─────┘                                                     │
 ├─────────────────────────────────────────────────────────────┤
-│ < Back to Feed                                              │
+│ < Back to Analysis                                          │
 ├─────────────────────────────────────────────────────────────┤
-│ Article Title                                               │
-│ Source: [Source Name] | Published: [Date] | Author: [Name]  │
+│ Analysis Results                                            │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐ │
-│ │ [Summary] [Topic Analysis] [Original Article]           │ │
+│ │ Credibility Assessment                                   │ │
+│ │                                                         │ │
+│ │ ┌───────────────────────┐                              │ │
+│ │ │     78%               │  LIKELY CREDIBLE             │ │
+│ │ │  █████████████████░░░ │                              │ │
+│ │ └───────────────────────┘                              │ │
+│ │                                                         │ │
+│ │ Model used: DistilBERT                                  │ │
+│ │ Processing time: 1.2 seconds                            │ │
+│ │ Memory used: 450 MB                                     │ │
+│ │                                                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ▶ View Results from Other Models                        │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ▶ View Processed Text                                   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ [Save Result]  [Share]  [Analyze New Content]               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+##### Model Comparison Dashboard
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ┌─────┐ FakeNews Detector                    [User ▼] [🔍]   │
+│ │ Logo│                                                     │
+│ └─────┘                                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Model Comparison Dashboard                                  │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────┐  ┌─────────────────────────┐   │
+│ │                         │  │                         │   │
+│ │    Accuracy             │  │    Processing Time      │   │
+│ │    [Bar Chart]          │  │    [Bar Chart]          │   │
+│ │                         │  │                         │   │
+│ └─────────────────────────┘  └─────────────────────────┘   │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │                                                         │ │
+│ │                 Memory Usage                            │ │
+│ │                 [Bar Chart]                             │ │
+│ │                                                         │ │
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐ │
 │ │                                                         │ │
-│ │ Primary Topic: Technology (85% confidence)              │ │
-│ │                                                         │ │
-│ │ Secondary Topics:                                       │ │
-│ │ • Business (45%)                                        │ │
-│ │ • Science (30%)                                         │ │
-│ │                                                         │ │
-│ │ Key Terms:                                              │ │
-│ │ [artificial intelligence] [machine learning] [data]     │ │
-│ │                                                         │ │
-│ │ Named Entities:                                         │ │
-│ │ • Organizations: Google, OpenAI, Microsoft              │ │
-│ │ • People: Sam Altman, Sundar Pichai                     │ │
-│ │ • Locations: San Francisco, Seattle                     │ │
-│ │                                                         │ │
-│ │ Sentiment: Slightly Positive (0.32)                     │ │
+│ │                 Performance vs Resources                │ │
+│ │                 [Scatter Plot]                          │ │
 │ │                                                         │ │
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                             │
-│ [Read Original Article]  [Save]  [Share]                    │
+│ Set as default: [DistilBERT ▼]  [Save Preference]           │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -421,173 +378,153 @@ CREATE TABLE user_saved_articles (
 ### 5.1 Development Stack
 
 #### 5.1.1 Frontend Stack
-- **Core Framework:** React 18
-- **State Management:** Redux Toolkit
+- **Core Framework:** React 18 (minimal configuration)
+- **State Management:** React Context API (avoiding Redux where possible)
 - **Routing:** React Router 6
-- **UI Framework:** Tailwind CSS
-- **Visualization:** Recharts, D3.js
+- **UI Framework:** Tailwind CSS (purged for minimal footprint)
+- **Visualization:** Recharts (lightweight charts)
 - **HTTP Client:** Axios
 - **Testing:** Jest, React Testing Library
 
 #### 5.1.2 Backend Stack
 - **Core Framework:** Django 4.2 with Django REST Framework
-- **Authentication:** Django REST Knox or SimpleJWT
-- **Task Queue:** Celery with Redis broker
-- **ORM:** Django ORM
+- **Authentication:** SimpleJWT (lightweight token auth)
+- **ORM:** Django ORM with query optimization
 - **Testing:** Pytest, Django Test Client
 
 #### 5.1.3 Database
-- **RDBMS:** PostgreSQL 15
+- **RDBMS:** SQLite 3
 - **Migration Tool:** Django Migrations
 
-### 5.2 NLP Stack
+### 5.2 ML Stack
 
-#### 5.2.1 Core NLP Libraries
-- **spaCy:** General NLP tasks, entity recognition
-- **Hugging Face Transformers:** For LLM-based tasks
-- **NLTK:** Text processing utilities
-- **TextBlob:** Simple sentiment analysis
-- **scikit-learn:** Optional for machine learning components
+#### 5.2.1 Core ML Libraries
+- **Transformers:** Hugging Face Transformers (optimized loading)
+- **Optimization:** ONNX Runtime for inference acceleration
+- **Text Processing:** NLTK (core components only)
+- **Metrics:** scikit-learn (for evaluation metrics)
 
-#### 5.2.2 NLP Models
-- **Summarization:** BART-large-cnn or T5
-- **Topic Classification:** Zero-shot classification with transformer models
-- **Entity Recognition:** spaCy English model (en_core_web_md)
-- **Sentiment Analysis:** TextBlob or fine-tuned classifier
+#### 5.2.2 Model Optimization Techniques
+- **Model Pruning:** Removing unnecessary weights
+- **Knowledge Distillation:** Using smaller student models
+- **Quantization:** Reducing precision of model weights
+- **Lazy Loading:** Loading models only when needed
+- **Caching:** Reusing model instances across requests
 
-### 5.3 External Services and Libraries
-
-#### 5.3.1 News Sources
-- Primary: NewsAPI (https://newsapi.org/)
-- Alternatives:
-  - The Guardian API
-  - New York Times API
-  - Custom web scrapers (with proper attribution)
-
-#### 5.3.2 Monitoring and Logging
+### 5.3 Monitoring and Logging
 - **Application Logging:** Python logging with rotating file handler
-- **Error Tracking:** Sentry
-- **Metrics:** Prometheus (optional)
-- **Visualization:** Grafana (optional)
+- **Resource Monitoring:** psutil for memory and CPU tracking
+- **Performance Tracking:** Custom middleware for request timing
 
 ## 6. Implementation Strategy
 
 ### 6.1 Development Approach
 - Iterative development with 2-week cycles
 - Feature branches with pull requests
-- CI/CD pipeline with automated testing
-- Regular code review with supervisor
+- Focus on resource efficiency in all components
+- Regular performance benchmarking
 
 ### 6.2 Implementation Order
-1. Setup development environment and project structure
+1. Setup development environment with resource monitoring
 2. Implement database schema and core models
-3. Develop authentication system
-4. Build news aggregation service
-5. Implement LLM integration for summarization
-6. Develop topic analysis system
-7. Create visualization data processing
-8. Build frontend dashboard components
-9. Implement enhanced article detail view
-10. Connect frontend to backend APIs
+3. Integrate lightweight FND models
+4. Develop text preprocessing pipeline
+5. Create model comparison framework
+6. Build analysis API endpoints
+7. Implement authentication system
+8. Develop frontend components
+9. Create visualization dashboards
+10. Add resource usage monitoring
 11. Test, optimize, and refine
 
 ### 6.3 Deployment Strategy
 
 #### 6.3.1 Development Environment
-- Local Docker Compose setup
-- SQLite for development database
-- Local LLM models for offline development
+- Local development with resource constraints simulation
+- SQLite database
+- Local model testing with sample datasets
 
 #### 6.3.2 Production Environment
-- AWS Elastic Beanstalk or EC2
-- Containerized deployment with Docker
-- PostgreSQL RDS database
-- Redis for caching and task queue
+- Lightweight VPS or edge computing device
+- Containerized deployment with Alpine-based Docker images
+- SQLite database with regular backups
 - HTTPS with Let's Encrypt
-- Static files on S3 or CloudFront
+- Static files served directly from nginx
 
 ## 7. Testing Strategy
 
 ### 7.1 Testing Levels
-- **Unit Testing:** Individual components and functions
+- **Unit Testing:** Individual functions and classes
 - **Integration Testing:** Component interactions
-- **API Testing:** Endpoint functionality
+- **Model Testing:** FND model accuracy and resource usage
 - **UI Testing:** Frontend component testing
-- **Performance Testing:** Visualization and data processing performance
+- **Resource Testing:** Memory and CPU usage monitoring
 
 ### 7.2 Testing Tools
 - **Backend:** Pytest, Django Test Client
 - **Frontend:** Jest, React Testing Library
-- **API:** Postman, Newman
-- **Performance:** Locust (basic load testing)
+- **Models:** Standard NLP metrics (accuracy, F1, etc.)
+- **Resource Usage:** psutil for tracking memory and CPU
 
 ## 8. Security Considerations
 
 ### 8.1 Authentication and Authorization
-- JWT-based authentication
-- Password storage with bcrypt
+- JWT-based authentication with short expiry
+- Secure password storage with bcrypt
 - Role-based access control
 - Rate limiting for sensitive endpoints
 
 ### 8.2 Data Protection
 - HTTPS for all communications
-- Database encryption at rest
+- Minimal data collection and storage
 - Input validation and sanitization
 - Protection against common web vulnerabilities
 
 ### 8.3 API Security
-- Rate limiting
+- Rate limiting to prevent abuse
 - CORS configuration
 - Input validation
 - Authentication for all non-public endpoints
 
 ## 9. Performance Considerations
 
-### 9.1 Optimization Techniques
-- Database query optimization
-- Efficient ORM usage
-- Redis caching for visualization data
-- Asynchronous processing for resource-intensive tasks
-- Frontend optimizations (code splitting, lazy loading)
+### 9.1 Resource Optimization Techniques
+- **Model Loading:** Lazy loading and model sharing
+- **Memory Management:** Careful garbage collection
+- **Database:** Optimized queries and proper indexing
+- **Caching:** Response caching for common requests
+- **Frontend:** Code splitting and lazy component loading
 
-### 9.2 Visualization Performance
-- Data aggregation performed on backend
-- Caching of visualization datasets
-- Progressive loading for large datasets
-- Time-based data partitioning
-- Client-side data transformations minimized
+### 9.2 Performance Targets
+- **Model Inference:** <5 seconds per article
+- **Memory Usage:** <500MB per instance
+- **Page Load Time:** <2 seconds initial load
+- **API Response Time:** <1 second for non-ML endpoints
 
 ## 10. Maintenance and Support
 
 ### 10.1 Monitoring
-- Application logs
-- Error tracking
-- Performance metrics
-- Regular security scanning
+- Resource usage tracking
+- Model performance metrics
+- Error logging and alerting
+- Regular performance benchmarking
 
-### 10.2 Backup Strategy
-- Daily database backups
-- Backup retention policy
-- Periodic recovery testing
-- Code repository backups
-
-### 10.3 Update Process
-- Regular dependency updates
-- Security patch procedure
-- Feature enhancement process
-- Documentation updates
+### 10.2 Update Process
+- Regular model evaluation with new datasets
+- Security patches for dependencies
+- Documentation updates for deployment optimizations
 
 ## 11. Risk Mitigation
 
 ### 11.1 Technical Risks and Mitigations
-- **LLM Performance:** Fall back to simpler models if needed
-- **API Rate Limits:** Implement caching and retries
-- **Visualization Performance:** Implement data pagination and aggregation
-- **Resource Constraints:** Optimize and prioritize features
-- **Data Quality:** Implement robust validation and error handling
+- **Accuracy Degradation:** Regular benchmarking against latest FND datasets
+- **Resource Spikes:** Implement resource limits and graceful degradation
+- **Model Obsolescence:** Framework for easy model updates
+- **Data Drift:** Monitoring detection accuracy over time
+- **False Positives:** User feedback mechanism for improvement
 
 ### 11.2 Operational Risks and Mitigations
-- **Service Availability:** Implement monitoring and redundancy
-- **Data Loss:** Regular backups and recovery testing
-- **Security Breaches:** Regular security reviews and updates
-- **Performance Issues:** Monitoring and optimization plan
+- **Resource Constraints:** Implement adaptive model selection based on available resources
+- **High Request Volume:** Queuing system for peak periods
+- **Model Loading Failures:** Fallback to simpler models
+- **Data Storage Growth:** Implement retention policies for analysis history
