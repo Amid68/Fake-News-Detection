@@ -20,7 +20,6 @@ from django.utils import timezone
 
 from news.models import Article
 from .models import ProcessingTask
-from .tasks import process_article_task
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -93,6 +92,8 @@ def queue_processing_for_articles(task_type: str, articles: Optional[List[int]] 
                 task_type=task_type,
                 status=ProcessingTask.PENDING
             )
+            # Import here to avoid circular import
+            from .tasks import process_article_task
             # Queue the task for asynchronous processing
             process_article_task.delay(task.id)
             count += 1

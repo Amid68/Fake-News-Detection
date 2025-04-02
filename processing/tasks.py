@@ -10,7 +10,6 @@ This module defines Celery tasks for article processing operations.
 
 import logging
 from celery import shared_task
-from .services import process_article_by_task
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -28,6 +27,10 @@ def process_article_task(task_id):
         bool: Success status
     """
     logger.info(f"Starting processing task {task_id}")
+
+    # Import here to avoid circular import
+    from .services import process_article_by_task
+
     result = process_article_by_task(task_id)
     logger.info(f"Completed processing task {task_id} with result: {result}")
     return result
