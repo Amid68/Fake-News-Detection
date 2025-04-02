@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <!-- Profile Sidebar -->
+    <div class="col-md-3">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Account Info</h5>
+        </div>
+        <div class="card-body">
+          <div class="text-center mb-3">
+            <div class="d-inline-block bg-secondary text-white rounded-circle p-3" style="width: 80px; height: 80px;">
+              <span style="font-size: 2.5rem;">{{ user.username.0|upper }}</span>
+            </div>
+          </div>
+
+          <h5 class="card-title text-center">{{ user.username }}</h5>
+
+          <p class="card-text">
+            <strong>Name:</strong> {{ user.get_full_name|default:"Not provided" }}<br>
+            <strong>Email:</strong> {{ user.email }}<br>
+            <strong>Member since:</strong> {{ user.date_joined|date:"F d, Y" }}
+          </p>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Quick Stats</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Articles read:</span>
+            <span class="badge bg-primary rounded-pill">{{ view_history.count }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Articles saved:</span>
+            <span class="badge bg-primary rounded-pill">{{ saved_articles.count }}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Topics following:</span>
+            <span class="badge bg-primary rounded-pill">{{ user_preferences.count }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9">
+      <div class="card mb-4">
+        <div class="card-header">
+          <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="preferences-tab" data-bs-toggle="tab" data-bs-target="#preferences"
+                      type="button" role="tab" aria-controls="preferences" aria-selected="true">
+                Topic Preferences
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history"
+                      type="button" role="tab" aria-controls="history" aria-selected="false">
+                Reading History
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="account-tab" data-bs-toggle="tab" data-bs-target="#account"
+                      type="button" role="tab" aria-controls="account" aria-selected="false">
+                Account Settings
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <div class="tab-content" id="profileTabContent">
+            <!-- Topic Preferences Tab -->
+            <div class="tab-pane fade show active" id="preferences" role="tabpanel" aria-labelledby="preferences-tab">
+              <h5 class="card-title">Your Topic Preferences</h5>
+              <p class="card-text">
+                Add topics you're interested in to customize your news feed.
+              </p>
+
+              <!-- Add New Preference Form -->
+              <form method="post" class="mb-4">
+                {% csrf_token %}
+                <input type="hidden" name="add_preference" value="true">
+                <div class="input-group">
+                  <input type="text" name="topic_keyword" class="form-control"
+                         placeholder="Enter a topic (e.g., Technology, Politics)" required>
+                  <button type="submit" class="btn btn-primary">Add Topic</button>
+                </div>
+                {% if preference_form.topic_keyword.errors %}
+                  <small class="text-danger">
+                    {{ preference_form.topic_keyword.errors|join:", " }}
+                  </small>
+                {% endif %}
+              </form>
+
+              <!-- Current Preferences -->
+              <div class="row">
+                {% for preference in user_preferences %}
+                  <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h6 class="card-title">{{ preference.topic_keyword }}</h6>
+                        <form method="post">
+                          {% csrf_token %}
+                          <input type="hidden" name="remove_preference" value="true">
+                          <input type="hidden" name="preference_id" value="{{ preference.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-x-circle"></i> Remove
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="col-12">
+                    <div class="alert alert-info">
+                      You haven't added any topic preferences yet. Add topics above to personalize your news feed.
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Reading History Tab -->
+            <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+              <h5 class="card-title">Recent Reading History</h5>
+              <p class="card-text">
+                Articles you've recently viewed.
+              </p>
+
+              <div class="list-group">
+                {% for view in view_history %}
+                  <a href="{% url 'article_detail' view.article.id %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                      <h6 class="mb-1">{{ view.article.title }}</h6>
+                      <small>{{ view.viewed_at|timesince }} ago</small>
+                    </div>
+                    <p class="mb-1">
+                      <small class="text-muted">{{ view.article.source.name }}</small>
+                    </p>
+                  </a>
+                {% empty %}
+                  <div class="alert alert-info">
+                    You haven't viewed any articles yet.
+                  </div>
+                {% endfor %}
+              </div>
+
+              {% if view_history %}
+                <div class="mt-3">
+                  <a href="#" class="btn btn-outline-primary">View All History</a>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Account Settings Tab -->
+            <div class="tab-pane fade" id="account" role="tabpanel" aria-labelledby="account-tab">
+              <h5 class="card-title">Account Settings</h5>
+              <p class="card-text">
+                Update your account information.
+              </p>
+
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="update_profile" value="true">
+
+                <div class="mb-3">
+                  <label for="id_first_name" class="form-label">First Name</label>
+                  {{ user_form.first_name }}
+                </div>
+
+                <div class="mb-3">
+                  <label for="id_last_name" class="form-label">Last Name</label>
+                  {{ user_form.last_name }}
+                </div>
+
+                <div class="mb-3">
+                  <label for="id_email" class="form-label">Email Address</label>
+                  {{ user_form.email }}
+                  {% if user_form.email.errors %}
+                    <div class="text-danger">
+                      {{ user_form.email.errors|join:", " }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary">Update Profile</button>
+              </form>
+
+              <hr class="my-4">
+
+              <h6>Password Management</h6>
+              <p>
+                <a href="{% url 'password_change' %}" class="btn btn-outline-secondary">
+                  Change Password
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Articles -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Saved Articles</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for saved in saved_articles %}
+              <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                  {% if saved.article.featured_image_url %}
+                    <img src="{{ saved.article.featured_image_url }}" class="card-img-top" alt="{{ saved.article.title }}">
+                  {% endif %}
+
+                  <div class="card-body">
+                    <h6 class="card-title">{{ saved.article.title }}</h6>
+                    <p class="card-text">
+                      <small class="text-muted">
+                        {{ saved.article.source.name }} | {{ saved.article.publication_date|date:"M d, Y" }}
+                      </small>
+                    </p>
+                    <a href="{% url 'article_detail' saved.article.id %}" class="btn btn-sm btn-outline-primary">
+                      Read Article
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <div class="col-12">
+                <div class="alert alert-info">
+                  You haven't saved any articles yet. Save articles to read them later.
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if saved_articles %}
+            <div class="mt-3">
+              <a href="{% url 'saved_articles' %}" class="btn btn-outline-primary">View All Saved Articles</a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
