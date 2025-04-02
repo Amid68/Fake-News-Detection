@@ -1,12 +1,13 @@
-# Automated Multilingual News Aggregator
+# VeriFact: Lightweight Fake News Detection System
 
-A Django-based web application for aggregating, summarizing, and detecting bias in news articles.
+VeriFact is a Django-based web application for aggregating, summarizing, and detecting bias in news articles, with a focus on efficient fake news detection using lightweight pre-trained models.
 
 ## Features
 
-- **User Authentication:** Secure registration and login system with email verification
+- **User Authentication:** Secure registration and login system with preference management
 - **News Aggregation:** Collects articles from reliable English language sources
-- **Content Analysis:** AI-powered article summarization and bias detection
+- **Fake News Detection:** Analyzes articles using lightweight pre-trained models
+- **Model Comparison:** Compare performance and resource usage of different detection models
 - **Personalized Feed:** News feed based on user topic preferences
 - **Responsive Design:** Clean, intuitive interface that works on desktop and mobile
 
@@ -22,97 +23,66 @@ A Django-based web application for aggregating, summarizing, and detecting bias 
 
 ### Natural Language Processing
 - Hugging Face Transformers
-- BART/T5 for summarization
-- BERT/RoBERTa for bias detection
+- DistilBERT, TinyBERT, MobileBERT, and ALBERT models
+- Optimized for resource efficiency
 
 ### Frontend
+- Bootstrap 5
+- Chart.js for data visualization
 - HTML/CSS/JavaScript
-- Future: React-based SPA (in development)
 
-## Prerequisites
+## Screenshots
+
+![Home Screen](docs/images/home-screen.png)
+![Article Detail](docs/images/article-detail.png)
+![Model Comparison](docs/images/model-comparison.png)
+
+## Quick Start
+
+### Prerequisites
 
 - Python 3.10 or higher
 - pip and virtualenv
 - Redis server (for Celery and caching)
-- PostgreSQL (for production)
-- NewsAPI key
 
-## Installation
-
-### 1. Clone the Repository
+### Installation
 
 ```bash
-git clone git@github.com:Amid68/news_bias_detection.git
-cd news_bias_detection
-```
+# Clone the repository
+git clone https://github.com/yourusername/verifact.git
+cd verifact
 
-### 2. Set Up Environment
-
-Create and activate a virtual environment:
-
-```bash
+# Set up virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
 
-Install dependencies:
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Configure Environment Variables
-
-Copy the example environment file and update it with your settings:
-
-```bash
+# Configure environment variables
 cp .env.example .env
-```
+# Edit .env with your settings
 
-Open `.env` in your editor and set the necessary variables:
-
-```
-# Essential settings to update:
-SECRET_KEY=your-secret-key-here
-DEBUG=True  # Set to False in production
-NEWS_API_KEY=your-newsapi-key-here
-```
-
-### 4. Initialize the Database
-
-Run migrations:
-
-```bash
+# Initialize database
 python manage.py migrate
-```
-
-Create a superuser:
-
-```bash
 python manage.py createsuperuser
-```
 
-### 5. Start the Development Server
-
-```bash
+# Start the development server
 python manage.py runserver
 ```
 
-The application should now be running at http://127.0.0.1:8000/
+For detailed setup instructions, see [SETUP.md](SETUP.md).
 
-### 6. Set Up Celery Worker (Optional for Development)
+## Model Comparison
 
-In a new terminal window with the virtual environment activated:
+VeriFact includes several lightweight models for fake news detection, optimized for different use cases:
 
-```bash
-celery -A news_aggregator worker -l info
-```
-
-For the task scheduler (beat):
-
-```bash
-celery -A news_aggregator beat -l info
-```
+| Model | Accuracy | F1 Score | Memory Usage | Processing Time |
+|-------|----------|----------|--------------|-----------------|
+| DistilBERT | 0.89 | 0.88 | 330 MB | 1.2s |
+| TinyBERT | 0.85 | 0.84 | 125 MB | 0.7s |
+| MobileBERT | 0.87 | 0.86 | 190 MB | 0.9s |
+| ALBERT | 0.83 | 0.82 | 70 MB | 0.5s |
 
 ## Usage
 
@@ -139,7 +109,7 @@ python manage.py process_articles --type bias_detection
 ## Project Structure
 
 ```
-news_aggregator/              # Main project folder
+verifact/
 ├── api/                      # REST API app
 ├── docs/                     # Project documentation
 ├── news/                     # News content management app
@@ -153,60 +123,17 @@ news_aggregator/              # Main project folder
 │   ├── services.py           # Processing services
 │   └── tasks.py              # Celery tasks
 ├── news_aggregator/          # Project settings
-├── static/                   # Static files (CSS, JS)
 ├── templates/                # HTML templates
 └── users/                    # User management app
 ```
 
-## Development
+## Testing
 
-### Running Tests
+Run the test suite:
 
 ```bash
 python manage.py test
 ```
-
-### Code Quality
-
-```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run linting
-flake8
-
-# Run type checking
-mypy .
-```
-
-## Deployment
-
-### Docker (Recommended)
-
-1. Build the Docker image:
-   ```bash
-   docker-compose build
-   ```
-
-2. Start the services:
-   ```bash
-   docker-compose up -d
-   ```
-
-3. Run migrations:
-   ```bash
-   docker-compose exec web python manage.py migrate
-   ```
-
-### Traditional Deployment
-
-For production deployment, consider:
-
-1. Using Gunicorn as the WSGI server
-2. Setting up Nginx as a reverse proxy
-3. Configuring PostgreSQL for the database
-4. Setting up Redis for caching and Celery
-5. Using supervisor for process management
 
 ## Contributing
 
