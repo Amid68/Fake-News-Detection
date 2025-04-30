@@ -182,3 +182,19 @@ repomix-output.txt
 
 # Docker
 .env.docker
+
+# Docker-specific ignores
+logs/
+staticfiles/
+mediafiles/
+
+# Docker volume data
+docker-volumes/
+
+# Model downloads
+.transformers/
+.cache/
+huggingface/
+
+# VS Code settings
+.vscode/
