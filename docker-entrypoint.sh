@@ -1,5 +1,18 @@
 #!/bin/bash
-
+# =============================================================================
+# Django Docker Entrypoint Script
+# =============================================================================
+#
+# This script serves as the entrypoint for the Django application container.
+# It performs essential setup tasks before starting the main application process.
+#
+# Tasks performed:
+# - Apply database migrations to set up or update the database schema
+# - Collect static files for serving by the web server
+# - Create a superuser if credentials are provided via environment variables
+# - Load initial fixture data if enabled
+# - Download and cache NLP models for sentiment analysis if enabled
+# =============================================================================
 # Exit immediately if a command exits with a non-zero status
 set -e
 
