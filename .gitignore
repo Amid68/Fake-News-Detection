@@ -179,3 +179,6 @@ data/
 models/
 repomix-output.txt
 *.pyc
+
+# Docker
+.env.docker
