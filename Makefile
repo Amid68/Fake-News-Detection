@@ -1,3 +1,12 @@
+# =============================================================================
+# News Aggregator Project Makefile
+# =============================================================================
+#
+# A collection of shortcuts for common Docker and Django operations.
+# This Makefile provides simple commands for building, running, and
+# managing the news aggregator application in Docker containers.
+# =============================================================================
+
 .PHONY: build up down restart logs shell migrate static collectstatic fetch-news process-articles test
 
 # Build and start all services
