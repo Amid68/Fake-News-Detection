@@ -23,6 +23,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("users/", include("users.urls")),
     path("news/", include("news.urls")),
-    path("api/", include("api.urls")),
     path("", RedirectView.as_view(pattern_name="news_home"), name="home"),
 ]
