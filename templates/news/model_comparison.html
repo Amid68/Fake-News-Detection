@@ -1,202 +1,76 @@
 {% extends "base.html" %}
-
 {% load custom_filters %}
 
 {% block title %}Model Comparison - VeriFact{% endblock %}
 
-{% block extra_css %}
-<style>
-  .metric-card {
-    border-radius: 10px;
-    transition: transform 0.3s, box-shadow 0.3s;
-  }
-
-  .metric-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  }
-
-  .model-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #4a90e2 100%);
-    color: white;
-    border-radius: 8px 8px 0 0;
-  }
-
-  .accuracy-bar {
-    height: 25px;
-    border-radius: 5px;
-    margin-bottom: 8px;
-  }
-
-  .scatter-plot {
-    height: 400px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    margin-top: 30px;
-  }
-
-  .tooltip-inner {
-    max-width: 300px;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container mt-4">
   <h1 class="mb-4">Fake News Detection Model Comparison</h1>
-  <p class="lead mb-5">
-    VeriFact uses lightweight pre-trained models for fake news detection.
-    This dashboard compares performance metrics and resource usage across different models.
+  <p class="lead mb-4">
+    This dashboard compares lightweight pre-trained models for fake news detection,
+    showing the tradeoff between accuracy and computational resource usage.
   </p>
 
-  <!-- Performance Summary -->
-  <div class="row mb-5">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">Model Performance Overview</h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Accuracy</th>
-                  <th>F1 Score</th>
-                  <th>Precision</th>
-                  <th>Recall</th>
-                  <th>Processing Time</th>
-                  <th>Memory Usage</th>
-                  <th>Efficiency</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for metric in model_metrics %}
-                  <tr>
-                    <td><strong>{{ metric.model_name }}</strong></td>
-                    <td>{{ metric.accuracy|floatformat:2 }}</td>
-                    <td>{{ metric.f1_score|floatformat:2 }}</td>
-                    <td>{{ metric.precision_score|floatformat:2 }}</td>
-                    <td>{{ metric.recall_score|floatformat:2 }}</td>
-                    <td>{{ metric.avg_processing_time|floatformat:2 }}s</td>
-                    <td>{{ metric.avg_memory_usage|floatformat:1 }} MB</td>
-                    <td>
-                      <div class="progress" style="height: 15px;">
-                        <div class="progress-bar
-                          {% if metric.efficiency_score > 0.8 %}bg-success
-                          {% elif metric.efficiency_score > 0.6 %}bg-info
-                          {% elif metric.efficiency_score > 0.4 %}bg-warning
-                          {% else %}bg-danger{% endif %}"
-                          role="progressbar"
-                          style="width: {{ metric.efficiency_score|multiply:100 }}%;"
-                          aria-valuenow="{{ metric.efficiency_score|multiply:100 }}"
-                          aria-valuemin="0"
-                          aria-valuemax="100">
-                          {{ metric.efficiency_score|floatformat:2 }}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                {% empty %}
-                  <tr>
-                    <td colspan="8" class="text-center">No model metrics available yet.</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
+  <!-- Performance Summary Table -->
+  <div class="card mb-5">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Model Performance Overview</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Accuracy</th>
+              <th>F1 Score</th>
+              <th>Processing Time</th>
+              <th>Memory Usage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for metric in model_metrics %}
+              <tr>
+                <td><strong>{{ metric.model_name }}</strong></td>
+                <td>{{ metric.accuracy|floatformat:2 }}</td>
+                <td>{{ metric.f1_score|floatformat:2 }}</td>
+                <td>{{ metric.avg_processing_time|floatformat:2 }}s</td>
+                <td>{{ metric.avg_memory_usage|floatformat:1 }} MB</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center">No model metrics available yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- Model Cards -->
-  <h2 class="mb-4">Detailed Model Comparison</h2>
-  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
-    {% for metric in model_metrics %}
-      <div class="col">
-        <div class="card h-100 metric-card">
-          <div class="card-header model-header">
-            <h5 class="mb-0">{{ metric.model_name }}</h5>
-          </div>
-          <div class="card-body">
-            <!-- Accuracy -->
-            <h6>Accuracy: {{ metric.accuracy|floatformat:2 }}</h6>
-            <div class="progress accuracy-bar">
-              <div class="progress-bar bg-success" role="progressbar"
-                style="width: {{ metric.accuracy|multiply:100 }}%">
-                {{ metric.accuracy|floatformat:2 }}
-              </div>
-            </div>
-
-            <!-- F1 Score -->
-            <h6>F1 Score: {{ metric.f1_score|floatformat:2 }}</h6>
-            <div class="progress accuracy-bar">
-              <div class="progress-bar bg-info" role="progressbar"
-                style="width: {{ metric.f1_score|multiply:100 }}%">
-                {{ metric.f1_score|floatformat:2 }}
-              </div>
-            </div>
-
-            <!-- Processing Time -->
-            <h6>Avg. Processing Time: {{ metric.avg_processing_time|floatformat:2 }}s</h6>
-            <div class="progress accuracy-bar">
-              {% with max_time=5 %}
-                {% with normalized=metric.avg_processing_time|divide:max_time|min_with:1 %}
-                  <div class="progress-bar bg-warning" role="progressbar"
-                    style="width: {{ normalized|multiply:100 }}%">
-                    {{ metric.avg_processing_time|floatformat:2 }}s
-                  </div>
-                {% endwith %}
-              {% endwith %}
-            </div>
-
-            <!-- Memory Usage -->
-            <h6>Avg. Memory Usage: {{ metric.avg_memory_usage|floatformat:1 }} MB</h6>
-            <div class="progress accuracy-bar">
-              {% with max_memory=500 %}
-                {% with normalized=metric.avg_memory_usage|divide:max_memory|min_with:1 %}
-                  <div class="progress-bar bg-danger" role="progressbar"
-                    style="width: {{ normalized|multiply:100 }}%">
-                    {{ metric.avg_memory_usage|floatformat:1 }} MB
-                  </div>
-                {% endwith %}
-              {% endwith %}
-            </div>
-          </div>
-          <div class="card-footer">
-            <div class="d-flex justify-content-between align-items-center">
-              <small class="text-muted">Parameters: {{ metric.parameter_count|intcomma }}</small>
-              <small class="text-muted">Last updated: {{ metric.updated_at|date:"M d, Y" }}</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-
-  <!-- Trade-off Visualization -->
-  <h2 class="mb-4">Performance vs. Resource Usage</h2>
+  <!-- Visualization -->
   <div class="card mb-5">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Performance vs. Resource Usage</h5>
+    </div>
     <div class="card-body">
-      <p class="mb-4">
-        This scatter plot shows the trade-off between model accuracy and resource usage.
+      <p>
+        This visualization shows the trade-off between model accuracy and resource requirements.
         The ideal model would be in the top-left corner (high accuracy, low resource usage).
       </p>
 
-      <div id="tradeoffChart" class="scatter-plot"></div>
+      <div id="perfChart" style="height: 400px; width: 100%;"></div>
     </div>
   </div>
 
-  <!-- Model Selection Recommendations -->
-  <div class="card mb-5">
+  <!-- Model Recommendations -->
+  <div class="card mb-4">
     <div class="card-header bg-primary text-white">
       <h5 class="mb-0">Model Selection Recommendations</h5>
     </div>
     <div class="card-body">
       <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-6">
           <div class="card h-100">
             <div class="card-body">
               <h5 class="card-title">Best for Accuracy</h5>
@@ -205,11 +79,10 @@
                   <h6 class="card-subtitle mb-2 text-muted">{{ best_accuracy.model_name }}</h6>
                   <p class="card-text">
                     Accuracy: <strong>{{ best_accuracy.accuracy|floatformat:2 }}</strong><br>
-                    F1 Score: {{ best_accuracy.f1_score|floatformat:2 }}<br>
                     Memory: {{ best_accuracy.avg_memory_usage|floatformat:1 }} MB
                   </p>
                   <p class="card-text">
-                    Recommended when accuracy is your top priority and resources are not constrained.
+                    Recommended when accuracy is your top priority.
                   </p>
                 {% else %}
                   <p class="card-text">No model metrics available</p>
@@ -219,30 +92,7 @@
           </div>
         </div>
 
-        <div class="col-md-4">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="card-title">Best for Efficiency</h5>
-              {% with best_efficiency=model_metrics|dictsort:"efficiency_score"|last %}
-                {% if best_efficiency %}
-                  <h6 class="card-subtitle mb-2 text-muted">{{ best_efficiency.model_name }}</h6>
-                  <p class="card-text">
-                    Efficiency: <strong>{{ best_efficiency.efficiency_score|floatformat:2 }}</strong><br>
-                    Processing: {{ best_efficiency.avg_processing_time|floatformat:2 }}s<br>
-                    Memory: {{ best_efficiency.avg_memory_usage|floatformat:1 }} MB
-                  </p>
-                  <p class="card-text">
-                    Best balance of accuracy and resource usage. Great for most use cases.
-                  </p>
-                {% else %}
-                  <p class="card-text">No model metrics available</p>
-                {% endif %}
-              {% endwith %}
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-4">
+        <div class="col-md-6">
           <div class="card h-100">
             <div class="card-body">
               <h5 class="card-title">Best for Resource Constraints</h5>
@@ -251,11 +101,10 @@
                   <h6 class="card-subtitle mb-2 text-muted">{{ best_memory.model_name }}</h6>
                   <p class="card-text">
                     Memory: <strong>{{ best_memory.avg_memory_usage|floatformat:1 }} MB</strong><br>
-                    Processing: {{ best_memory.avg_processing_time|floatformat:2 }}s<br>
                     Accuracy: {{ best_memory.accuracy|floatformat:2 }}
                   </p>
                   <p class="card-text">
-                    Ideal for resource-constrained environments like edge devices or low-end servers.
+                    Ideal for resource-constrained environments like edge devices.
                   </p>
                 {% else %}
                   <p class="card-text">No model metrics available</p>
@@ -281,33 +130,47 @@
           label: "{{ metric.model_name }}",
           accuracy: {{ metric.accuracy }},
           memory: {{ metric.avg_memory_usage }},
-          time: {{ metric.avg_processing_time }},
-          parameters: {{ metric.parameter_count }},
-          f1Score: {{ metric.f1_score }}
-        },
+          time: {{ metric.avg_processing_time }}
+        }{% if not forloop.last %},{% endif %}
       {% endfor %}
     ];
 
     if (modelData.length > 0) {
-      // Create the performance vs memory scatter plot
-      const ctx = document.getElementById('tradeoffChart').getContext('2d');
-      const scatterChart = new Chart(ctx, {
+      // Create scatter plot
+      const ctx = document.getElementById('perfChart').getContext('2d');
+      const chart = new Chart(ctx, {
         type: 'bubble',
         data: {
-          datasets: modelData.map(model => ({
+          datasets: modelData.map((model, index) => ({
             label: model.label,
             data: [{
               x: model.memory,  // Memory usage (MB)
               y: model.accuracy, // Accuracy (0-1)
               r: model.time * 5  // Bubble size based on processing time
             }],
-            backgroundColor: getColorForModel(model.label),
-            borderColor: getColorForModel(model.label, 0.8),
+            backgroundColor: getColor(index, 0.5),
+            borderColor: getColor(index, 1),
           }))
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Memory Usage (MB)'
+              },
+              min: 0
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Accuracy'
+              },
+              min: 0.7,
+              max: 1.0
+            }
+          },
           plugins: {
             tooltip: {
               callbacks: {
@@ -317,48 +180,26 @@
                     `Model: ${model.label}`,
                     `Accuracy: ${model.accuracy.toFixed(2)}`,
                     `Memory: ${model.memory.toFixed(1)} MB`,
-                    `Time: ${model.time.toFixed(2)}s`,
-                    `Parameters: ${model.parameters.toLocaleString()}`
+                    `Processing Time: ${model.time.toFixed(2)}s`
                   ];
                 }
               }
-            },
-            legend: {
-              position: 'bottom',
-            },
-          },
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Memory Usage (MB)'
-              },
-              min: 0,
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Accuracy'
-              },
-              min: 0.7,
-              max: 1.0,
             }
           }
         }
       });
     }
 
-    // Get color for model
-    function getColorForModel(modelName, alpha = 0.5) {
-      const colors = {
-        'DistilBERT': `rgba(52, 152, 219, ${alpha})`,
-        'TinyBERT': `rgba(46, 204, 113, ${alpha})`,
-        'MobileBERT': `rgba(155, 89, 182, ${alpha})`,
-        'ALBERT': `rgba(241, 196, 15, ${alpha})`,
-        'FastText': `rgba(231, 76, 60, ${alpha})`
-      };
-
-      return colors[modelName] || `rgba(52, 73, 94, ${alpha})`;
+    // Generate colors for the chart
+    function getColor(index, alpha) {
+      const colors = [
+        `rgba(52, 152, 219, ${alpha})`,  // Blue
+        `rgba(46, 204, 113, ${alpha})`,  // Green
+        `rgba(155, 89, 182, ${alpha})`,  // Purple
+        `rgba(241, 196, 15, ${alpha})`,  // Yellow
+        `rgba(231, 76, 60, ${alpha})`    // Red
+      ];
+      return colors[index % colors.length];
     }
   });
 </script>
