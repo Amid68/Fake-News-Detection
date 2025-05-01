@@ -1,7 +1,14 @@
 from django.contrib import admin
 
-from .models import (Article, ArticleViewHistory, DetectionModelMetrics,
-                     FakeNewsDetectionResult, Source, Topic, UserSavedArticle)
+from .models import (
+    Article,
+    ArticleViewHistory,
+    DetectionModelMetrics,
+    FakeNewsDetectionResult,
+    Source,
+    Topic,
+    UserSavedArticle,
+)
 
 
 @admin.register(Source)

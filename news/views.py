@@ -20,8 +20,14 @@ from django.utils import timezone
 
 from users.models import UserPreference
 
-from .models import (Article, ArticleViewHistory, DetectionModelMetrics,
-                     Source, Topic, UserSavedArticle)
+from .models import (
+    Article,
+    ArticleViewHistory,
+    DetectionModelMetrics,
+    Source,
+    Topic,
+    UserSavedArticle,
+)
 
 
 def home_view(request):

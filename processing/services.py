@@ -17,8 +17,7 @@ import psutil
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          pipeline)
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
 from news.models import Article
 

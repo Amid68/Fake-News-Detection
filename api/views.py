@@ -13,21 +13,31 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from news.models import (Article, DetectionModelMetrics,
-                         FakeNewsDetectionResult, Source, Topic)
+from news.models import (
+    Article,
+    DetectionModelMetrics,
+    FakeNewsDetectionResult,
+    Source,
+    Topic,
+)
 from processing.services import detect_fake_news
 from users.models import CustomUser, UserPreference
 
-from .serializers import (AnalyzeTextSerializer, ArticleDetailSerializer,
-                          ArticleSerializer, DetectionModelMetricsSerializer,
-                          FakeNewsDetectionResultSerializer, SourceSerializer,
-                          TopicSerializer, UserPreferenceSerializer,
-                          UserSerializer)
+from .serializers import (
+    AnalyzeTextSerializer,
+    ArticleDetailSerializer,
+    ArticleSerializer,
+    DetectionModelMetricsSerializer,
+    FakeNewsDetectionResultSerializer,
+    SourceSerializer,
+    TopicSerializer,
+    UserPreferenceSerializer,
+    UserSerializer,
+)
 
 
 class ArticleViewSet(viewsets.ReadOnlyModelViewSet):

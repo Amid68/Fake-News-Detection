@@ -11,8 +11,13 @@ for the REST API.
 
 from rest_framework import serializers
 
-from news.models import (Article, DetectionModelMetrics,
-                         FakeNewsDetectionResult, Source, Topic)
+from news.models import (
+    Article,
+    DetectionModelMetrics,
+    FakeNewsDetectionResult,
+    Source,
+    Topic,
+)
 from users.models import CustomUser, UserPreference
 
 
