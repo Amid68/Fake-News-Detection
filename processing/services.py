@@ -60,6 +60,9 @@ def queue_processing_for_articles(
     Returns:
         int: Number of tasks queued
     """
+    from news_aggregator.celery import app
+    app.send_task('processing.tasks.process_article_task', args=[task.id])
+
     if task_type not in [ProcessingTask.SUMMARIZATION, ProcessingTask.BIAS_DETECTION]:
         raise ValueError(f"Invalid task type: {task_type}")
 
