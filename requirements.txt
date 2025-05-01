@@ -1,4 +1,4 @@
 Django==5.1.6
 transformers==4.36.2
-torch==2.0.1
+torch==2.2.0
 numpy==1.26.4
