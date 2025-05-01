@@ -48,21 +48,11 @@ _model_cache = {}
 
 
 def queue_processing_for_articles(
-    task_type: str, articles: Optional[List[int]] = None
+        task_type: str, articles: Optional[List[int]] = None
 ) -> int:
     """
     Queue processing tasks for articles.
-
-    Args:
-        task_type: Type of processing (summarization or bias_detection)
-        articles: Optional list of article IDs to process (defaults to unprocessed)
-
-    Returns:
-        int: Number of tasks queued
     """
-    from news_aggregator.celery import app
-    app.send_task('processing.tasks.process_article_task', args=[task.id])
-
     if task_type not in [ProcessingTask.SUMMARIZATION, ProcessingTask.BIAS_DETECTION]:
         raise ValueError(f"Invalid task type: {task_type}")
 
@@ -92,14 +82,10 @@ def queue_processing_for_articles(
             task = ProcessingTask.objects.create(
                 article=article, task_type=task_type, status=ProcessingTask.PENDING
             )
-            # Import here to avoid circular import
-            from .tasks import process_article_task
 
-            # Queue the task for asynchronous processing
-            process_article_task.delay(task.id)
+            process_article_by_task(task.id)
             count += 1
 
-    logger.info(f"Queued {count} articles for {task_type}")
     return count
 
 
