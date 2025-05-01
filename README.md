@@ -1,41 +1,40 @@
 # VeriFact: Lightweight Fake News Detection System
 
-VeriFact is a Django-based web application for aggregating, summarizing, and detecting bias in news articles, with a focus on efficient fake news detection using lightweight pre-trained models.
+VeriFact is a simplified Django-based web application that demonstrates fake news detection using lightweight pre-trained models, ideal for academic demonstration and research presentation.
 
-## Features
+## Core Features
 
-- **User Authentication:** Secure registration and login system with preference management
-- **News Aggregation:** Collects articles from reliable English language sources
-- **Fake News Detection:** Analyzes articles using lightweight pre-trained models
-- **Model Comparison:** Compare performance and resource usage of different detection models
-- **Personalized Feed:** News feed based on user topic preferences
-- **Responsive Design:** Clean, intuitive interface that works on desktop and mobile
+- **User Authentication:** Basic registration and login system
+- **News Display:** View curated news articles with detailed view
+- **Fake News Detection:** Analyze text using lightweight ML models
+- **Model Comparison:** Compare performance metrics between models
+- **Interactive Demo:** Test any text with different detection models
 
-## Technology Stack
+## Simplified Technology Stack
 
 ### Backend
 - Python 3.10+
 - Django 5.1+
-- Django REST Framework
-- PostgreSQL (production) / SQLite (development)
-- Celery for asynchronous tasks
-- Redis for caching and task queue
+- SQLite for database
 
 ### Natural Language Processing
 - Hugging Face Transformers
-- DistilBERT, TinyBERT, MobileBERT, and ALBERT models
-- Optimized for resource efficiency
+- Two comparison models: DistilBERT and TinyBERT
+- Optimized for demonstration purposes
 
 ### Frontend
 - Bootstrap 5
 - Chart.js for data visualization
-- HTML/CSS/JavaScript
+- Basic HTML/CSS/JavaScript
 
-## Screenshots
+## Model Comparison
 
-![Home Screen](docs/images/home-screen.png)
-![Article Detail](docs/images/article-detail.png)
-![Model Comparison](docs/images/model-comparison.png)
+VeriFact demonstrates lightweight models for fake news detection, optimized for different use cases:
+
+| Model | Accuracy | F1 Score | Memory Usage | Processing Time |
+|-------|----------|----------|--------------|-----------------|
+| DistilBERT | 0.89 | 0.88 | 330 MB | 1.2s |
+| TinyBERT | 0.85 | 0.84 | 125 MB | 0.7s |
 
 ## Quick Start
 
@@ -43,7 +42,6 @@ VeriFact is a Django-based web application for aggregating, summarizing, and det
 
 - Python 3.10 or higher
 - pip and virtualenv
-- Redis server (for Celery and caching)
 
 ### Installation
 
@@ -53,13 +51,11 @@ git clone https://github.com/yourusername/verifact.git
 cd verifact
 
 # Set up virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Edit .env with your settings
 
 # Initialize database
 python manage.py migrate
@@ -69,84 +65,36 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-For detailed setup instructions, see [SETUP.md](SETUP.md).
-
-## Model Comparison
-
-VeriFact includes several lightweight models for fake news detection, optimized for different use cases:
-
-| Model | Accuracy | F1 Score | Memory Usage | Processing Time |
-|-------|----------|----------|--------------|-----------------|
-| DistilBERT | 0.89 | 0.88 | 330 MB | 1.2s |
-| TinyBERT | 0.85 | 0.84 | 125 MB | 0.7s |
-| MobileBERT | 0.87 | 0.86 | 190 MB | 0.9s |
-| ALBERT | 0.83 | 0.82 | 70 MB | 0.5s |
-
-## Usage
-
-### Fetching News Articles
-
-```bash
-# Fetch latest news
-python manage.py fetch_news
-
-# Fetch with specific parameters
-python manage.py fetch_news --category technology --limit 50 --process
-```
-
-### Processing Articles
-
-```bash
-# Queue summarization for all unprocessed articles
-python manage.py process_articles --type summarization
-
-# Queue bias detection for all unprocessed articles
-python manage.py process_articles --type bias_detection
-```
-
-## Project Structure
+## Simplified Project Structure
 
 ```
 verifact/
-├── api/                      # REST API app
-├── docs/                     # Project documentation
-├── news/                     # News content management app
-│   ├── management/           # Custom management commands
+├── news/                     # News content and detection
 │   ├── migrations/           # Database migrations
-│   ├── models.py             # Database models
-│   ├── services.py           # Business logic and services
+│   ├── models.py             # Database models (simplified)
+│   ├── services.py           # Detection services
 │   └── views.py              # View functions
-├── processing/               # NLP processing app
-│   ├── models.py             # Processing models
-│   ├── services.py           # Processing services
-│   └── tasks.py              # Celery tasks
 ├── news_aggregator/          # Project settings
 ├── templates/                # HTML templates
-└── users/                    # User management app
+│   ├── news/
+│   │   ├── home.html
+│   │   ├── article_detail.html
+│   │   ├── model_comparison.html
+│   │   └── analyze_text.html
+└── users/                    # Basic user authentication
 ```
 
-## Testing
+## Usage
 
-Run the test suite:
+### Access Key Pages
 
-```bash
-python manage.py test
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- **Home:** View the list of news articles
+- **Article Detail:** View article content and any detection results
+- **Model Comparison:** Compare different detection model performance
+- **Analyze Text:** Test any text with the detection models
 
 ## Acknowledgments
 
-- [NewsAPI](https://newsapi.org/) for providing the news data
 - [Hugging Face](https://huggingface.co/) for NLP models and tools
 - [Django](https://www.djangoproject.com/) for the web framework
+- [Chart.js](https://www.chartjs.org/) for visualizations
