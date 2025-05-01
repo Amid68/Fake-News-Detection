@@ -30,14 +30,14 @@ class NewsModelTests(TestCase):
         self.source = Source.objects.create(
             name="Test Source",
             base_url="https://test-source.com",
-            description="A test source for unit tests"
+            description="A test source for unit tests",
         )
 
         # Create a test topic
         self.topic = Topic.objects.create(
             name="Test Topic",
             slug="test-topic",
-            description="A test topic for unit tests"
+            description="A test topic for unit tests",
         )
 
         # Create a test article
@@ -46,7 +46,7 @@ class NewsModelTests(TestCase):
             content="This is a test article content.",
             source=self.source,
             publication_date=timezone.now(),
-            source_article_url="https://test-source.com/test-article"
+            source_article_url="https://test-source.com/test-article",
         )
 
         # Add topic to article
@@ -54,9 +54,7 @@ class NewsModelTests(TestCase):
 
         # Create a test user
         self.user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
+            username="testuser", email="test@example.com", password="testpassword123"
         )
 
     def test_source_creation(self):
@@ -81,10 +79,7 @@ class NewsModelTests(TestCase):
     def test_user_saved_article(self):
         """Test user saved article functionality."""
         # Create a saved article
-        saved = UserSavedArticle.objects.create(
-            user=self.user,
-            article=self.article
-        )
+        saved = UserSavedArticle.objects.create(user=self.user, article=self.article)
 
         # Verify saved article
         self.assertEqual(saved.user, self.user)
@@ -107,8 +102,7 @@ class NewsViewTests(TestCase):
 
         # Create a test source
         self.source = Source.objects.create(
-            name="Test Source",
-            base_url="https://test-source.com"
+            name="Test Source", base_url="https://test-source.com"
         )
 
         # Create 5 test articles
@@ -118,26 +112,24 @@ class NewsViewTests(TestCase):
                 content=f"This is test article {i} content.",
                 source=self.source,
                 publication_date=timezone.now() - timedelta(days=i),
-                source_article_url=f"https://test-source.com/test-article-{i}"
+                source_article_url=f"https://test-source.com/test-article-{i}",
             )
 
         # Create a test user
         self.user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
+            username="testuser", email="test@example.com", password="testpassword123"
         )
 
     def test_home_view_unauthenticated(self):
         """Test home view for unauthenticated users."""
-        response = self.client.get(reverse('news_home'))
+        response = self.client.get(reverse("news_home"))
 
         # Check response status code
         self.assertEqual(response.status_code, 200)
 
         # Check that articles are in the context
-        self.assertTrue('page_obj' in response.context)
-        self.assertEqual(len(response.context['page_obj']), 5)
+        self.assertTrue("page_obj" in response.context)
+        self.assertEqual(len(response.context["page_obj"]), 5)
 
     def test_article_detail_view(self):
         """Test article detail view."""
@@ -145,14 +137,14 @@ class NewsViewTests(TestCase):
         article = Article.objects.first()
 
         # Get detail page
-        response = self.client.get(reverse('article_detail', args=[article.id]))
+        response = self.client.get(reverse("article_detail", args=[article.id]))
 
         # Check response status code
         self.assertEqual(response.status_code, 200)
 
         # Check that article is in the context
-        self.assertTrue('article' in response.context)
-        self.assertEqual(response.context['article'], article)
+        self.assertTrue("article" in response.context)
+        self.assertEqual(response.context["article"], article)
 
         # Check that view count is incremented
         article.refresh_from_db()
@@ -167,7 +159,7 @@ class NewsViewTests(TestCase):
         article = Article.objects.first()
 
         # Save the article
-        response = self.client.post(reverse('save_article', args=[article.id]))
+        response = self.client.post(reverse("save_article", args=[article.id]))
 
         # Check redirect
         self.assertEqual(response.status_code, 302)
@@ -182,11 +174,11 @@ class NewsViewTests(TestCase):
         article = Article.objects.first()
 
         # Try to save the article
-        response = self.client.post(reverse('save_article', args=[article.id]))
+        response = self.client.post(reverse("save_article", args=[article.id]))
 
         # Check redirect to login
         self.assertEqual(response.status_code, 302)
-        self.assertTrue('/login/' in response.url)
+        self.assertTrue("/login/" in response.url)
 
         # Check that article is not saved
         saved = UserSavedArticle.objects.filter(article=article)
@@ -217,8 +209,7 @@ class NewsServiceTests(TestCase):
         """Test getting recent articles."""
         # Create a test source
         source = Source.objects.create(
-            name="Test Source",
-            base_url="https://test-source.com"
+            name="Test Source", base_url="https://test-source.com"
         )
 
         # Create 10 test articles with different dates
@@ -228,7 +219,7 @@ class NewsServiceTests(TestCase):
                 content=f"This is test article {i} content.",
                 source=source,
                 publication_date=timezone.now() - timedelta(days=i),
-                source_article_url=f"https://test-source.com/test-article-{i}"
+                source_article_url=f"https://test-source.com/test-article-{i}",
             )
 
         # Test getting recent articles (default: last 7 days, limit 20)

@@ -44,7 +44,7 @@ def get_http_session() -> requests.Session:
         total=3,  # Maximum number of retries
         backoff_factor=0.5,  # Sleep between retries: {backoff factor} * (2 ** ({number of total retries} - 1))
         status_forcelist=[429, 500, 502, 503, 504],  # Status codes to retry on
-        allowed_methods=["GET"]  # HTTP methods to retry
+        allowed_methods=["GET"],  # HTTP methods to retry
     )
 
     # Mount the adapter to the session
@@ -56,12 +56,12 @@ def get_http_session() -> requests.Session:
 
 
 def fetch_articles_from_api(
-        source: Optional[str] = None,
-        category: Optional[str] = None,
-        country: Optional[str] = None,
-        page_size: int = 20,
-        page: int = 1,
-        use_cache: bool = True
+    source: Optional[str] = None,
+    category: Optional[str] = None,
+    country: Optional[str] = None,
+    page_size: int = 20,
+    page: int = 1,
+    use_cache: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     Fetch articles from News API with caching and error handling.
@@ -89,21 +89,21 @@ def fetch_articles_from_api(
 
     # Build parameters for API request
     params = {
-        'apiKey': settings.NEWS_API_KEY,
-        'language': 'en',
-        'pageSize': page_size,
-        'page': page,
+        "apiKey": settings.NEWS_API_KEY,
+        "language": "en",
+        "pageSize": page_size,
+        "page": page,
     }
 
     # Add optional filters if provided
     if source:
-        params['sources'] = source
+        params["sources"] = source
 
     if category:
-        params['category'] = category
+        params["category"] = category
 
     if country:
-        params['country'] = country
+        params["country"] = country
 
     # Get a session with retry capabilities
     session = get_http_session()
@@ -115,7 +115,7 @@ def fetch_articles_from_api(
 
         # Parse the response
         data = response.json()
-        articles = data.get('articles', [])
+        articles = data.get("articles", [])
 
         # Cache the results if caching is enabled
         if use_cache and articles:
@@ -155,18 +155,19 @@ def save_articles_to_db(articles_data: List[Dict[str, Any]]) -> Tuple[int, int]:
     # Process each article
     for article_data in articles_data:
         # Skip articles with missing critical data
-        if not article_data.get('title') or not article_data.get('url'):
-            logger.warning(f"Skipping article due to missing title or URL: {article_data.get('url', 'Unknown URL')}")
+        if not article_data.get("title") or not article_data.get("url"):
+            logger.warning(
+                f"Skipping article due to missing title or URL: {article_data.get('url', 'Unknown URL')}"
+            )
             continue
 
         try:
             # Get or create source
-            source_name = article_data.get('source', {}).get('name', 'Unknown')
-            source_url = extract_base_url(article_data.get('url', ''))
+            source_name = article_data.get("source", {}).get("name", "Unknown")
+            source_url = extract_base_url(article_data.get("url", ""))
 
             source, created = Source.objects.get_or_create(
-                name=source_name,
-                defaults={'base_url': source_url}
+                name=source_name, defaults={"base_url": source_url}
             )
 
             if created:
@@ -175,21 +176,24 @@ def save_articles_to_db(articles_data: List[Dict[str, Any]]) -> Tuple[int, int]:
             # Parse publication date
             try:
                 pub_date = datetime.fromisoformat(
-                    article_data.get('publishedAt', '').replace('Z', '+00:00')
+                    article_data.get("publishedAt", "").replace("Z", "+00:00")
                 )
             except (ValueError, AttributeError):
-                logger.warning(f"Invalid date format for article: {article_data.get('url', 'Unknown URL')}")
+                logger.warning(
+                    f"Invalid date format for article: {article_data.get('url', 'Unknown URL')}"
+                )
                 pub_date = timezone.now()
 
             # Check if article already exists
             article, created = Article.objects.update_or_create(
-                source_article_url=article_data.get('url'),
+                source_article_url=article_data.get("url"),
                 defaults={
-                    'title': article_data.get('title', ''),
-                    'content': article_data.get('content') or article_data.get('description', ''),
-                    'source': source,
-                    'publication_date': pub_date,
-                }
+                    "title": article_data.get("title", ""),
+                    "content": article_data.get("content")
+                    or article_data.get("description", ""),
+                    "source": source,
+                    "publication_date": pub_date,
+                },
             )
 
             if created:
@@ -200,7 +204,9 @@ def save_articles_to_db(articles_data: List[Dict[str, Any]]) -> Tuple[int, int]:
                 logger.info(f"Updated existing article: {article.title[:50]}...")
 
         except Exception as e:
-            logger.error(f"Error saving article {article_data.get('url', 'Unknown URL')}: {str(e)}")
+            logger.error(
+                f"Error saving article {article_data.get('url', 'Unknown URL')}: {str(e)}"
+            )
 
     return new_count, updated_count
 
@@ -216,23 +222,24 @@ def extract_base_url(url: str) -> str:
         str: The base URL
     """
     if not url:
-        return ''
+        return ""
 
     try:
         from urllib.parse import urlparse
+
         parsed_url = urlparse(url)
         base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         return base_url
     except Exception as e:
         logger.error(f"Error extracting base URL from {url}: {str(e)}")
-        return ''
+        return ""
 
 
 def get_recent_articles(
-        days: int = 7,
-        limit: int = 20,
-        topic: Optional[str] = None,
-        source_id: Optional[int] = None
+    days: int = 7,
+    limit: int = 20,
+    topic: Optional[str] = None,
+    source_id: Optional[int] = None,
 ) -> List[Article]:
     """
     Get recent articles with optional filtering.
@@ -250,9 +257,9 @@ def get_recent_articles(
     date_threshold = timezone.now() - timedelta(days=days)
 
     # Start with a basic query
-    query = Article.objects.filter(
-        publication_date__gte=date_threshold
-    ).select_related('source')
+    query = Article.objects.filter(publication_date__gte=date_threshold).select_related(
+        "source"
+    )
 
     # Apply optional filters
     if topic:
@@ -265,7 +272,7 @@ def get_recent_articles(
         query = query.filter(source_id=source_id)
 
     # Order by publication date and limit results
-    query = query.order_by('-publication_date')[:limit]
+    query = query.order_by("-publication_date")[:limit]
 
     return query
 

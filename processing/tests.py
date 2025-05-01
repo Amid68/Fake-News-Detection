@@ -28,8 +28,7 @@ class ProcessingModelTests(TestCase):
         """Set up test data."""
         # Create a test source
         self.source = Source.objects.create(
-            name="Test Source",
-            base_url="https://test-source.com"
+            name="Test Source", base_url="https://test-source.com"
         )
 
         # Create a test article
@@ -38,7 +37,7 @@ class ProcessingModelTests(TestCase):
             content="This is a test article content.",
             source=self.source,
             publication_date=timezone.now(),
-            source_article_url="https://test-source.com/test-article"
+            source_article_url="https://test-source.com/test-article",
         )
 
     def test_processing_task_creation(self):
@@ -47,7 +46,7 @@ class ProcessingModelTests(TestCase):
         task = ProcessingTask.objects.create(
             article=self.article,
             task_type=ProcessingTask.BIAS_DETECTION,
-            status=ProcessingTask.PENDING
+            status=ProcessingTask.PENDING,
         )
 
         # Verify task
@@ -68,7 +67,7 @@ class ProcessingModelTests(TestCase):
         task = ProcessingTask.objects.create(
             article=self.article,
             task_type=ProcessingTask.BIAS_DETECTION,
-            status=ProcessingTask.PENDING
+            status=ProcessingTask.PENDING,
         )
 
         # Update to processing
@@ -99,8 +98,7 @@ class ProcessingServiceTests(TestCase):
         """Set up test data."""
         # Create a test source
         self.source = Source.objects.create(
-            name="Test Source",
-            base_url="https://test-source.com"
+            name="Test Source", base_url="https://test-source.com"
         )
 
         # Create test articles
@@ -110,10 +108,10 @@ class ProcessingServiceTests(TestCase):
                 content=f"This is test article {i} content.",
                 source=self.source,
                 publication_date=timezone.now(),
-                source_article_url=f"https://test-source.com/test-article-{i}"
+                source_article_url=f"https://test-source.com/test-article-{i}",
             )
 
-    @patch('processing.services.process_article_task.delay')
+    @patch("processing.services.process_article_task.delay")
     def test_queue_processing_articles(self, mock_delay):
         """Test queueing articles for processing."""
         # Test queueing all articles for bias detection
@@ -129,7 +127,7 @@ class ProcessingServiceTests(TestCase):
             self.assertEqual(task.task_type, ProcessingTask.BIAS_DETECTION)
             self.assertEqual(task.status, ProcessingTask.PENDING)
 
-    @patch('processing.services.process_article_task.delay')
+    @patch("processing.services.process_article_task.delay")
     def test_queue_specific_articles(self, mock_delay):
         """Test queueing specific articles for processing."""
         # Get 2 articles
@@ -149,7 +147,7 @@ class ProcessingServiceTests(TestCase):
             self.assertEqual(task.task_type, ProcessingTask.SUMMARIZATION)
             self.assertTrue(task.article.id in article_ids)
 
-    @patch('processing.services.get_model_for_detection')
+    @patch("processing.services.get_model_for_detection")
     def test_detect_fake_news(self, mock_get_model):
         """Test fake news detection."""
         # Mock the model and tokenizer
@@ -159,30 +157,30 @@ class ProcessingServiceTests(TestCase):
 
         # Mock the pipeline result
         mock_pipeline_instance = MagicMock()
-        mock_pipeline_instance.return_value = [{'label': 'POSITIVE', 'score': 0.8}]
+        mock_pipeline_instance.return_value = [{"label": "POSITIVE", "score": 0.8}]
 
-        with patch('processing.services.pipeline', return_value=mock_pipeline_instance):
+        with patch("processing.services.pipeline", return_value=mock_pipeline_instance):
             # Test detection
             result = detect_fake_news("This is a test article content.", "distilbert")
 
             # Check result structure
-            self.assertIn('credibility_score', result)
-            self.assertIn('category', result)
-            self.assertIn('confidence', result)
-            self.assertIn('bias_score', result)
-            self.assertIn('model_name', result)
+            self.assertIn("credibility_score", result)
+            self.assertIn("category", result)
+            self.assertIn("confidence", result)
+            self.assertIn("bias_score", result)
+            self.assertIn("model_name", result)
 
             # Positive sentiment should map to 'mostly_credible'
-            self.assertEqual(result['category'], 'mostly_credible')
-            self.assertAlmostEqual(result['confidence'], 0.8)
+            self.assertEqual(result["category"], "mostly_credible")
+            self.assertAlmostEqual(result["confidence"], 0.8)
 
             # Test with negative sentiment
-            mock_pipeline_instance.return_value = [{'label': 'NEGATIVE', 'score': 0.7}]
+            mock_pipeline_instance.return_value = [{"label": "NEGATIVE", "score": 0.7}]
             result = detect_fake_news("This is a test article content.", "distilbert")
 
             # Negative sentiment should map to 'mostly_fake'
-            self.assertEqual(result['category'], 'mostly_fake')
-            self.assertAlmostEqual(result['confidence'], 0.7)
+            self.assertEqual(result["category"], "mostly_fake")
+            self.assertAlmostEqual(result["confidence"], 0.7)
 
 
 class ProcessingIntegrationTests(TestCase):
@@ -192,8 +190,7 @@ class ProcessingIntegrationTests(TestCase):
         """Set up test data."""
         # Create a test source
         self.source = Source.objects.create(
-            name="Test Source",
-            base_url="https://test-source.com"
+            name="Test Source", base_url="https://test-source.com"
         )
 
         # Create a test article
@@ -202,17 +199,17 @@ class ProcessingIntegrationTests(TestCase):
             content="This is a test article with enough content to analyze for bias detection.",
             source=self.source,
             publication_date=timezone.now(),
-            source_article_url="https://test-source.com/test-article"
+            source_article_url="https://test-source.com/test-article",
         )
 
         # Create a processing task
         self.task = ProcessingTask.objects.create(
             article=self.article,
             task_type=ProcessingTask.BIAS_DETECTION,
-            status=ProcessingTask.PENDING
+            status=ProcessingTask.PENDING,
         )
 
-    @patch('processing.services.detect_bias_in_article')
+    @patch("processing.services.detect_bias_in_article")
     def test_process_article_by_task(self, mock_detect_bias):
         """Test processing an article by task."""
         # Mock the detection function to return success
@@ -235,7 +232,7 @@ class ProcessingIntegrationTests(TestCase):
         task2 = ProcessingTask.objects.create(
             article=self.article,
             task_type=ProcessingTask.BIAS_DETECTION,
-            status=ProcessingTask.PENDING
+            status=ProcessingTask.PENDING,
         )
 
         # Process the new task

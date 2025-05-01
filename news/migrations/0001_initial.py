@@ -8,30 +8,50 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Source',
+            name="Source",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('base_url', models.TextField()),
-                ('api_endpoint', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
+                ("base_url", models.TextField()),
+                ("api_endpoint", models.TextField(blank=True, null=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Article',
+            name="Article",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.TextField()),
-                ('content', models.TextField(blank=True, null=True)),
-                ('summary', models.TextField(blank=True, null=True)),
-                ('bias_score', models.FloatField(blank=True, null=True)),
-                ('publication_date', models.DateTimeField()),
-                ('source_article_url', models.TextField(unique=True)),
-                ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='news.source')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.TextField()),
+                ("content", models.TextField(blank=True, null=True)),
+                ("summary", models.TextField(blank=True, null=True)),
+                ("bias_score", models.FloatField(blank=True, null=True)),
+                ("publication_date", models.DateTimeField()),
+                ("source_article_url", models.TextField(unique=True)),
+                (
+                    "source",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="news.source"
+                    ),
+                ),
             ],
         ),
     ]

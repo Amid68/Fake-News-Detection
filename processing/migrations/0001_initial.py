@@ -9,26 +9,85 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('news', '0004_alter_detectionmodelmetrics_options_and_more'),
+        ("news", "0004_alter_detectionmodelmetrics_options_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ProcessingTask',
+            name="ProcessingTask",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('task_type', models.CharField(choices=[('summarization', 'Summarization'), ('bias_detection', 'Bias Detection')], max_length=20)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('processing', 'Processing'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('error_message', models.TextField(blank=True, null=True)),
-                ('priority', models.PositiveSmallIntegerField(default=1, help_text='Priority level (1-5, 1 being highest)')),
-                ('processor', models.CharField(blank=True, help_text='Name of worker processing this task', max_length=100, null=True)),
-                ('article', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='processing_tasks', to='news.article')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "task_type",
+                    models.CharField(
+                        choices=[
+                            ("summarization", "Summarization"),
+                            ("bias_detection", "Bias Detection"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("processing", "Processing"),
+                            ("completed", "Completed"),
+                            ("failed", "Failed"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("error_message", models.TextField(blank=True, null=True)),
+                (
+                    "priority",
+                    models.PositiveSmallIntegerField(
+                        default=1, help_text="Priority level (1-5, 1 being highest)"
+                    ),
+                ),
+                (
+                    "processor",
+                    models.CharField(
+                        blank=True,
+                        help_text="Name of worker processing this task",
+                        max_length=100,
+                        null=True,
+                    ),
+                ),
+                (
+                    "article",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="processing_tasks",
+                        to="news.article",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['priority', 'created_at'],
-                'indexes': [models.Index(fields=['status'], name='processing__status_a66e5e_idx'), models.Index(fields=['task_type'], name='processing__task_ty_1cf95e_idx'), models.Index(fields=['article'], name='processing__article_ee1c55_idx')],
+                "ordering": ["priority", "created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["status"], name="processing__status_a66e5e_idx"
+                    ),
+                    models.Index(
+                        fields=["task_type"], name="processing__task_ty_1cf95e_idx"
+                    ),
+                    models.Index(
+                        fields=["article"], name="processing__article_ee1c55_idx"
+                    ),
+                ],
             },
         ),
     ]

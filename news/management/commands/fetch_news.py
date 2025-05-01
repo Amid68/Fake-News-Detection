@@ -15,7 +15,11 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 from django.core.cache import cache
 from django.db import transaction
-from news.services import fetch_articles_from_api, save_articles_to_db, clear_article_cache
+from news.services import (
+    fetch_articles_from_api,
+    save_articles_to_db,
+    clear_article_cache,
+)
 from news.models import Source
 from processing.services import queue_processing_for_articles
 from processing.models import ProcessingTask
@@ -29,7 +33,7 @@ class Command(BaseCommand):
     Django management command to fetch news articles from configured sources.
     """
 
-    help = 'Fetch news articles from configured sources'
+    help = "Fetch news articles from configured sources"
 
     def add_arguments(self, parser):
         """
@@ -39,46 +43,46 @@ class Command(BaseCommand):
             parser: ArgumentParser instance
         """
         parser.add_argument(
-            '--source',
+            "--source",
             type=str,
-            help='Specific source to fetch from (name or ID)',
+            help="Specific source to fetch from (name or ID)",
         )
 
         parser.add_argument(
-            '--category',
+            "--category",
             type=str,
-            help='Specific category to fetch (e.g., business, technology)',
+            help="Specific category to fetch (e.g., business, technology)",
         )
 
         parser.add_argument(
-            '--country',
+            "--country",
             type=str,
-            help='Two-letter country code to fetch news from (e.g., us, gb)',
+            help="Two-letter country code to fetch news from (e.g., us, gb)",
         )
 
         parser.add_argument(
-            '--limit',
+            "--limit",
             type=int,
             default=100,
-            help='Maximum number of articles to fetch',
+            help="Maximum number of articles to fetch",
         )
 
         parser.add_argument(
-            '--no-cache',
-            action='store_true',
-            help='Bypass cache and fetch fresh data',
+            "--no-cache",
+            action="store_true",
+            help="Bypass cache and fetch fresh data",
         )
 
         parser.add_argument(
-            '--clear-cache',
-            action='store_true',
-            help='Clear article cache before fetching',
+            "--clear-cache",
+            action="store_true",
+            help="Clear article cache before fetching",
         )
 
         parser.add_argument(
-            '--process',
-            action='store_true',
-            help='Queue processing tasks for fetched articles',
+            "--process",
+            action="store_true",
+            help="Queue processing tasks for fetched articles",
         )
 
     def handle(self, *args, **options):
@@ -89,21 +93,21 @@ class Command(BaseCommand):
             *args: Additional arguments
             **options: Command options/arguments
         """
-        self.stdout.write(self.style.NOTICE('Starting news article fetch...'))
+        self.stdout.write(self.style.NOTICE("Starting news article fetch..."))
 
         # Setup variables
         start_time = time.time()
-        source_name = options.get('source')
-        category = options.get('category')
-        country = options.get('country')
-        limit = options.get('limit')
-        use_cache = not options.get('no_cache')
-        process_articles = options.get('process')
+        source_name = options.get("source")
+        category = options.get("category")
+        country = options.get("country")
+        limit = options.get("limit")
+        use_cache = not options.get("no_cache")
+        process_articles = options.get("process")
 
         # Clear cache if requested
-        if options.get('clear_cache'):
+        if options.get("clear_cache"):
             clear_article_cache()
-            self.stdout.write(self.style.SUCCESS('Cleared article cache'))
+            self.stdout.write(self.style.SUCCESS("Cleared article cache"))
 
         # Resolve source if provided
         source_id = None
@@ -144,11 +148,13 @@ class Command(BaseCommand):
                     country=country,
                     page_size=page_size,
                     page=page,
-                    use_cache=use_cache
+                    use_cache=use_cache,
                 )
 
                 if not articles:
-                    self.stdout.write(self.style.WARNING(f"No articles found for page {page}"))
+                    self.stdout.write(
+                        self.style.WARNING(f"No articles found for page {page}")
+                    )
                     break
 
                 total_articles += len(articles)
@@ -175,7 +181,9 @@ class Command(BaseCommand):
 
                 # Queue bias detection tasks
                 self.stdout.write("Queueing bias detection tasks...")
-                bias_count = queue_processing_for_articles(ProcessingTask.BIAS_DETECTION)
+                bias_count = queue_processing_for_articles(
+                    ProcessingTask.BIAS_DETECTION
+                )
 
                 self.stdout.write(
                     self.style.SUCCESS(

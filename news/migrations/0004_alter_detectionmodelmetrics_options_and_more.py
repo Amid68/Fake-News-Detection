@@ -7,126 +7,162 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('news', '0003_detectionmodelmetrics_fakenewsdetectionresult_and_more'),
+        ("news", "0003_detectionmodelmetrics_fakenewsdetectionresult_and_more"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='detectionmodelmetrics',
-            options={'verbose_name': 'Detection Model Metrics', 'verbose_name_plural': 'Detection Model Metrics'},
+            name="detectionmodelmetrics",
+            options={
+                "verbose_name": "Detection Model Metrics",
+                "verbose_name_plural": "Detection Model Metrics",
+            },
         ),
         migrations.AlterModelOptions(
-            name='fakenewsdetectionresult',
-            options={'verbose_name': 'Fake News Detection Result', 'verbose_name_plural': 'Fake News Detection Results'},
+            name="fakenewsdetectionresult",
+            options={
+                "verbose_name": "Fake News Detection Result",
+                "verbose_name_plural": "Fake News Detection Results",
+            },
         ),
         migrations.RemoveField(
-            model_name='detectionmodelmetrics',
-            name='precision',
+            model_name="detectionmodelmetrics",
+            name="precision",
         ),
         migrations.RemoveField(
-            model_name='detectionmodelmetrics',
-            name='recall',
+            model_name="detectionmodelmetrics",
+            name="recall",
         ),
         migrations.RemoveField(
-            model_name='fakenewsdetectionresult',
-            name='memory_usage',
+            model_name="fakenewsdetectionresult",
+            name="memory_usage",
         ),
         migrations.AddField(
-            model_name='article',
-            name='bias_score',
-            field=models.FloatField(blank=True, help_text='Political bias score (-1.0 left to 1.0 right)', null=True),
+            model_name="article",
+            name="bias_score",
+            field=models.FloatField(
+                blank=True,
+                help_text="Political bias score (-1.0 left to 1.0 right)",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='article',
-            name='summary',
-            field=models.TextField(blank=True, help_text='AI-generated summary', null=True),
+            model_name="article",
+            name="summary",
+            field=models.TextField(
+                blank=True, help_text="AI-generated summary", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='detectionmodelmetrics',
-            name='efficiency_score',
-            field=models.FloatField(default=0.8, help_text='Composite score of performance and resource usage'),
+            model_name="detectionmodelmetrics",
+            name="efficiency_score",
+            field=models.FloatField(
+                default=0.8,
+                help_text="Composite score of performance and resource usage",
+            ),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='detectionmodelmetrics',
-            name='precision_score',
+            model_name="detectionmodelmetrics",
+            name="precision_score",
             field=models.FloatField(default=0.86),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='detectionmodelmetrics',
-            name='recall_score',
+            model_name="detectionmodelmetrics",
+            name="recall_score",
             field=models.FloatField(default=0.84),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='detectionmodelmetrics',
-            name='accuracy',
+            model_name="detectionmodelmetrics",
+            name="accuracy",
             field=models.FloatField(),
         ),
         migrations.AlterField(
-            model_name='detectionmodelmetrics',
-            name='avg_memory_usage',
+            model_name="detectionmodelmetrics",
+            name="avg_memory_usage",
             field=models.FloatField(),
         ),
         migrations.AlterField(
-            model_name='detectionmodelmetrics',
-            name='avg_processing_time',
+            model_name="detectionmodelmetrics",
+            name="avg_processing_time",
             field=models.FloatField(),
         ),
         migrations.AlterField(
-            model_name='detectionmodelmetrics',
-            name='f1_score',
+            model_name="detectionmodelmetrics",
+            name="f1_score",
             field=models.FloatField(),
         ),
         migrations.AlterField(
-            model_name='detectionmodelmetrics',
-            name='model_name',
+            model_name="detectionmodelmetrics",
+            name="model_name",
             field=models.CharField(max_length=100, unique=True),
         ),
         migrations.AlterField(
-            model_name='detectionmodelmetrics',
-            name='parameter_count',
+            model_name="detectionmodelmetrics",
+            name="parameter_count",
             field=models.IntegerField(),
         ),
         migrations.AlterField(
-            model_name='fakenewsdetectionresult',
-            name='article',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='fake_news_detection', to='news.article'),
+            model_name="fakenewsdetectionresult",
+            name="article",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="fake_news_detection",
+                to="news.article",
+            ),
         ),
         migrations.AlterField(
-            model_name='fakenewsdetectionresult',
-            name='confidence',
-            field=models.FloatField(help_text='Model confidence in the prediction (0-1)'),
+            model_name="fakenewsdetectionresult",
+            name="confidence",
+            field=models.FloatField(
+                help_text="Model confidence in the prediction (0-1)"
+            ),
         ),
         migrations.AlterField(
-            model_name='fakenewsdetectionresult',
-            name='credibility_category',
-            field=models.CharField(choices=[('highly_credible', 'Highly Credible'), ('mostly_credible', 'Mostly Credible'), ('mixed', 'Mixed Credibility'), ('mostly_fake', 'Mostly Fake'), ('fake', 'Fake')], max_length=20),
+            model_name="fakenewsdetectionresult",
+            name="credibility_category",
+            field=models.CharField(
+                choices=[
+                    ("highly_credible", "Highly Credible"),
+                    ("mostly_credible", "Mostly Credible"),
+                    ("mixed", "Mixed Credibility"),
+                    ("mostly_fake", "Mostly Fake"),
+                    ("fake", "Fake"),
+                ],
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='fakenewsdetectionresult',
-            name='credibility_score',
-            field=models.FloatField(help_text='Credibility score (0-1)'),
+            model_name="fakenewsdetectionresult",
+            name="credibility_score",
+            field=models.FloatField(help_text="Credibility score (0-1)"),
         ),
         migrations.AlterField(
-            model_name='fakenewsdetectionresult',
-            name='explanation',
-            field=models.TextField(blank=True, help_text='Explanation of the detection result', null=True),
+            model_name="fakenewsdetectionresult",
+            name="explanation",
+            field=models.TextField(
+                blank=True, help_text="Explanation of the detection result", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='fakenewsdetectionresult',
-            name='model_name',
+            model_name="fakenewsdetectionresult",
+            name="model_name",
             field=models.CharField(max_length=100),
         ),
         migrations.AlterField(
-            model_name='fakenewsdetectionresult',
-            name='processing_time',
-            field=models.FloatField(default=1.0, help_text='Processing time in seconds'),
+            model_name="fakenewsdetectionresult",
+            name="processing_time",
+            field=models.FloatField(
+                default=1.0, help_text="Processing time in seconds"
+            ),
             preserve_default=False,
         ),
         migrations.AddIndex(
-            model_name='article',
-            index=models.Index(fields=['bias_score'], name='news_articl_bias_sc_1224d1_idx'),
+            model_name="article",
+            index=models.Index(
+                fields=["bias_score"], name="news_articl_bias_sc_1224d1_idx"
+            ),
         ),
     ]

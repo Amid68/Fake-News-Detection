@@ -25,35 +25,29 @@ from .models import ProcessingTask
 logger = logging.getLogger(__name__)
 
 # Model names and paths
-DEFAULT_BIAS_MODEL = 'distilbert-base-uncased-finetuned-sst-2-english'  # Placeholder, would use actual fake news model
+DEFAULT_BIAS_MODEL = "distilbert-base-uncased-finetuned-sst-2-english"  # Placeholder, would use actual fake news model
 MODELS = {
-    'distilbert': {
-        'name': 'DistilBERT',
-        'path': DEFAULT_BIAS_MODEL,
-        'max_length': 512
+    "distilbert": {"name": "DistilBERT", "path": DEFAULT_BIAS_MODEL, "max_length": 512},
+    "tinybert": {
+        "name": "TinyBERT",
+        "path": "huawei-noah/TinyBERT_General_4L_312D",
+        "max_length": 512,
     },
-    'tinybert': {
-        'name': 'TinyBERT',
-        'path': 'huawei-noah/TinyBERT_General_4L_312D',
-        'max_length': 512
+    "mobilebert": {
+        "name": "MobileBERT",
+        "path": "google/mobilebert-uncased",
+        "max_length": 512,
     },
-    'mobilebert': {
-        'name': 'MobileBERT',
-        'path': 'google/mobilebert-uncased',
-        'max_length': 512
-    },
-    'albert': {
-        'name': 'ALBERT',
-        'path': 'albert-base-v2',
-        'max_length': 512
-    }
+    "albert": {"name": "ALBERT", "path": "albert-base-v2", "max_length": 512},
 }
 
 # Cached models
 _model_cache = {}
 
 
-def queue_processing_for_articles(task_type: str, articles: Optional[List[int]] = None) -> int:
+def queue_processing_for_articles(
+    task_type: str, articles: Optional[List[int]] = None
+) -> int:
     """
     Queue processing tasks for articles.
 
@@ -80,7 +74,10 @@ def queue_processing_for_articles(task_type: str, articles: Optional[List[int]] 
     # Exclude articles with pending or processing tasks
     query = query.exclude(
         processing_tasks__task_type=task_type,
-        processing_tasks__status__in=[ProcessingTask.PENDING, ProcessingTask.PROCESSING]
+        processing_tasks__status__in=[
+            ProcessingTask.PENDING,
+            ProcessingTask.PROCESSING,
+        ],
     )
 
     # Create tasks
@@ -88,12 +85,11 @@ def queue_processing_for_articles(task_type: str, articles: Optional[List[int]] 
     with transaction.atomic():
         for article in query:
             task = ProcessingTask.objects.create(
-                article=article,
-                task_type=task_type,
-                status=ProcessingTask.PENDING
+                article=article, task_type=task_type, status=ProcessingTask.PENDING
             )
             # Import here to avoid circular import
             from .tasks import process_article_task
+
             # Queue the task for asynchronous processing
             process_article_task.delay(task.id)
             count += 1
@@ -114,11 +110,11 @@ def process_article_by_task(task_id: int) -> bool:
     """
     try:
         # Get the task
-        task = ProcessingTask.objects.select_related('article').get(id=task_id)
+        task = ProcessingTask.objects.select_related("article").get(id=task_id)
 
         # Update status to processing
         task.status = ProcessingTask.PROCESSING
-        task.save(update_fields=['status', 'updated_at'])
+        task.save(update_fields=["status", "updated_at"])
 
         # Process based on task type
         if task.task_type == ProcessingTask.SUMMARIZATION:
@@ -133,7 +129,7 @@ def process_article_by_task(task_id: int) -> bool:
             task.status = ProcessingTask.FAILED
             task.error_message = "Processing failed without specific error"
 
-        task.save(update_fields=['status', 'error_message', 'updated_at'])
+        task.save(update_fields=["status", "error_message", "updated_at"])
         return success
 
     except ProcessingTask.DoesNotExist:
@@ -147,7 +143,7 @@ def process_article_by_task(task_id: int) -> bool:
             task = ProcessingTask.objects.get(id=task_id)
             task.status = ProcessingTask.FAILED
             task.error_message = str(e)
-            task.save(update_fields=['status', 'error_message', 'updated_at'])
+            task.save(update_fields=["status", "error_message", "updated_at"])
         except Exception:
             pass  # If we can't update the task, just continue
 
@@ -180,12 +176,12 @@ def summarize_article(article: Article) -> bool:
             summary = content
         else:
             # Just a simple extractive approach for demonstration
-            sentences = content.split('. ')
-            summary = '. '.join(sentences[:3]) + '.'
+            sentences = content.split(". ")
+            summary = ". ".join(sentences[:3]) + "."
 
         # Update the article
         article.summary = summary
-        article.save(update_fields=['summary', 'updated_at'])
+        article.save(update_fields=["summary", "updated_at"])
 
         logger.info(f"Generated summary for article {article.id}")
         return True
@@ -195,7 +191,7 @@ def summarize_article(article: Article) -> bool:
         return False
 
 
-def detect_bias_in_article(article: Article, model_key: str = 'distilbert') -> bool:
+def detect_bias_in_article(article: Article, model_key: str = "distilbert") -> bool:
     """
     Detect political bias in an article.
 
@@ -224,29 +220,27 @@ def detect_bias_in_article(article: Article, model_key: str = 'distilbert') -> b
         memory_used = current_memory - initial_memory
 
         # Save results to article
-        article.bias_score = results['bias_score']
-        article.save(update_fields=['bias_score', 'updated_at'])
+        article.bias_score = results["bias_score"]
+        article.save(update_fields=["bias_score", "updated_at"])
 
         # Create or update detection result
         from news.models import FakeNewsDetectionResult
+
         FakeNewsDetectionResult.objects.update_or_create(
             article=article,
             defaults={
-                'credibility_score': results['credibility_score'],
-                'credibility_category': results['category'],
-                'confidence': results['confidence'],
-                'model_name': results['model_name'],
-                'processing_time': processing_time,
-                'explanation': results.get('explanation', '')
-            }
+                "credibility_score": results["credibility_score"],
+                "credibility_category": results["category"],
+                "confidence": results["confidence"],
+                "model_name": results["model_name"],
+                "processing_time": processing_time,
+                "explanation": results.get("explanation", ""),
+            },
         )
 
         # Update model metrics
         update_model_metrics(
-            model_key,
-            results['confidence'],
-            processing_time,
-            memory_used
+            model_key, results["confidence"], processing_time, memory_used
         )
 
         logger.info(f"Detected bias for article {article.id} with model {model_key}")
@@ -257,7 +251,7 @@ def detect_bias_in_article(article: Article, model_key: str = 'distilbert') -> b
         return False
 
 
-def get_model_for_detection(model_key: str = 'distilbert'):
+def get_model_for_detection(model_key: str = "distilbert"):
     """
     Get the appropriate model for fake news detection.
 
@@ -276,7 +270,7 @@ def get_model_for_detection(model_key: str = 'distilbert'):
         raise ValueError(f"Unknown model key: {model_key}")
 
     model_config = MODELS[model_key]
-    model_path = model_config['path']
+    model_path = model_config["path"]
 
     # Load tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -288,7 +282,7 @@ def get_model_for_detection(model_key: str = 'distilbert'):
     return tokenizer, model
 
 
-def detect_fake_news(text: str, model_key: str = 'distilbert') -> Dict[str, Any]:
+def detect_fake_news(text: str, model_key: str = "distilbert") -> Dict[str, Any]:
     """
     Detect fake news in the given text using the specified model.
 
@@ -308,16 +302,16 @@ def detect_fake_news(text: str, model_key: str = 'distilbert') -> Dict[str, Any]
     # For demonstration, we'll use a sentiment classifier as a stand-in
     # In a real implementation, you'd use a model fine-tuned for fake news
     tokenizer, model = get_model_for_detection(model_key)
-    classifier = pipeline('sentiment-analysis', model=model, tokenizer=tokenizer)
+    classifier = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
 
     # For long texts, we need to chunk and analyze sections
-    max_length = MODELS[model_key]['max_length']
+    max_length = MODELS[model_key]["max_length"]
 
     if len(text) > max_length * 4:
         # Analyze just the beginning, middle, and end for simplicity
         beginning = text[:max_length]
         middle_start = len(text) // 2 - max_length // 2
-        middle = text[middle_start:middle_start + max_length]
+        middle = text[middle_start : middle_start + max_length]
         end = text[-max_length:]
 
         samples = [beginning, middle, end]
@@ -328,43 +322,42 @@ def detect_fake_news(text: str, model_key: str = 'distilbert') -> Dict[str, Any]
             results.append(result)
 
         # Average the results
-        if sum(1 for r in results if r['label'] == 'POSITIVE') >= 2:
-            label = 'POSITIVE'
+        if sum(1 for r in results if r["label"] == "POSITIVE") >= 2:
+            label = "POSITIVE"
         else:
-            label = 'NEGATIVE'
+            label = "NEGATIVE"
 
-        score = sum(r['score'] for r in results) / len(results)
+        score = sum(r["score"] for r in results) / len(results)
     else:
         # For shorter texts, analyze the whole thing
         result = classifier(text[:max_length])[0]
-        label = result['label']
-        score = result['score']
+        label = result["label"]
+        score = result["score"]
 
     # Map sentiment results to credibility results
     # In a real implementation, this would be the direct output of a fake news model
-    credibility_mapping = {
-        'POSITIVE': 'mostly_credible',
-        'NEGATIVE': 'mostly_fake'
-    }
+    credibility_mapping = {"POSITIVE": "mostly_credible", "NEGATIVE": "mostly_fake"}
 
     # Convert sentiment score to bias score (-1 to 1 range)
     # This is just a placeholder mapping
     bias_score = (score - 0.5) * 2  # Convert 0-1 to -1 to 1
 
     category = credibility_mapping[label]
-    credibility_score = score if label == 'POSITIVE' else 1 - score
+    credibility_score = score if label == "POSITIVE" else 1 - score
 
     return {
-        'credibility_score': credibility_score,
-        'category': category,
-        'confidence': score,
-        'bias_score': bias_score,
-        'model_name': MODELS[model_key]['name'],
-        'explanation': f"This article was analyzed using {MODELS[model_key]['name']}."
+        "credibility_score": credibility_score,
+        "category": category,
+        "confidence": score,
+        "bias_score": bias_score,
+        "model_name": MODELS[model_key]["name"],
+        "explanation": f"This article was analyzed using {MODELS[model_key]['name']}.",
     }
 
 
-def update_model_metrics(model_key: str, confidence: float, processing_time: float, memory_usage: float):
+def update_model_metrics(
+    model_key: str, confidence: float, processing_time: float, memory_usage: float
+):
     """
     Update metrics for a detection model.
 
@@ -382,24 +375,32 @@ def update_model_metrics(model_key: str, confidence: float, processing_time: flo
     # Get or create metrics record
     try:
         metrics, created = DetectionModelMetrics.objects.get_or_create(
-            model_name=MODELS[model_key]['name'],
+            model_name=MODELS[model_key]["name"],
             defaults={
-                'accuracy': 0.85,  # Placeholder values
-                'precision_score': 0.86,
-                'recall_score': 0.84,
-                'f1_score': 0.85,
-                'avg_processing_time': processing_time,
-                'avg_memory_usage': memory_usage,
-                'parameter_count': 66000000 if model_key == 'distilbert' else 14500000,  # Placeholder
-                'efficiency_score': 0.8
-            }
+                "accuracy": 0.85,  # Placeholder values
+                "precision_score": 0.86,
+                "recall_score": 0.84,
+                "f1_score": 0.85,
+                "avg_processing_time": processing_time,
+                "avg_memory_usage": memory_usage,
+                "parameter_count": (
+                    66000000 if model_key == "distilbert" else 14500000
+                ),  # Placeholder
+                "efficiency_score": 0.8,
+            },
         )
 
         if not created:
             # Update running averages
-            metrics.avg_processing_time = (metrics.avg_processing_time * 0.9) + (processing_time * 0.1)
-            metrics.avg_memory_usage = (metrics.avg_memory_usage * 0.9) + (memory_usage * 0.1)
-            metrics.save(update_fields=['avg_processing_time', 'avg_memory_usage', 'updated_at'])
+            metrics.avg_processing_time = (metrics.avg_processing_time * 0.9) + (
+                processing_time * 0.1
+            )
+            metrics.avg_memory_usage = (metrics.avg_memory_usage * 0.9) + (
+                memory_usage * 0.1
+            )
+            metrics.save(
+                update_fields=["avg_processing_time", "avg_memory_usage", "updated_at"]
+            )
 
     except Exception as e:
         logger.error(f"Error updating model metrics for {model_key}: {str(e)}")
