@@ -197,3 +197,5 @@ huggingface/
 
 # VS Code settings
 .vscode/
+
+data/fake-news-net/
