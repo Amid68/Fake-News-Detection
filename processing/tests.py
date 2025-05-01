@@ -9,14 +9,16 @@ in the processing app.
 @date 2025-04-02
 """
 
+from unittest.mock import MagicMock, patch
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from django.contrib.auth import get_user_model
-from unittest.mock import patch, MagicMock
 
-from news.models import Article, Source, FakeNewsDetectionResult
+from news.models import Article, FakeNewsDetectionResult, Source
+
 from .models import ProcessingTask
-from .services import queue_processing_for_articles, detect_fake_news
+from .services import detect_fake_news, queue_processing_for_articles
 
 User = get_user_model()
 

@@ -9,6 +9,7 @@ This module defines Celery tasks for article processing operations.
 """
 
 import logging
+
 from celery import shared_task
 
 # Setup logger

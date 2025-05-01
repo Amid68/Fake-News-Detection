@@ -9,11 +9,12 @@ in the news app.
 @date 2025-04-02
 """
 
-from django.test import TestCase, Client
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
-from django.contrib.auth import get_user_model
-from datetime import timedelta
 
 from .models import Article, Source, Topic, UserSavedArticle
 from .services import extract_base_url, get_recent_articles

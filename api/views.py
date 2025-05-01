@@ -9,34 +9,25 @@ user preferences, and fake news detection functionality.
 @date 2025-04-01
 """
 
-from rest_framework import viewsets, status, filters
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from news.models import (
-    Article,
-    Source,
-    Topic,
-    FakeNewsDetectionResult,
-    DetectionModelMetrics,
-)
-from users.models import UserPreference, CustomUser
+from news.models import (Article, DetectionModelMetrics,
+                         FakeNewsDetectionResult, Source, Topic)
 from processing.services import detect_fake_news
-from .serializers import (
-    ArticleSerializer,
-    ArticleDetailSerializer,
-    SourceSerializer,
-    TopicSerializer,
-    UserPreferenceSerializer,
-    FakeNewsDetectionResultSerializer,
-    DetectionModelMetricsSerializer,
-    UserSerializer,
-    AnalyzeTextSerializer,
-)
+from users.models import CustomUser, UserPreference
+
+from .serializers import (AnalyzeTextSerializer, ArticleDetailSerializer,
+                          ArticleSerializer, DetectionModelMetricsSerializer,
+                          FakeNewsDetectionResultSerializer, SourceSerializer,
+                          TopicSerializer, UserPreferenceSerializer,
+                          UserSerializer)
 
 
 class ArticleViewSet(viewsets.ReadOnlyModelViewSet):

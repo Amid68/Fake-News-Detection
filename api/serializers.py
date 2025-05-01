@@ -10,14 +10,10 @@ for the REST API.
 """
 
 from rest_framework import serializers
-from news.models import (
-    Article,
-    Source,
-    Topic,
-    FakeNewsDetectionResult,
-    DetectionModelMetrics,
-)
-from users.models import UserPreference, CustomUser
+
+from news.models import (Article, DetectionModelMetrics,
+                         FakeNewsDetectionResult, Source, Topic)
+from users.models import CustomUser, UserPreference
 
 
 class SourceSerializer(serializers.ModelSerializer):

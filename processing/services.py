@@ -11,14 +11,17 @@ and generate summaries using lightweight NLP models.
 
 import logging
 import time
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import psutil
-from typing import Dict, List, Optional, Tuple, Union, Any
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
+                          pipeline)
 
 from news.models import Article
+
 from .models import ProcessingTask
 
 # Setup logger
@@ -371,7 +374,6 @@ def update_model_metrics(
 
     # This is a simplified implementation that only tracks average metrics
     # A complete implementation would track more detailed performance metrics
-
     # Get or create metrics record
     try:
         metrics, created = DetectionModelMetrics.objects.get_or_create(

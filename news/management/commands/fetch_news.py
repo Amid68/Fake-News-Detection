@@ -12,17 +12,16 @@ and other parameters.
 
 import logging
 import time
-from django.core.management.base import BaseCommand, CommandError
+
 from django.core.cache import cache
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from news.services import (
-    fetch_articles_from_api,
-    save_articles_to_db,
-    clear_article_cache,
-)
+
 from news.models import Source
-from processing.services import queue_processing_for_articles
+from news.services import (clear_article_cache, fetch_articles_from_api,
+                           save_articles_to_db)
 from processing.models import ProcessingTask
+from processing.services import queue_processing_for_articles
 
 # Setup logger
 logger = logging.getLogger(__name__)

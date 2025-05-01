@@ -11,16 +11,18 @@ process article data, and manage database operations for news content.
 """
 
 import logging
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
-from typing import Dict, List, Tuple, Optional, Any
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
+
+import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
-from .models import Source, Article
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+from .models import Article, Source
 
 # Setup logger
 logger = logging.getLogger(__name__)

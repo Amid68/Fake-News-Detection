@@ -9,23 +9,19 @@ filtering by topics, and showing bias analysis results.
 @date 2025-04-02
 """
 
-from django.shortcuts import render, get_object_or_404, redirect
+from datetime import timedelta
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from datetime import timedelta
 
-from .models import (
-    Article,
-    Source,
-    Topic,
-    UserSavedArticle,
-    ArticleViewHistory,
-    DetectionModelMetrics,
-)
 from users.models import UserPreference
+
+from .models import (Article, ArticleViewHistory, DetectionModelMetrics,
+                     Source, Topic, UserSavedArticle)
 
 
 def home_view(request):

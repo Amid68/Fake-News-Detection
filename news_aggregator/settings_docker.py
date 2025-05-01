@@ -3,8 +3,9 @@ Docker-specific Django settings for news_aggregator project.
 Extends the main settings.py file with Docker-specific configurations.
 """
 
-from .settings import *
 import os
+
+from .settings import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")

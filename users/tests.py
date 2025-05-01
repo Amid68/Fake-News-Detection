@@ -9,13 +9,13 @@ in the users app.
 @date 2025-04-02
 """
 
-from django.test import TestCase, Client
-from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
+from django.test import Client, TestCase
+from django.urls import reverse
 
-from .models import CustomUser, UserPreference
 from .forms import CustomUserCreationForm, UserPreferenceForm
+from .models import CustomUser, UserPreference
 
 User = get_user_model()
 
