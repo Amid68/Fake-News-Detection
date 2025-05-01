@@ -102,7 +102,7 @@ DATABASES = {
         "PORT": config("DB_PORT", default=""),
         "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=0, cast=int),
         "OPTIONS": {
-            "timeout": 20,  # in seconds
+            "connect_timeout": 20,  # in seconds
         },
     }
 }
