@@ -199,3 +199,5 @@ huggingface/
 .vscode/
 
 data/fake-news-net/
+.DS_Store
+**/.DS_Store
