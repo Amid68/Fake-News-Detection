@@ -1,5 +1,5 @@
 """
-Django settings for news_aggregator project.
+Django settings for LightFakeDetect project.
 """
 
 import os
@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Local apps
-    "users",
     "news",
 ]
 
@@ -39,7 +38,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "news_aggregator.urls"
+ROOT_URLCONF = "LightFakeDetect.urls"
 
 TEMPLATES = [
     {
@@ -57,7 +56,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "news_aggregator.wsgi.application"
+WSGI_APPLICATION = "LightFakeDetect.wsgi.application"
 
 # Database - using SQLite for simplicity
 DATABASES = {
@@ -66,22 +65,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
@@ -96,15 +79,3 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# Custom user model
-AUTH_USER_MODEL = "users.CustomUser"
-
-# Authentication settings
-LOGIN_REDIRECT_URL = "home"
-LOGOUT_REDIRECT_URL = "home"
-LOGIN_URL = "login"
-
-# News API settings
-NEWS_API_KEY = "2b3d3d4e2d614fd4b504816ae232cc0d"
-NEWS_API_ENDPOINT = "https://newsapi.org/v2/top-headlines"
