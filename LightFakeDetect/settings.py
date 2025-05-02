@@ -79,3 +79,6 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ML Models directory
+ML_MODELS_DIR = os.path.join(BASE_DIR, 'ml_models')
