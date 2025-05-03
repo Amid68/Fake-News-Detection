@@ -15,6 +15,7 @@ class Command(BaseCommand):
         os.makedirs(model_dir, exist_ok=True)
 
         # Initialize metrics from JSON file
+        self.stdout.write(self.style.SUCCESS('Initializing model metrics...'))
         initialize_model_metrics()
 
         self.stdout.write(self.style.SUCCESS('Successfully initialized model metrics'))
