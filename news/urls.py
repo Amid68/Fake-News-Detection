@@ -10,4 +10,7 @@ urlpatterns = [
 
     # Text analysis page
     path("analyze/text/", views.analyze_text_view, name="analyze_text"),
+
+    # Examples page
+    path("examples/", views.examples_view, name="examples"),
 ]

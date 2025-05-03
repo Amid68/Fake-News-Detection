@@ -41,3 +41,7 @@ def analyze_text_view(request):
         'results': results,
         'models': models
     })
+
+def examples_view(request):
+    """View for displaying example news articles for testing"""
+    return render(request, 'news/examples.html')
