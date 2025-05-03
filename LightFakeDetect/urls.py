@@ -5,12 +5,12 @@ The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/
 """
 
-from django.contrib import admin
-from django.urls import include, path
-from django.views.generic import RedirectView
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("models/", include("news.urls")),
-    path("", RedirectView.as_view(pattern_name="model_comparison"), name="home"),
+    # Use views we know exist based on your views.py file
+    path("", views.model_comparison_view, name="news_home"),
+    path("models/comparison/", views.model_comparison_view, name="model_comparison"),
+    path("analyze/text/", views.analyze_text_view, name="analyze_text"),
 ]
