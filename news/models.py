@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils import timezone
 
 class Article(models.Model):
     """news article model"""
@@ -24,8 +23,6 @@ class FakeNewsDetectionResult(models.Model):
     credibility_category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     model_name = models.CharField(max_length=100)
     processing_time = models.FloatField(help_text="Processing time in seconds")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
 
 class DetectionModelMetrics(models.Model):
@@ -36,5 +33,3 @@ class DetectionModelMetrics(models.Model):
     avg_processing_time = models.FloatField()
     avg_memory_usage = models.FloatField()
     parameter_count = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
