@@ -77,6 +77,112 @@
     color: #aaa;
     font-style: italic;
   }
+
+  .metadata-section {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #dc3545;
+  }
+
+  .truth-level {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .truth-level-desc {
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+
+  /* Truth scale colors */
+  .truth-pants-on-fire {
+    background-color: #dc3545;
+    color: white;
+  }
+  .truth-false {
+    background-color: #e35d6a;
+    color: white;
+  }
+  .truth-mostly-false {
+    background-color: #fd7e14;
+    color: white;
+  }
+  .truth-half-true {
+    background-color: #ffc107;
+    color: black;
+  }
+  .truth-mostly-true {
+    background-color: #75b798;
+    color: white;
+  }
+  .truth-true {
+    background-color: #198754;
+    color: white;
+  }
+
+  .truth-meter {
+    height: 30px;
+    position: relative;
+    background-color: #e9ecef;
+    border-radius: 15px;
+    margin: 1.5rem 0;
+    overflow: hidden;
+  }
+
+  .truth-meter-segment {
+    height: 100%;
+    float: left;
+    text-align: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+    line-height: 30px;
+  }
+
+  .truth-marker {
+    position: absolute;
+    width: 8px;
+    height: 40px;
+    background-color: #000;
+    top: -5px;
+    margin-left: -4px;
+    z-index: 10;
+  }
+
+  .metadata-fields {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+  }
+
+  .metadata-fields.show {
+    max-height: 500px;
+  }
+
+  .metadata-toggle {
+    cursor: pointer;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .metadata-toggle i {
+    transition: transform 0.3s;
+  }
+
+  .metadata-toggle.active i {
+    transform: rotate(180deg);
+  }
 </style>
 {% endblock %}
 
@@ -85,8 +191,8 @@
   <div class="row justify-content-center">
     <div class="col-lg-10">
       <h1 class="display-5 mb-2 fw-bold">Fake News Analysis</h1>
-      <p class="lead mb-5">
-        Enter any text below to analyze it for credibility using our detection models.
+      <p class="lead mb-4">
+        Enter any text below to analyze it for credibility using our LIAR2 fine-tuned detection model.
       </p>
 
       <div class="card analyzer-form mb-5">
@@ -95,21 +201,45 @@
             {% csrf_token %}
             <div class="mb-4">
               <label for="text" class="form-label fw-semibold">Text to Analyze</label>
-              <textarea class="form-control p-3" id="text" name="text" rows="8" required placeholder="Paste or type any news article, social media post, or statement to analyze..."></textarea>
+              <textarea class="form-control p-3" id="text" name="text" rows="6" required placeholder="Paste or type any news article, social media post, or statement to analyze..."></textarea>
             </div>
 
-            <div class="mb-4">
-              <label for="model" class="form-label fw-semibold">Select Detection Model</label>
+            <div class="metadata-toggle" id="metadataToggle">
+              <span class="fw-semibold"><i class="bi bi-info-circle me-2"></i> Additional Metadata (Optional)</span>
+              <i class="bi bi-chevron-down"></i>
+            </div>
+
+            <div class="metadata-fields" id="metadataFields">
+              <div class="metadata-section">
+                <p class="text-muted mb-3">Adding metadata improves the model's accuracy. The LIAR2 model was trained with these contextual fields.</p>
+
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label for="speaker" class="form-label">Speaker</label>
+                    <input type="text" class="form-control" id="speaker" name="speaker" placeholder="Who made this statement?">
+                    <div class="form-text">Example: donald trump, facebook posts, cnn</div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="subject" name="subject" placeholder="Topic of the statement">
+                    <div class="form-text">Example: health, economy, politics</div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="context" class="form-label">Context</label>
+                    <input type="text" class="form-control" id="context" name="context" placeholder="Where was this stated?">
+                    <div class="form-text">Example: interview, tweet, speech</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4 mt-4">
+              <label for="model" class="form-label fw-semibold">Detection Model</label>
               <select class="form-select" id="model" name="model">
-                {% for model in models %}
-                  {% if model.key == 'distilbert_finetuned' %}
-                    <option value="{{ model.key }}">{{ model.name }} <span class="text-success">● Ready</span></option>
-                  {% elif model.key == 'tinybert' %}
-                    <option value="{{ model.key }}" disabled>{{ model.name }} <span class="text-muted">○ Coming Soon</span></option>
-                  {% else %}
-                    <option value="{{ model.key }}">{{ model.name }}</option>
-                  {% endif %}
-                {% endfor %}
+                <option value="distilbert_liar2">DistilBERT (LIAR2 Fine-tuned) <span class="text-success">● Ready</span></option>
+                <option value="tinybert" disabled>TinyBERT <span class="text-muted">○ Coming Soon</span></option>
               </select>
               <div class="form-text mt-2">
                 <span class="badge bg-success badge-sm">Ready</span> Models that have been fine-tuned for fake news detection
@@ -133,52 +263,78 @@
             <h5 class="mb-0 fw-bold"><i class="bi bi-clipboard-data me-2"></i> Analysis Results</h5>
           </div>
           <div class="card-body p-4">
-            <div class="mb-4">
-              <h6 class="text-muted mb-3">Credibility Score:</h6>
-              <div class="progress mb-2">
-                <div class="progress-bar
-                  {% if results.credibility_score > 0.7 %}bg-success
-                  {% elif results.credibility_score > 0.3 %}bg-warning
-                  {% else %}bg-danger{% endif %}"
-                  role="progressbar"
-                  style="width: {{ results.credibility_score|floatformat:2|multiply:100 }}%;"
-                  aria-valuenow="{{ results.credibility_score|floatformat:2|multiply:100 }}"
-                  aria-valuemin="0"
-                  aria-valuemax="100">
-                  {{ results.credibility_score|floatformat:2|multiply:100 }}%
-                </div>
-              </div>
-              <div class="d-flex justify-content-between">
-                <small class="text-danger">Low Credibility</small>
-                <small class="text-success">High Credibility</small>
-              </div>
-            </div>
-
+            <!-- LIAR2 Truth Rating Display -->
             <div class="assessment-box text-center">
-              <h6 class="text-muted mb-3">Assessment:</h6>
-              <h3>
-                {% if results.category == 'credible' %}
-                  <span class="badge bg-success"><i class="bi bi-check-circle me-2"></i>Credible Content</span>
-                {% elif results.category == 'mixed' %}
-                  <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-2"></i>Mixed Credibility</span>
-                {% else %}
-                  <span class="badge bg-danger"><i class="bi bi-x-circle me-2"></i>Likely Fake Content</span>
-                {% endif %}
-              </h3>
+              <h6 class="text-muted mb-3">Truth Rating:</h6>
 
-              <p class="mt-3 mb-0">
-                {% if results.category == 'credible' %}
-                  This content appears to be credible according to our analysis.
-                {% elif results.category == 'mixed' %}
-                  This content contains elements that may require fact-checking.
-                {% else %}
-                  This content has characteristics commonly found in fake news.
-                {% endif %}
-              </p>
+              {% if results.label_text == 'pants_on_fire' %}
+                <h3>
+                  <span class="truth-level truth-pants-on-fire">
+                    <i class="bi bi-fire me-2"></i>Pants on Fire!
+                  </span>
+                </h3>
+                <p class="truth-level-desc">Extremely false statement with no factual basis</p>
+              {% elif results.label_text == 'false' %}
+                <h3>
+                  <span class="truth-level truth-false">
+                    <i class="bi bi-x-circle me-2"></i>False
+                  </span>
+                </h3>
+                <p class="truth-level-desc">Statement is not accurate</p>
+              {% elif results.label_text == 'mostly_false' %}
+                <h3>
+                  <span class="truth-level truth-mostly-false">
+                    <i class="bi bi-dash-circle me-2"></i>Mostly False
+                  </span>
+                </h3>
+                <p class="truth-level-desc">Statement contains some elements of truth but ignores critical facts</p>
+              {% elif results.label_text == 'half_true' %}
+                <h3>
+                  <span class="truth-level truth-half-true">
+                    <i class="bi bi-circle-half me-2"></i>Half True
+                  </span>
+                </h3>
+                <p class="truth-level-desc">Statement is partially accurate but leaves out important details</p>
+              {% elif results.label_text == 'mostly_true' %}
+                <h3>
+                  <span class="truth-level truth-mostly-true">
+                    <i class="bi bi-check-circle me-2"></i>Mostly True
+                  </span>
+                </h3>
+                <p class="truth-level-desc">Statement is accurate but needs clarification or additional information</p>
+              {% elif results.label_text == 'true' %}
+                <h3>
+                  <span class="truth-level truth-true">
+                    <i class="bi bi-check-circle-fill me-2"></i>True
+                  </span>
+                </h3>
+                <p class="truth-level-desc">Statement is accurate and there's nothing significant missing</p>
+              {% else %}
+                <h3>
+                  <span class="badge bg-secondary">
+                    <i class="bi bi-question-circle me-2"></i>Unknown
+                  </span>
+                </h3>
+                <p class="truth-level-desc">Unable to determine truth level</p>
+              {% endif %}
             </div>
 
-            <hr>
+            <!-- Truth Meter Visualization -->
+            <div class="truth-meter">
+              <div class="truth-meter-segment" style="width: 16.66%; background-color: #dc3545;">POF</div>
+              <div class="truth-meter-segment" style="width: 16.66%; background-color: #e35d6a;">F</div>
+              <div class="truth-meter-segment" style="width: 16.66%; background-color: #fd7e14;">MF</div>
+              <div class="truth-meter-segment" style="width: 16.66%; background-color: #ffc107; color: black;">HT</div>
+              <div class="truth-meter-segment" style="width: 16.66%; background-color: #75b798;">MT</div>
+              <div class="truth-meter-segment" style="width: 16.66%; background-color: #198754;">T</div>
 
+              {% if results.label_index is not None %}
+                <div class="truth-marker" style="left: {{ results.label_index|add:0.5|multiply:16.66 }}%;"></div>
+              {% endif %}
+            </div>
+
+            <!-- Model Performance Metrics -->
+            <hr>
             <div class="row mt-4">
               <div class="col-md-6">
                 <div class="d-flex align-items-center mb-3">
@@ -190,6 +346,12 @@
                 <div class="d-flex align-items-center mb-3">
                   <i class="bi bi-clock-history me-2 text-muted"></i>
                   <span><strong>Processing time:</strong> {{ results.processing_time|floatformat:2 }} seconds</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-graph-up me-2 text-muted"></i>
+                  <span><strong>Confidence:</strong> {{ results.confidence|floatformat:2 }}</span>
                 </div>
               </div>
               {% if results.memory_usage %}
@@ -207,4 +369,18 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const metadataToggle = document.getElementById('metadataToggle');
+    const metadataFields = document.getElementById('metadataFields');
+
+    if (metadataToggle && metadataFields) {
+      metadataToggle.addEventListener('click', function() {
+        metadataFields.classList.toggle('show');
+        metadataToggle.classList.toggle('active');
+      });
+    }
+  });
+</script>
 {% endblock %}
