@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "simple_base.html" %}
 {% load custom_filters %}
 
 {% block title %}Model Comparison - VeriFact{% endblock %}
@@ -45,21 +45,6 @@
           </tbody>
         </table>
       </div>
-    </div>
-  </div>
-
-  <!-- Visualization -->
-  <div class="card mb-5">
-    <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">Performance vs. Resource Usage</h5>
-    </div>
-    <div class="card-body">
-      <p>
-        This visualization shows the trade-off between model accuracy and resource requirements.
-        The ideal model would be in the top-left corner (high accuracy, low resource usage).
-      </p>
-
-      <div id="perfChart" style="height: 400px; width: 100%;"></div>
     </div>
   </div>
 
@@ -116,91 +101,10 @@
       </div>
     </div>
   </div>
+
+  <!-- Add a link to analyze text page -->
+  <div class="text-center mb-5">
+    <a href="/analyze/text/" class="btn btn-primary btn-lg">Try the models yourself</a>
+  </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Model data from context
-    const modelData = [
-      {% for metric in model_metrics %}
-        {
-          label: "{{ metric.model_name }}",
-          accuracy: {{ metric.accuracy }},
-          memory: {{ metric.avg_memory_usage }},
-          time: {{ metric.avg_processing_time }}
-        }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
-
-    if (modelData.length > 0) {
-      // Create scatter plot
-      const ctx = document.getElementById('perfChart').getContext('2d');
-      const chart = new Chart(ctx, {
-        type: 'bubble',
-        data: {
-          datasets: modelData.map((model, index) => ({
-            label: model.label,
-            data: [{
-              x: model.memory,  // Memory usage (MB)
-              y: model.accuracy, // Accuracy (0-1)
-              r: model.time * 5  // Bubble size based on processing time
-            }],
-            backgroundColor: getColor(index, 0.5),
-            borderColor: getColor(index, 1),
-          }))
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Memory Usage (MB)'
-              },
-              min: 0
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Accuracy'
-              },
-              min: 0.7,
-              max: 1.0
-            }
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const model = modelData[context.datasetIndex];
-                  return [
-                    `Model: ${model.label}`,
-                    `Accuracy: ${model.accuracy.toFixed(2)}`,
-                    `Memory: ${model.memory.toFixed(1)} MB`,
-                    `Processing Time: ${model.time.toFixed(2)}s`
-                  ];
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Generate colors for the chart
-    function getColor(index, alpha) {
-      const colors = [
-        `rgba(52, 152, 219, ${alpha})`,  // Blue
-        `rgba(46, 204, 113, ${alpha})`,  // Green
-        `rgba(155, 89, 182, ${alpha})`,  // Purple
-        `rgba(241, 196, 15, ${alpha})`,  // Yellow
-        `rgba(231, 76, 60, ${alpha})`    // Red
-      ];
-      return colors[index % colors.length];
-    }
-  });
-</script>
 {% endblock %}
