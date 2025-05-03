@@ -1,78 +1,181 @@
 {% extends "simple_base.html" %}
 
-{% block title %}Example News - VeriFact{% endblock %}
+{% block title %}Example News - LightFakeDetect{% endblock %}
+
+{% block extra_css %}
+<style>
+  .example-card {
+    border: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 2rem;
+  }
+
+  .example-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .example-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .example-content {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #dee2e6;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .real-content {
+    border-left-color: #28a745;
+  }
+
+  .fake-content {
+    border-left-color: #dc3545;
+  }
+
+  .example-type {
+    display: inline-block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+  }
+
+  .analyze-btn {
+    border-radius: 50px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .analyze-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .analyze-btn i {
+    transition: transform 0.2s;
+  }
+
+  .analyze-btn:hover i {
+    transform: translateX(3px);
+  }
+
+  .hero-section {
+    background-color: #f8f9fa;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0.5rem;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h1 class="mb-4">Example News Articles for Testing</h1>
-  <p class="lead mb-4">
-    Click on any example to analyze it with your fine-tuned DistilBERT model.
-  </p>
+<div class="container mt-5">
+  <div class="hero-section">
+    <div class="row justify-content-center text-center">
+      <div class="col-lg-10">
+        <h1 class="display-5 fw-bold mb-3">Test with Example Articles</h1>
+        <p class="lead mb-0">
+          Click on any example to analyze it with our fine-tuned DistilBERT model.
+          See how the system performs on real and fake news examples.
+        </p>
+      </div>
+    </div>
+  </div>
 
   <div class="row">
     <!-- Real News Examples -->
-    <div class="col-md-6">
-      <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-          <h5 class="mb-0">Real News Examples</h5>
+    <div class="col-lg-6">
+      <div class="card example-card">
+        <div class="card-header example-header bg-success text-white">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-check-circle me-2"></i> Real News Examples</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
           <div class="mb-4">
-            <h6>Political News</h6>
-            <p id="real-1">
+            <span class="example-type text-success">Political News</span>
+            <h6 class="fw-bold mb-3">European Climate Regulations</h6>
+            <div class="example-content real-content" id="real-1">
               The European Union announced new climate regulations today, requiring member states to reduce carbon emissions by an additional 15% by 2030. The measure passed with support from 22 of the 27 member states, with opposition primarily from countries with coal-dependent economies.
-            </p>
-            <button class="btn btn-sm btn-outline-primary analyze-btn" data-text="real-1">Analyze This</button>
+            </div>
+            <button class="btn btn-outline-success analyze-btn float-end" data-text="real-1">
+              Analyze This <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+            <div class="clearfix"></div>
           </div>
 
           <div class="mb-4">
-            <h6>Scientific Report</h6>
-            <p id="real-2">
+            <span class="example-type text-success">Scientific Report</span>
+            <h6 class="fw-bold mb-3">Alzheimer's Treatment Research</h6>
+            <div class="example-content real-content" id="real-2">
               Researchers at Stanford University have published findings in the journal Nature showing promising results for a new treatment approach for Alzheimer's disease. The clinical trial, involving 230 patients, demonstrated a 28% reduction in cognitive decline over 18 months compared to the control group.
-            </p>
-            <button class="btn btn-sm btn-outline-primary analyze-btn" data-text="real-2">Analyze This</button>
+            </div>
+            <button class="btn btn-outline-success analyze-btn float-end" data-text="real-2">
+              Analyze This <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+            <div class="clearfix"></div>
           </div>
 
           <div class="mb-4">
-            <h6>Business News</h6>
-            <p id="real-3">
+            <span class="example-type text-success">Business News</span>
+            <h6 class="fw-bold mb-3">Tesla Quarterly Earnings</h6>
+            <div class="example-content real-content" id="real-3">
               Tesla reported quarterly earnings that exceeded analyst expectations, with revenue growth of 23% year-over-year. The electric vehicle manufacturer cited increased production efficiency and strong demand in European markets as key factors in the better-than-expected performance.
-            </p>
-            <button class="btn btn-sm btn-outline-primary analyze-btn" data-text="real-3">Analyze This</button>
+            </div>
+            <button class="btn btn-outline-success analyze-btn float-end" data-text="real-3">
+              Analyze This <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+            <div class="clearfix"></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Fake News Examples -->
-    <div class="col-md-6">
-      <div class="card mb-4">
-        <div class="card-header bg-danger text-white">
-          <h5 class="mb-0">Fake News Examples</h5>
+    <div class="col-lg-6">
+      <div class="card example-card">
+        <div class="card-header example-header bg-danger text-white">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-x-circle me-2"></i> Fake News Examples</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
           <div class="mb-4">
-            <h6>Conspiracy Theory</h6>
-            <p id="fake-1">
+            <span class="example-type text-danger">Conspiracy Theory</span>
+            <h6 class="fw-bold mb-3">Mind Control Chemicals</h6>
+            <div class="example-content fake-content" id="fake-1">
               Government officials have been secretly putting mind-control chemicals in the water supply for decades, according to documents leaked by an anonymous whistleblower. The chemicals allegedly make citizens more compliant and less likely to question authority figures.
-            </p>
-            <button class="btn btn-sm btn-outline-primary analyze-btn" data-text="fake-1">Analyze This</button>
+            </div>
+            <button class="btn btn-outline-danger analyze-btn float-end" data-text="fake-1">
+              Analyze This <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+            <div class="clearfix"></div>
           </div>
 
           <div class="mb-4">
-            <h6>Sensationalist Health Claim</h6>
-            <p id="fake-2">
+            <span class="example-type text-danger">Sensationalist Health Claim</span>
+            <h6 class="fw-bold mb-3">Miracle Diabetes Cure</h6>
+            <div class="example-content fake-content" id="fake-2">
               Doctors are shocked by a simple household item that has been proven to cure diabetes overnight. Big pharmaceutical companies are trying to keep this miracle cure secret because it threatens their profits from diabetes medications.
-            </p>
-            <button class="btn btn-sm btn-outline-primary analyze-btn" data-text="fake-2">Analyze This</button>
+            </div>
+            <button class="btn btn-outline-danger analyze-btn float-end" data-text="fake-2">
+              Analyze This <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+            <div class="clearfix"></div>
           </div>
 
           <div class="mb-4">
-            <h6>Fabricated Political Story</h6>
-            <p id="fake-3">
+            <span class="example-type text-danger">Fabricated Political Story</span>
+            <h6 class="fw-bold mb-3">Martial Law Preparation</h6>
+            <div class="example-content fake-content" id="fake-3">
               The president's secret plan to declare martial law was revealed yesterday when an aide accidentally leaked confidential documents to the press. Military units are already being positioned in major cities across the country in preparation for the announcement.
-            </p>
-            <button class="btn btn-sm btn-outline-primary analyze-btn" data-text="fake-3">Analyze This</button>
+            </div>
+            <button class="btn btn-outline-danger analyze-btn float-end" data-text="fake-3">
+              Analyze This <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+            <div class="clearfix"></div>
           </div>
         </div>
       </div>

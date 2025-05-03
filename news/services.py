@@ -37,6 +37,7 @@ from .models import Article, FakeNewsDetectionResult, DetectionModelMetrics
 MODEL_BASE_DIR = os.path.join(settings.BASE_DIR, 'ml_models')
 
 # Define available models
+# Define available models
 MODELS = {
     "distilbert_finetuned": {
         "name": "DistilBERT (Fine-tuned)",
@@ -44,17 +45,11 @@ MODELS = {
         "max_length": 512,
         "description": "Fine-tuned DistilBERT model optimized for news credibility detection"
     },
-    "distilbert": {
-        "name": "DistilBERT (Base)",
-        "path": "distilbert-base-uncased",
-        "max_length": 512,
-        "description": "Pre-trained DistilBERT model with default classification head"
-    },
     "tinybert": {
-        "name": "TinyBERT",
+        "name": "TinyBERT (Coming Soon)",
         "path": "huawei-noah/TinyBERT_General_4L_312D",
         "max_length": 512,
-        "description": "Smaller and faster model with fewer parameters"
+        "description": "Smaller and faster model with fewer parameters (not yet fine-tuned)"
     }
 }
 
