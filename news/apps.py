@@ -13,5 +13,10 @@ class NewsConfig(AppConfig):
         # Avoid importing during Django's app registry loading
         import os
         if os.environ.get('RUN_MAIN', None) == 'true':
+            # Make sure custom template tags are available
+            from django.template.base import add_to_builtins
+            add_to_builtins('news.templatetags.custom_filters')
+
+            # Initialize model metrics
             from .services import initialize_model_metrics
             initialize_model_metrics()
