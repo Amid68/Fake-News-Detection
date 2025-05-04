@@ -89,7 +89,7 @@ def combine_features(text, speaker=None, subject=None, context=None):
     subject = str(subject) if subject else "unknown"
     context = str(context) if context else "unknown"
 
-    # Combine features with special tokens
+    # Combine features with special tokens as in the notebook
     combined = f"{text} [SEP] Subject: {subject} [SEP] Speaker: {speaker} [SEP] Context: {context}"
     return combined
 
@@ -177,6 +177,7 @@ def detect_fake_news(text, model_key="distilbert_liar2", speaker=None, subject=N
                 # Get the UI color
                 color = LIAR2_LABEL_COLORS.get(label_idx, "secondary")
 
+                # Include confidence score in the output
                 return {
                     "credibility_score": credibility_score,
                     "confidence": score,
@@ -215,6 +216,7 @@ def detect_fake_news(text, model_key="distilbert_liar2", speaker=None, subject=N
         }
 
 
+# Update the model metrics with actual performance from the notebook
 def initialize_model_metrics():
     """
     Initialize model metrics in the database based on
@@ -226,8 +228,8 @@ def initialize_model_metrics():
         DetectionModelMetrics.objects.update_or_create(
             model_name="DistilBERT (LIAR2 Fine-tuned)",
             defaults={
-                'accuracy': 0.36,
-                'f1_score': 0.32,
+                'accuracy': 0.6743,  # Update with actual accuracy from notebook
+                'f1_score': 0.6353,  # Update with actual F1 score from notebook
                 'avg_processing_time': 1.2,
                 'avg_memory_usage': 350.0,
                 'parameter_count': 66000000  # ~66M parameters for DistilBERT

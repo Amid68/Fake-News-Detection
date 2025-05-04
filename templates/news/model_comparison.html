@@ -173,42 +173,51 @@
   <h4 class="fw-bold mb-4"><i class="bi bi-lightbulb me-2"></i> Model Selection Guide</h4>
   <div class="row mb-5">
     <div class="col-md-6 mb-4">
-      <div class="card model-card position-relative">
-        <span class="badge bg-primary badge-highlight">BEST ACCURACY</span>
-        <div class="card-body p-4">
-          <h5 class="card-title">Best for Accuracy</h5>
-          {% with best_accuracy=model_metrics|dictsort:"accuracy"|last %}
-            {% if best_accuracy %}
-              <h6 class="card-subtitle mb-3 text-muted">{{ best_accuracy.model_name }}</h6>
-              <div class="row mb-3">
-                <div class="col-6">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-check-circle-fill me-2 text-success"></i>
-                    <div>
-                      <small class="text-muted d-block">Accuracy</small>
-                      <strong>{{ best_accuracy.accuracy|floatformat:2 }}</strong>
+      <!-- Update model metrics in the "Best for Accuracy" card -->
+        <div class="card model-card position-relative">
+          <span class="badge bg-primary badge-highlight">BEST ACCURACY</span>
+          <div class="card-body p-4">
+            <h5 class="card-title">Best for Accuracy</h5>
+            {% with best_accuracy=model_metrics|dictsort:"accuracy"|last %}
+              {% if best_accuracy %}
+                <h6 class="card-subtitle mb-3 text-muted">{{ best_accuracy.model_name }}</h6>
+                <div class="row mb-3">
+                  <div class="col-6">
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-check-circle-fill me-2 text-success"></i>
+                      <div>
+                        <small class="text-muted d-block">Accuracy</small>
+                        <strong>{{ best_accuracy.accuracy|floatformat:2 }}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-memory me-2 text-muted"></i>
+                      <div>
+                        <small class="text-muted d-block">Memory</small>
+                        <strong>{{ best_accuracy.avg_memory_usage|floatformat:1 }} MB</strong>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div class="col-6">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-memory me-2 text-muted"></i>
-                    <div>
-                      <small class="text-muted d-block">Memory</small>
-                      <strong>{{ best_accuracy.avg_memory_usage|floatformat:1 }} MB</strong>
-                    </div>
+                <!-- Add an F1 score display here -->
+                <div class="d-flex align-items-center mb-3">
+                  <i class="bi bi-graph-up me-2 text-muted"></i>
+                  <div>
+                    <small class="text-muted d-block">F1 Score</small>
+                    <strong>{{ best_accuracy.f1_score|floatformat:2 }}</strong>
                   </div>
                 </div>
-              </div>
-              <p class="card-text">
-                Recommended when detection accuracy is your top priority and you have sufficient computational resources.
-              </p>
-            {% else %}
-              <p class="card-text">No model metrics available</p>
-            {% endif %}
-          {% endwith %}
+                <p class="card-text">
+                  Recommended when detection accuracy is your top priority and you have sufficient computational resources.
+                </p>
+              {% else %}
+                <p class="card-text">No model metrics available</p>
+              {% endif %}
+            {% endwith %}
+          </div>
         </div>
-      </div>
     </div>
 
     <div class="col-md-6 mb-4">
