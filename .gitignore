@@ -2,3 +2,5 @@ ml_models/
 .DS_Store
 *.img
 *.xml
+data/
+*.csv
