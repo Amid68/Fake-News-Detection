@@ -6,6 +6,7 @@ Building on the findings from our exploratory data analysis, this notebook focus
 
 First, I'll import the necessary libraries and load our datasets.
 
+
 ```python
 # Import necessary libraries
 import pandas as pd
@@ -40,7 +41,14 @@ pd.set_option('display.width', 1000)
 pd.set_option('display.max_colwidth', 200)
 ```
 
+    [nltk_data] Downloading package stopwords to /Users/amid/nltk_data...
+    [nltk_data]   Package stopwords is already up-to-date!
+    [nltk_data] Downloading package punkt to /Users/amid/nltk_data...
+    [nltk_data]   Package punkt is already up-to-date!
+
+
 Now I'll load the datasets and the basic cleaned versions from the first notebook (if available), or recreate them:
+
 
 ```python
 # Try to load previously saved datasets or load raw data
@@ -52,8 +60,8 @@ try:
 except:
     # If not available, load raw data and perform basic cleaning
     print("Loading raw datasets")
-    true_news = pd.read_csv('True.csv')
-    fake_news = pd.read_csv('Fake.csv')
+    true_news = pd.read_csv('../data/ISOT/True.csv')
+    fake_news = pd.read_csv('../data/ISOT/Fake.csv')
     
     # Basic cleaning function
     def clean_text(text, patterns_to_remove=None):
@@ -104,9 +112,15 @@ print("True News Dataset Shape:", true_news.shape)
 print("Fake News Dataset Shape:", fake_news.shape)
 ```
 
+    Loaded previously cleaned datasets
+    True News Dataset Shape: (21417, 7)
+    Fake News Dataset Shape: (23481, 7)
+
+
 ## 2. Enhanced Data Cleaning
 
 Based on our exploratory analysis, I'll create an enhanced cleaning function that removes identified biases while preserving legitimate signals:
+
 
 ```python
 # Enhanced cleaning function
@@ -174,6 +188,27 @@ for i in range(2):
     print(f"Enhanced cleaned text: {fake_news['enhanced_cleaned_text'].iloc[i][:100]}")
 ```
 
+    Sample of enhanced cleaned true news:
+    
+    Original text beginning: WASHINGTON (Reuters) - The head of a conservative Republican faction in the U.S. Congress, who voted
+    Basic cleaned text: WASHINGTON - The head of a conservative Republican faction in the U.S. Congress, who voted this mont
+    Enhanced cleaned text: WASHINGTON - The head of a conservative Republican faction in the U.S. Congress, who voted this mont
+    
+    Original text beginning: WASHINGTON (Reuters) - Transgender people will be allowed for the first time to enlist in the U.S. m
+    Basic cleaned text: WASHINGTON - Transgender people will be allowed for the first time to enlist in the U.S. military st
+    Enhanced cleaned text: WASHINGTON - Transgender people will be allowed for the first time to enlist in the U.S. military st
+    
+    Sample of enhanced cleaned fake news:
+    
+    Original text beginning: Donald Trump just couldn t wish all Americans a Happy New Year and leave it at that. Instead, he had
+    Basic cleaned text: Donald Trump just couldn t wish all Americans a Happy New Year and leave it at that. Instead, he had
+    Enhanced cleaned text: Donald Trump just couldn t wish all Americans a Happy New Year and leave it at that. Instead, he had
+    
+    Original text beginning: House Intelligence Committee Chairman Devin Nunes is going to have a bad day. He s been under the as
+    Basic cleaned text: House Intelligence Committee Chairman Devin Nunes is going to have a bad day. He s been under the as
+    Enhanced cleaned text: House Intelligence Committee Chairman Devin Nunes is going to have a bad day. He s been under the as
+
+
 I'm using this enhanced cleaning approach because:
 
 1. It removes high-bias markers like "(Reuters)" that could lead to overfitting
@@ -183,6 +218,7 @@ I'm using this enhanced cleaning approach because:
 ## 3. Feature Engineering
 
 Now I'll develop features that capture legitimate stylistic and content differences between real and fake news:
+
 
 ```python
 # Function to engineer features
@@ -283,7 +319,42 @@ print("\nFeature statistics for Fake News:")
 print(fake_news_features[feature_columns].describe().transpose()[['mean', 'std']])
 ```
 
+    
+    Feature statistics for True News:
+                                          mean          std
+    text_length                    2365.543027  1679.237226
+    word_count                      384.765980   274.038348
+    avg_word_length                   5.159852     0.261931
+    sentence_count                   21.801233    15.912271
+    avg_sentence_length              17.978341     4.760765
+    ...                                    ...          ...
+    immigration_per_1000_words        0.910725     3.301516
+    foreign_policy_count              0.985199     1.969442
+    foreign_policy_per_1000_words     2.954578     6.271201
+    environment_count                 0.173927     1.207913
+    environment_per_1000_words        0.412954     2.724981
+    
+    [30 rows x 2 columns]
+    
+    Feature statistics for Fake News:
+                                          mean          std
+    text_length                    2526.356927  2516.888565
+    word_count                      422.673566   408.049293
+    avg_word_length                   4.814384     0.969869
+    sentence_count                   23.439249    21.517830
+    avg_sentence_length              17.782822     6.266311
+    ...                                    ...          ...
+    immigration_per_1000_words        0.618969     2.908075
+    foreign_policy_count              0.319620     1.219033
+    foreign_policy_per_1000_words     0.664558     2.604566
+    environment_count                 0.134832     1.151828
+    environment_per_1000_words        0.317995     2.497391
+    
+    [30 rows x 2 columns]
+
+
 Let's visualize the differences in key features between real and fake news:
+
 
 ```python
 # Select important features for visualization
@@ -300,7 +371,7 @@ key_features = [
 combined_features = pd.concat([
     true_news_features[key_features + ['label']],
     fake_news_features[key_features + ['label']]
-])
+]).reset_index(drop=True)  # Reset the index to avoid duplicates
 
 # Create a figure with subplots
 fig, axes = plt.subplots(2, 3, figsize=(18, 10))
@@ -316,7 +387,14 @@ plt.savefig('key_features_comparison.png')
 plt.show()
 ```
 
+
+    
+![png](output_9_0.png)
+    
+
+
 Let's calculate the feature importance to identify the most discriminative features:
+
 
 ```python
 # Create a function to calculate feature importance using logistic regression
@@ -331,11 +409,16 @@ def calculate_feature_importance(X, y):
     Returns:
         DataFrame with feature importances
     """
+    # Handle missing values by imputing with mean
+    from sklearn.impute import SimpleImputer
+    imputer = SimpleImputer(strategy='mean')
+    X_imputed = pd.DataFrame(imputer.fit_transform(X), columns=X.columns)
+    
     # Initialize logistic regression model
     model = LogisticRegressionCV(cv=5, random_state=42)
     
     # Fit the model
-    model.fit(X, y)
+    model.fit(X_imputed, y)
     
     # Get feature importances
     importances = model.coef_[0]
@@ -356,11 +439,11 @@ def calculate_feature_importance(X, y):
 true_news_features['numeric_label'] = 1
 fake_news_features['numeric_label'] = 0
 
-# Combine datasets
+# Combine datasets - fix the index issue here as well
 combined_features = pd.concat([
     true_news_features[feature_columns + ['numeric_label']],
     fake_news_features[feature_columns + ['numeric_label']]
-])
+]).reset_index(drop=True)  # Reset index to avoid duplicates
 
 # Remove any non-numeric features
 numeric_features = [f for f in feature_columns if combined_features[f].dtype in [np.int64, np.float64]]
@@ -384,9 +467,35 @@ plt.savefig('feature_importance.png')
 plt.show()
 ```
 
+    Top 15 most important features:
+                                    Feature  Importance
+    5                            said_count    0.472733
+    6                            told_count    0.340095
+    13                       question_count    0.330750
+    7                    according_to_count    0.300979
+    15  question_exclamation_per_1000_words    0.219513
+    2                       avg_word_length    0.182382
+    19         second_person_per_1000_words    0.172765
+    20                        economy_count    0.146954
+    9                   said_per_1000_words    0.126964
+    10                quotes_per_1000_words    0.120079
+    26                 foreign_policy_count    0.094659
+    8                           quote_count    0.079715
+    16                   first_person_count    0.072636
+    27        foreign_policy_per_1000_words    0.060956
+    18          first_person_per_1000_words    0.044301
+
+
+
+    
+![png](output_11_1.png)
+    
+
+
 ## 4. Text Vectorization with TF-IDF
 
 Let's create text features using TF-IDF vectorization:
+
 
 ```python
 # Function to create TF-IDF vectors
@@ -447,9 +556,39 @@ for feature, score in feature_idf[-10:]:
     print(f"- {feature}: {score:.4f}")
 ```
 
+    TF-IDF vectors created with 5000 features
+    True news vectors shape: (21417, 5000)
+    Fake news vectors shape: (23481, 5000)
+    
+    Top 10 most common terms (lowest IDF):
+    - said: 1.3128
+    - president: 1.6438
+    - trump: 1.7077
+    - people: 1.8450
+    - donald: 1.8907
+    - donald trump: 1.9059
+    - new: 2.0455
+    - told: 2.0895
+    - just: 2.1017
+    - state: 2.1404
+    
+    Top 10 most rare terms (highest IDF):
+    - ailes: 7.0872
+    - coulter: 7.0872
+    - zuma: 7.1478
+    - mnangagwa: 7.1689
+    - odinga: 7.1904
+    - conyers: 7.2578
+    - anc: 7.3055
+    - finicum: 7.5850
+    - 2016 realdonaldtrump: 7.6178
+    - amp: 8.7677
+
+
 ## 5. Baseline Model Evaluation
 
 Let's evaluate a simple baseline model using our engineered features:
+
 
 ```python
 # Create a combined dataset with all features
@@ -468,12 +607,25 @@ combined_final = combined_final.sample(frac=1, random_state=42).reset_index(drop
 # Select numeric features for model evaluation
 numeric_features = [f for f in feature_columns if combined_final[f].dtype in [np.int64, np.float64]]
 
+# Check for missing values
+missing_values = combined_final[numeric_features].isnull().sum()
+print("Features with missing values:")
+print(missing_values[missing_values > 0])
+
 # Define X and y
 X = combined_final[numeric_features]
 y = combined_final['label']
 
 # Create train/test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Handle missing values with imputation
+from sklearn.impute import SimpleImputer
+imputer = SimpleImputer(strategy='mean')
+
+# Fit imputer on training data and transform both training and test data
+X_train_imputed = pd.DataFrame(imputer.fit_transform(X_train), columns=X_train.columns)
+X_test_imputed = pd.DataFrame(imputer.transform(X_test), columns=X_test.columns)
 
 # Create and evaluate a baseline logistic regression model
 from sklearn.linear_model import LogisticRegression
@@ -482,11 +634,11 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # Initialize model
 model = LogisticRegression(max_iter=1000, random_state=42)
 
-# Fit the model
-model.fit(X_train, y_train)
+# Fit the model on imputed data
+model.fit(X_train_imputed, y_train)
 
-# Make predictions
-y_pred = model.predict(X_test)
+# Make predictions on imputed data
+y_pred = model.predict(X_test_imputed)
 
 # Evaluate the model
 print("Baseline Model Evaluation (Engineered Features Only)")
@@ -508,25 +660,83 @@ plt.savefig('confusion_matrix.png')
 plt.show()
 ```
 
+    Features with missing values:
+    said_per_1000_words                    715
+    quotes_per_1000_words                  715
+    emotional_per_1000_words               715
+    question_exclamation_per_1000_words    715
+    first_person_per_1000_words            715
+    second_person_per_1000_words           715
+    economy_per_1000_words                 715
+    healthcare_per_1000_words              715
+    immigration_per_1000_words             715
+    foreign_policy_per_1000_words          715
+    environment_per_1000_words             715
+    dtype: int64
+    Baseline Model Evaluation (Engineered Features Only)
+    Accuracy: 0.9997772828507795
+    
+    Classification Report:
+                  precision    recall  f1-score   support
+    
+               0       1.00      1.00      1.00      4696
+               1       1.00      1.00      1.00      4284
+    
+        accuracy                           1.00      8980
+       macro avg       1.00      1.00      1.00      8980
+    weighted avg       1.00      1.00      1.00      8980
+    
+    
+    Confusion Matrix:
+    [[4696    0]
+     [   2 4282]]
+
+
+
+    
+![png](output_15_1.png)
+    
+
+
 Let's also evaluate a model that combines TF-IDF features with our engineered features:
+
 
 ```python
 # Convert sparse TF-IDF matrices to DataFrames for easier handling
-from scipy.sparse import hstack
+from scipy.sparse import vstack
+from sklearn.preprocessing import normalize
 
-# Combine true and fake vectors
-all_vectors = hstack([true_vectors, fake_vectors])
+# The error occurs because true_vectors and fake_vectors have different row counts
+# We need to use the same feature space (columns) but keep rows separate
+print(f"True vectors shape: {true_vectors.shape}")
+print(f"Fake vectors shape: {fake_vectors.shape}")
 
-# Create train/test split with TF-IDF vectors
-from sklearn.model_selection import train_test_split
+# Create labels arrays for each dataset
+true_labels = np.ones(true_vectors.shape[0])
+fake_labels = np.zeros(fake_vectors.shape[0])
 
-# Create labels array
-labels = np.concatenate([np.ones(true_vectors.shape[0]), np.zeros(fake_vectors.shape[0])])
-
-# Split TF-IDF vectors and labels
-X_tfidf_train, X_tfidf_test, y_tfidf_train, y_tfidf_test = train_test_split(
-    all_vectors, labels, test_size=0.2, random_state=42, stratify=labels
+# Split each dataset separately using the same random state
+X_true_train, X_true_test, y_true_train, y_true_test = train_test_split(
+    true_vectors, true_labels, test_size=0.2, random_state=42
 )
+
+X_fake_train, X_fake_test, y_fake_train, y_fake_test = train_test_split(
+    fake_vectors, fake_labels, test_size=0.2, random_state=42
+)
+
+# Combine the train and test sets
+X_tfidf_train = vstack([X_true_train, X_fake_train])
+y_tfidf_train = np.concatenate([y_true_train, y_fake_train])
+
+X_tfidf_test = vstack([X_true_test, X_fake_test])
+y_tfidf_test = np.concatenate([y_true_test, y_fake_test])
+
+# Shuffle the training data
+indices = np.arange(X_tfidf_train.shape[0])
+np.random.seed(42)
+np.random.shuffle(indices)
+X_tfidf_train = X_tfidf_train[indices]
+y_tfidf_train = y_tfidf_train[indices]
 
 # Initialize model for TF-IDF only
 tfidf_model = LogisticRegression(max_iter=1000, random_state=42)
@@ -543,17 +753,160 @@ print("Accuracy:", accuracy_score(y_tfidf_test, y_tfidf_pred))
 print("\nClassification Report:")
 print(classification_report(y_tfidf_test, y_tfidf_pred))
 
-# Now let's create a model that combines both types of features
-# This is a bit more complex since we need to align the samples
-# In a real implementation, you would use a FeatureUnion or a custom transformer
-# For this demonstration, we'll use a simpler approach
-print("\nNext step would be to create a combined model with both TF-IDF and engineered features")
-print("This would typically be implemented using sklearn's Pipeline and FeatureUnion")
+# Plot confusion matrix
+cm_tfidf = confusion_matrix(y_tfidf_test, y_tfidf_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm_tfidf, annot=True, fmt='d', cmap='Blues', cbar=False)
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.title('TF-IDF Model Confusion Matrix')
+plt.savefig('tfidf_confusion_matrix.png')
+plt.show()
 ```
+
+    True vectors shape: (21417, 5000)
+    Fake vectors shape: (23481, 5000)
+    TF-IDF Only Model Evaluation
+    Accuracy: 0.9839661507627213
+    
+    Classification Report:
+                  precision    recall  f1-score   support
+    
+             0.0       0.99      0.98      0.98      4697
+             1.0       0.98      0.99      0.98      4284
+    
+        accuracy                           0.98      8981
+       macro avg       0.98      0.98      0.98      8981
+    weighted avg       0.98      0.98      0.98      8981
+    
+
+
+
+    
+![png](output_17_1.png)
+    
+
+
+
+```python
+# Analysis of Misclassified Examples
+# Let's examine the few examples that were misclassified by our best model
+
+# For the engineered features model
+misclassified_indices = np.where(y_pred != y_test)[0]
+print(f"Number of misclassified examples: {len(misclassified_indices)}")
+
+if len(misclassified_indices) > 0:
+    for idx in misclassified_indices:
+        print(f"\nMisclassified example {idx}:")
+        print(f"True label: {y_test.iloc[idx]}")
+        print(f"Predicted label: {y_pred[idx]}")
+        print(f"Top features:")
+        for feature in feature_importance['Feature'].head(5):
+            print(f"- {feature}: {X_test.iloc[idx][feature]}")
+```
+
+    Number of misclassified examples: 2
+    
+    Misclassified example 2717:
+    True label: 1
+    Predicted label: 0
+    Top features:
+    - said_count: 3.0
+    - told_count: 0.0
+    - question_count: 5.0
+    - according_to_count: 0.0
+    - question_exclamation_per_1000_words: 13.736263736263735
+    
+    Misclassified example 2776:
+    True label: 1
+    Predicted label: 0
+    Top features:
+    - said_count: 14.0
+    - told_count: 6.0
+    - question_count: 0.0
+    - according_to_count: 13.0
+    - question_exclamation_per_1000_words: 0.0
+
+
+
+```python
+# Feature Correlation Analysis
+# Let's examine correlations between our top features
+
+# Calculate correlation matrix for top features
+top_features = feature_importance['Feature'].head(10).tolist()
+correlation_matrix = X.loc[:, top_features].corr()
+
+# Plot correlation heatmap
+plt.figure(figsize=(12, 10))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+plt.title('Correlation Between Top Features')
+plt.tight_layout()
+plt.savefig('feature_correlation.png')
+plt.show()
+```
+
+
+    
+![png](output_19_0.png)
+    
+
+
+
+```python
+# Feature Distribution Across Categories
+# Let's visualize how top features vary across different news subjects
+
+# Since the subject column isn't in our feature datasets, we need to get it from the original datasets
+# Get subject column from original datasets
+true_subjects = true_news[['subject']].copy()
+true_subjects['label'] = 'Real'
+true_subjects['original_index'] = true_subjects.index
+
+fake_subjects = fake_news[['subject']].copy() 
+fake_subjects['label'] = 'Fake'
+fake_subjects['original_index'] = fake_subjects.index
+
+# Get top feature values from feature datasets
+top_feature = feature_importance['Feature'].iloc[0]  # Use the most important feature
+true_feature = pd.DataFrame({
+    'feature_value': true_news_features[top_feature],
+    'original_index': true_news_features.index
+})
+
+fake_feature = pd.DataFrame({
+    'feature_value': fake_news_features[top_feature],
+    'original_index': fake_news_features.index
+})
+
+# Merge subject with feature value
+true_combined = pd.merge(true_subjects, true_feature, on='original_index')
+fake_combined = pd.merge(fake_subjects, fake_feature, on='original_index')
+
+# Combine both datasets
+combined_for_plot = pd.concat([true_combined, fake_combined], ignore_index=True)
+
+# Now plot
+plt.figure(figsize=(14, 8))
+sns.boxplot(x='subject', y='feature_value', hue='label', data=combined_for_plot)
+plt.xticks(rotation=45, ha='right')
+plt.title(f'Distribution of {top_feature} by Subject')
+plt.tight_layout()
+plt.savefig('feature_by_subject.png')
+plt.show()
+```
+
+
+    
+![png](output_20_0.png)
+    
+
 
 ## 6. Preparing Final Datasets for Model Fine-tuning
 
 Now I'll prepare the final datasets for model fine-tuning, including train/validation/test splits:
+
 
 ```python
 # Create final dataset with enhanced cleaning
@@ -595,9 +948,27 @@ test_df.to_csv('test_fake_news.csv', index=False)
 print("Train, validation, and test sets saved to CSV files")
 ```
 
+    Class distribution:
+    label
+    0    23481
+    1    21417
+    Name: count, dtype: int64
+    Class balance: label
+    0    0.522985
+    1    0.477015
+    Name: proportion, dtype: float64
+    Final dataset saved as 'fake_news_preprocessed.csv'
+    Dataset splits:
+    Training set: 31428 samples (70.0%)
+    Validation set: 6735 samples (15.0%)
+    Test set: 6735 samples (15.0%)
+    Train, validation, and test sets saved to CSV files
+
+
 ## 7. Recommendations for Model Fine-tuning
 
 Based on our analysis and feature engineering, here are recommendations for model fine-tuning:
+
 
 ```python
 # Define list of recommendations
@@ -619,9 +990,23 @@ for i, rec in enumerate(recommendations, 1):
     print(f"{i}. {rec}")
 ```
 
+    Recommendations for Model Fine-tuning:
+    1. Start with simple baseline models (Logistic Regression, Naive Bayes) to establish benchmarks
+    2. Use both engineered features and text-based features (TF-IDF or embeddings) for best performance
+    3. Consider transformer-based models like BERT or RoBERTa for advanced text representation
+    4. Monitor for signs of the model learning unwanted patterns or shortcuts
+    5. Perform cross-validation to ensure robust performance evaluation
+    6. Analyze misclassifications to identify remaining biases or patterns
+    7. Consider ensemble methods that combine multiple models
+    8. Test on external datasets to ensure generalization beyond the ISOT dataset
+    9. Use stratified sampling throughout to maintain class balance
+    10. Implement regularization to prevent overfitting to dataset-specific patterns
+
+
 ## 8. Suggested Model Training Pipeline
 
 Here's a suggested pipeline for training a fake news detection model:
+
 
 ```python
 # Outline of a comprehensive model training pipeline
@@ -679,7 +1064,13 @@ print("It demonstrates how to combine text features and engineered features")
 print("And how to perform hyperparameter optimization with cross-validation")
 ```
 
+    The code above outlines a comprehensive model training pipeline
+    It demonstrates how to combine text features and engineered features
+    And how to perform hyperparameter optimization with cross-validation
+
+
 ## 9. Summary and Next Steps
+
 
 ```python
 summary = """
@@ -706,5 +1097,28 @@ By following these steps, we can develop models that effectively distinguish bet
 
 print(summary)
 ```
+
+    
+    In this notebook, I've performed the following key tasks:
+    
+    1. Enhanced data cleaning to remove dataset-specific patterns while preserving legitimate signals
+    2. Engineered a comprehensive set of features capturing stylistic, structural, and content differences
+    3. Created text representations using TF-IDF vectorization
+    4. Evaluated baseline models to establish benchmarks
+    5. Prepared finalized datasets for model training with proper train/validation/test splits
+    6. Provided recommendations for model fine-tuning
+    
+    The analysis suggests that both engineered features and text-based features are valuable for distinguishing between real and fake news. The Reuters pattern in true news has been addressed, and we've identified multiple legitimate signals that can help models learn substantive differences.
+    
+    Next steps would include:
+    1. Training models using the prepared datasets
+    2. Experimenting with more sophisticated text representation techniques
+    3. Fine-tuning transformer-based models like BERT
+    4. Evaluating models on external datasets
+    5. Analyzing error cases to further refine the approach
+    
+    By following these steps, we can develop models that effectively distinguish between real and fake news based on substantive characteristics rather than dataset-specific artifacts.
+    
+
 
 This notebook provides a comprehensive approach to preparing the ISOT Fake News Dataset for model fine-tuning, addressing the biases we identified in our exploratory analysis and creating features that capture legitimate differences between real and fake news.
