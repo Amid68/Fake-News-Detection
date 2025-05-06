@@ -6,6 +6,7 @@ This notebook focuses on exploratory data analysis of the ISOT Fake News Dataset
 
 First, I'll import the necessary libraries and load our datasets.
 
+
 ```python
 # Import necessary libraries
 import pandas as pd
@@ -36,21 +37,33 @@ pd.set_option('display.width', 1000)
 pd.set_option('display.max_colwidth', 200)
 ```
 
+    [nltk_data] Downloading package stopwords to /Users/amid/nltk_data...
+    [nltk_data]   Package stopwords is already up-to-date!
+    [nltk_data] Downloading package punkt to /Users/amid/nltk_data...
+    [nltk_data]   Package punkt is already up-to-date!
+
+
 Now I'll load both datasets and take a quick look at them:
+
 
 ```python
 # Load the datasets
-true_news = pd.read_csv('True.csv')
-fake_news = pd.read_csv('Fake.csv')
+true_news = pd.read_csv('../data/ISOT/True.csv')
+fake_news = pd.read_csv('../data/ISOT/Fake.csv')
 
 # Display basic info about the datasets
 print("True News Dataset Shape:", true_news.shape)
 print("Fake News Dataset Shape:", fake_news.shape)
 ```
 
+    True News Dataset Shape: (21417, 4)
+    Fake News Dataset Shape: (23481, 4)
+
+
 ## 2. Initial Data Exploration
 
 I'll examine both datasets to understand their structure and content.
+
 
 ```python
 # Display the first few rows of each dataset
@@ -58,12 +71,130 @@ print("True News Dataset Sample:")
 true_news.head(3)
 ```
 
+    True News Dataset Sample:
+
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>title</th>
+      <th>text</th>
+      <th>subject</th>
+      <th>date</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>As U.S. budget fight looms, Republicans flip their fiscal script</td>
+      <td>WASHINGTON (Reuters) - The head of a conservative Republican faction in the U.S. Congress, who voted this month for a huge expansion of the national debt to pay for tax cuts, called himself a “fis...</td>
+      <td>politicsNews</td>
+      <td>December 31, 2017</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>U.S. military to accept transgender recruits on Monday: Pentagon</td>
+      <td>WASHINGTON (Reuters) - Transgender people will be allowed for the first time to enlist in the U.S. military starting on Monday as ordered by federal courts, the Pentagon said on Friday, after Pres...</td>
+      <td>politicsNews</td>
+      <td>December 29, 2017</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Senior U.S. Republican senator: 'Let Mr. Mueller do his job'</td>
+      <td>WASHINGTON (Reuters) - The special counsel investigation of links between Russia and President Trump’s 2016 election campaign should continue without interference in 2018, despite calls from some ...</td>
+      <td>politicsNews</td>
+      <td>December 31, 2017</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
 ```python
 print("Fake News Dataset Sample:")
 fake_news.head(3)
 ```
 
+    Fake News Dataset Sample:
+
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>title</th>
+      <th>text</th>
+      <th>subject</th>
+      <th>date</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Donald Trump Sends Out Embarrassing New Year’s Eve Message; This is Disturbing</td>
+      <td>Donald Trump just couldn t wish all Americans a Happy New Year and leave it at that. Instead, he had to give a shout out to his enemies, haters and  the very dishonest fake news media.  The former...</td>
+      <td>News</td>
+      <td>December 31, 2017</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Drunk Bragging Trump Staffer Started Russian Collusion Investigation</td>
+      <td>House Intelligence Committee Chairman Devin Nunes is going to have a bad day. He s been under the assumption, like many of us, that the Christopher Steele-dossier was what prompted the Russia inve...</td>
+      <td>News</td>
+      <td>December 31, 2017</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Sheriff David Clarke Becomes An Internet Joke For Threatening To Poke People ‘In The Eye’</td>
+      <td>On Friday, it was revealed that former Milwaukee Sheriff David Clarke, who was being considered for Homeland Security Secretary in Donald Trump s administration, has an email scandal of his own.In...</td>
+      <td>News</td>
+      <td>December 30, 2017</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
 Let's check the columns in each dataset to ensure they have similar structures:
+
 
 ```python
 # Check columns in each dataset
@@ -77,9 +208,28 @@ print("\nMissing Values in Fake News:")
 print(fake_news.isnull().sum())
 ```
 
+    True News Columns: ['title', 'text', 'subject', 'date']
+    Fake News Columns: ['title', 'text', 'subject', 'date']
+    
+    Missing Values in True News:
+    title      0
+    text       0
+    subject    0
+    date       0
+    dtype: int64
+    
+    Missing Values in Fake News:
+    title      0
+    text       0
+    subject    0
+    date       0
+    dtype: int64
+
+
 ## 3. Identifying the "(Reuters)" Pattern
 
 I suspect that true news articles contain a specific pattern "(Reuters)" that might lead to model overfitting. Let's investigate this:
+
 
 ```python
 # Check for "(Reuters)" in the text of true news articles
@@ -94,7 +244,23 @@ for i in range(3):
     print(true_news['text'].iloc[i][:200])
 ```
 
+    Number of true news articles containing '(Reuters)': 21247
+    Percentage: 99.21%
+    
+    Sample of true news beginning:
+    
+    Article 1 beginning:
+    WASHINGTON (Reuters) - The head of a conservative Republican faction in the U.S. Congress, who voted this month for a huge expansion of the national debt to pay for tax cuts, called himself a “fiscal 
+    
+    Article 2 beginning:
+    WASHINGTON (Reuters) - Transgender people will be allowed for the first time to enlist in the U.S. military starting on Monday as ordered by federal courts, the Pentagon said on Friday, after Presiden
+    
+    Article 3 beginning:
+    WASHINGTON (Reuters) - The special counsel investigation of links between Russia and President Trump’s 2016 election campaign should continue without interference in 2018, despite calls from some Trum
+
+
 Let's also check if fake news ever contains this pattern:
+
 
 ```python
 # Check if fake news articles contain "(Reuters)"
@@ -103,11 +269,16 @@ print(f"Number of fake news articles containing '(Reuters)': {fake_reuters_count
 print(f"Percentage: {fake_reuters_count / len(fake_news) * 100:.2f}%")
 ```
 
+    Number of fake news articles containing '(Reuters)': 9
+    Percentage: 0.04%
+
+
 I'm checking for the "(Reuters)" pattern because if all true news articles contain this pattern and fake news doesn't, our model might learn to classify articles based on this pattern alone rather than learning the actual substantive differences. This would lead to poor generalization when applied to new data without this specific marker.
 
 ## 4. Exploring Other Potential Patterns or Biases
 
 Now I'll look for other patterns or markers that might create similar biases:
+
 
 ```python
 # Function to check for common prefixes/suffixes in the text
@@ -144,7 +315,23 @@ for prefix, count in fake_patterns['prefixes'][:5]:
     print(f"Prefix: '{prefix}' - Count: {count}")
 ```
 
+    Common patterns in True News:
+    Prefix: 'WASHINGTON (Reuters) - Preside' - Count: 744
+    Prefix: 'WASHINGTON (Reuters) - U.S. Pr' - Count: 690
+    Prefix: 'WASHINGTON (Reuters) - The U.S' - Count: 577
+    Prefix: 'WASHINGTON (Reuters) - Republi' - Count: 323
+    Prefix: 'WASHINGTON (Reuters) - U.S. Se' - Count: 296
+    
+    Common patterns in Fake News:
+    Prefix: 'Tune in to the Alternate Curre' - Count: 203
+    Prefix: 'https://www.youtube.com/watch?' - Count: 68
+    Prefix: 'Shawn Helton 21st Century Wire' - Count: 36
+    Prefix: 'Patrick Henningsen 21st Centur' - Count: 32
+    Prefix: 'Amateur president Donald Trump' - Count: 17
+
+
 Let's analyze location patterns in true news articles:
+
 
 ```python
 # Analyze location patterns in true news
@@ -169,7 +356,14 @@ print(f"Fake news articles with apparent location datelines: {fake_locations_pat
 print(f"Percentage: {fake_locations_pattern / len(fake_news) * 100:.2f}%")
 ```
 
+    Most common locations in True News:
+    [('WASHINGTON', 6392), ('LONDON', 705), ('NEW YORK', 696), ('MOSCOW', 623), ('BERLIN', 500), ('BEIJING', 433), ('BRUSSELS', 346), ('BEIRUT', 346), ('PARIS', 301), ('ANKARA', 247)]
+    Fake news articles with apparent location datelines: 1
+    Percentage: 0.00%
+
+
 Let's also look at common sources mentioned in both datasets:
+
 
 ```python
 # Function to extract potential source patterns
@@ -198,9 +392,17 @@ print("\nMost common sources in Fake News:")
 print(Counter(fake_sources).most_common(10))
 ```
 
+    Most common sources in True News:
+    [('(Reuters)', 21249), ('(SPD)', 150), ('(FDP)', 144), ('(AfD)', 140), ('(CDU)', 103), ('(SDF)', 95), ('(Trump)', 88), ('(KRG)', 88), ('(NAFTA)', 85), ('(PKK)', 83)]
+    
+    Most common sources in Fake News:
+    [('(s)', 409), ('(ACR)', 217), ('(id)', 174), ('(a)', 130), ('(R)', 109), ('(US)', 79), ('(D)', 74), ('(b)', 73), ('(DHS)', 64), ('(c)', 55)]
+
+
 ## 5. Text Length Analysis
 
 I'll analyze the text length distribution for both real and fake news to identify any significant differences:
+
 
 ```python
 # Add text length as a feature
@@ -227,11 +429,25 @@ print("Text Length Statistics:")
 print(combined_df.groupby('label')['text_length'].describe())
 ```
 
+
+    
+![png](output_20_0.png)
+    
+
+
+    Text Length Statistics:
+             count         mean          std  min     25%     50%     75%      max
+    label                                                                         
+    Fake   23481.0  2547.396235  2532.884399  1.0  1433.0  2166.0  3032.0  51794.0
+    Real   21417.0  2383.278517  1684.835730  1.0   914.0  2222.0  3237.0  29781.0
+
+
 Analyzing text length is important because significant differences between real and fake news could become a feature that the model relies on too heavily. For instance, if fake news articles are consistently shorter, the model might classify short articles as fake regardless of content.
 
 ## 6. Basic Content Cleaning
 
 Now I'll create a basic cleaning function to remove the "(Reuters)" pattern and any other identified markers that might bias our model:
+
 
 ```python
 # Function to clean text
@@ -282,11 +498,24 @@ for i in range(3):
     print(f"Cleaned text beginning: {true_news['cleaned_text'].iloc[i][:100]}")
 ```
 
+    Sample of cleaned true news:
+    
+    Original text beginning: WASHINGTON (Reuters) - The head of a conservative Republican faction in the U.S. Congress, who voted
+    Cleaned text beginning: WASHINGTON - The head of a conservative Republican faction in the U.S. Congress, who voted this mont
+    
+    Original text beginning: WASHINGTON (Reuters) - Transgender people will be allowed for the first time to enlist in the U.S. m
+    Cleaned text beginning: WASHINGTON - Transgender people will be allowed for the first time to enlist in the U.S. military st
+    
+    Original text beginning: WASHINGTON (Reuters) - The special counsel investigation of links between Russia and President Trump
+    Cleaned text beginning: WASHINGTON - The special counsel investigation of links between Russia and President Trump’s 2016 el
+
+
 I'm removing these patterns because they could create artificial signals that the model might latch onto during training. By removing them, I'm forcing the model to learn the actual stylistic and content differences between real and fake news rather than relying on specific markers.
 
 ## 7. Content Analysis
 
 Let's analyze the actual content differences between real and fake news using word frequencies:
+
 
 ```python
 # Function to get most common words
@@ -325,7 +554,15 @@ print("\nMost common words in Fake News:")
 print(fake_common_words)
 ```
 
+    Most common words in True News:
+    [('said', 99045), ('trump', 54322), ('would', 31528), ('president', 26456), ('state', 19760), ('government', 18323), ('new', 16786), ('states', 16628), ('house', 16548), ('also', 15953), ('united', 15576), ('republican', 15347), ('people', 15255), ('told', 14244), ('could', 13710), ('one', 12704), ('last', 12614), ('party', 12462), ('washington', 12431), ('two', 11624)]
+    
+    Most common words in Fake News:
+    [('trump', 74285), ('said', 31151), ('people', 26016), ('president', 25788), ('would', 23461), ('one', 23013), ('clinton', 18091), ('obama', 17935), ('like', 17666), ('donald', 17243), ('also', 15246), ('news', 14206), ('new', 14201), ('even', 13700), ('hillary', 13691), ('white', 12799), ('time', 12792), ('state', 12543), ('via', 11408), ('media', 11065)]
+
+
 Let's analyze which words are disproportionately common in each dataset:
+
 
 ```python
 # Function to analyze word ratio between datasets
@@ -389,7 +626,35 @@ print("\nWords much more common in true news:")
 print(more_in_true[['word', 'true_count', 'fake_count', 'true_fake_ratio']].head(10))
 ```
 
+    Words much more common in fake news:
+           word  fake_count  true_count  fake_true_ratio
+    20  clinton       18091           0         180911.0
+    2     obama       17935           0         179351.0
+    18     like       17666           0         176661.0
+    17   donald       17243           0         172431.0
+    28     news       14206           0         142061.0
+    1      even       13700           0         137001.0
+    12  hillary       13691           0         136911.0
+    7     white       12799           0         127991.0
+    29     time       12792           0         127921.0
+    30      via       11408           0         114081.0
+    
+    Words much more common in true news:
+              word  true_count  fake_count  true_fake_ratio
+    26  government       18323           0         183231.0
+    14      states       16628           0         166281.0
+    3        house       16548           0         165481.0
+    15      united       15576           0         155761.0
+    23  republican       15347           0         153471.0
+    22        told       14244           0         142441.0
+    5        could       13710           0         137101.0
+    13        last       12614           0         126141.0
+    27       party       12462           0         124621.0
+    0   washington       12431           0         124311.0
+
+
 Let's create word clouds to visualize the most common words in each dataset:
+
 
 ```python
 # Create word clouds
@@ -410,9 +675,22 @@ create_wordcloud(true_news['cleaned_text'], 'True News Word Cloud')
 create_wordcloud(fake_news['cleaned_text'], 'Fake News Word Cloud')
 ```
 
+
+    
+![png](output_28_0.png)
+    
+
+
+
+    
+![png](output_28_1.png)
+    
+
+
 ## 8. Topic Analysis
 
 Let's try to identify the main topics in each dataset:
+
 
 ```python
 # Simple topic analysis using TF-IDF
@@ -464,7 +742,23 @@ for i, topic in enumerate(fake_topics):
     print(f"Topic {i+1}: {', '.join(topic)}")
 ```
 
+    Topics in True News:
+    Topic 1: trump, clinton, said, campaign, president, republican, election, presidential, white, russia
+    Topic 2: korea, north, china, nuclear, korean, missile, south, sanctions, pyongyang, united
+    Topic 3: said, state, syria, iran, islamic, syrian, saudi, myanmar, military, al
+    Topic 4: tax, senate, house, republicans, republican, obamacare, legislation, said, healthcare, congress
+    Topic 5: eu, britain, brexit, european, said, minister, party, talks, union, merkel
+    
+    Topics in Fake News:
+    Topic 1: trump, donald, president, twitter, campaign, realdonaldtrump, just, republican, people, said
+    Topic 2: obama, people, police, said, black, president, gun, america, law, year
+    Topic 3: boiler, acr, pm, room, radio, join, 00, broadcast, animals, tune
+    Topic 4: clinton, hillary, sanders, campaign, democratic, state, emails, email, foundation, bernie
+    Topic 5: russia, fbi, russian, comey, intelligence, investigation, news, information, director, putin
+
+
 Let's analyze policy area coverage in both datasets:
+
 
 ```python
 # Define policy areas and related terms
@@ -524,9 +818,29 @@ plt.savefig('policy_coverage.png')
 plt.show()
 ```
 
+    Policy area coverage comparison:
+          Policy Area  True News (per doc)  Fake News (per doc)  Fake/True Ratio
+    0         economy             1.463277             0.588093         0.401901
+    1      healthcare             0.711397             0.466249         0.655399
+    2     immigration             0.721343             0.602700         0.835525
+    3  foreign_policy             1.178036             0.410545         0.348499
+    4     environment             0.850819             0.572463         0.672837
+
+
+
+    <Figure size 1200x600 with 0 Axes>
+
+
+
+    
+![png](output_32_2.png)
+    
+
+
 ## 9. Citation Analysis
 
 Let's examine how sources are cited in both datasets:
+
 
 ```python
 # Function to analyze citation patterns
@@ -616,9 +930,45 @@ plt.savefig('citation_frequency.png')
 plt.show()
 ```
 
+    Most common citation patterns in True News:
+    - 'the U': 85 occurrences
+    - 'U': 75 occurrences
+    - 'North Korea': 60 occurrences
+    - 'media reports': 50 occurrences
+    - 'Saudi Arabia': 34 occurrences
+    
+    Most common citation patterns in Fake News:
+    - 'the report': 59 occurrences
+    - 'police': 39 occurrences
+    - 'Politico': 32 occurrences
+    - 'U': 32 occurrences
+    - 'reports': 30 occurrences
+    
+    Citation phrase frequency comparison (per 1000 words):
+      Citation Phrase  True News (per 1000 words)  Fake News (per 1000 words)  Ratio (True/Fake)
+    0            said                    8.744218                    2.135530           4.094635
+    1            told                    1.726265                    0.904086           1.909404
+    2    according to                    0.743019                    0.816837           0.909629
+    3        reported                    0.287448                    0.292842           0.981581
+    4          stated                    0.020515                    0.101840           0.201439
+    5       announced                    0.220199                    0.182951           1.203597
+    6         claimed                    0.080238                    0.197945           0.405354
+
+
+
+    <Figure size 1200x600 with 0 Axes>
+
+
+
+    
+![png](output_34_2.png)
+    
+
+
 ## 10. Summary of Findings and Next Steps
 
 Based on my exploratory data analysis, here are the key findings:
+
 
 ```python
 # Create a summary of findings
@@ -636,6 +986,16 @@ print("Key Findings from Exploratory Data Analysis:")
 for i, finding in enumerate(findings, 1):
     print(f"{i}. {finding}")
 ```
+
+    Key Findings from Exploratory Data Analysis:
+    1. 99.21% of real news articles contain '(Reuters)', making it a strong bias signal
+    2. Real news articles typically begin with a location dateline (e.g., 'WASHINGTON') followed by '(Reuters)'
+    3. Text length distributions differ between real and fake news, but not dramatically
+    4. Vocabulary usage shows meaningful differences: real news uses more formal institutional language while fake news is more personality-focused
+    5. Real news has more citations and source attributions than fake news
+    6. Real news provides more substantive policy coverage across most policy areas
+    7. Topic analysis shows different focuses: real news focuses on formal reporting while fake news leans toward political personalities
+
 
 In the next notebook, I'll focus on:
 
