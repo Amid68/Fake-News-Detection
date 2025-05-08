@@ -1,6 +1,6 @@
-# Part 3: Fine-tuning DistilBERT for Fake News Detection
+# Part 3: Fine-tuning TinyBERT for Fake News Detection
 
-In this notebook, I'll build on our previous exploratory data analysis and feature engineering work to fine-tune a DistilBERT model for fake news detection. While our engineered features achieved impressive results, transformer models like DistilBERT can capture more complex linguistic patterns that might further improve performance or provide better generalization to new data.
+In this notebook, I'll build on our previous exploratory data analysis and feature engineering work to fine-tune a TinyBERT model for fake news detection. While our engineered features achieved impressive results, transformer models like TinyBERT can capture complex linguistic patterns that might further improve performance or provide better generalization to new data. TinyBERT is a smaller, more efficient version of BERT that maintains good performance while requiring fewer computational resources.
 
 ## 1. Setup and Library Installation
 
@@ -15,8 +15,7 @@ First, I'll import the necessary libraries and install any missing packages.
     Requirement already satisfied: transformers in /usr/local/lib/python3.11/dist-packages (4.51.1)
     Requirement already satisfied: datasets in /usr/local/lib/python3.11/dist-packages (3.5.0)
     Requirement already satisfied: torch in /usr/local/lib/python3.11/dist-packages (2.5.1+cu124)
-    Collecting evaluate
-      Downloading evaluate-0.4.3-py3-none-any.whl.metadata (9.2 kB)
+    Requirement already satisfied: evaluate in /usr/local/lib/python3.11/dist-packages (0.4.3)
     Requirement already satisfied: scikit-learn in /usr/local/lib/python3.11/dist-packages (1.2.2)
     Requirement already satisfied: filelock in /usr/local/lib/python3.11/dist-packages (from transformers) (3.18.0)
     Requirement already satisfied: huggingface-hub<1.0,>=0.30.0 in /usr/local/lib/python3.11/dist-packages (from transformers) (0.30.2)
@@ -33,8 +32,7 @@ First, I'll import the necessary libraries and install any missing packages.
     Requirement already satisfied: pandas in /usr/local/lib/python3.11/dist-packages (from datasets) (2.2.3)
     Requirement already satisfied: xxhash in /usr/local/lib/python3.11/dist-packages (from datasets) (3.5.0)
     Requirement already satisfied: multiprocess<0.70.17 in /usr/local/lib/python3.11/dist-packages (from datasets) (0.70.16)
-    Collecting fsspec<=2024.12.0,>=2023.1.0 (from fsspec[http]<=2024.12.0,>=2023.1.0->datasets)
-      Downloading fsspec-2024.12.0-py3-none-any.whl.metadata (11 kB)
+    Requirement already satisfied: fsspec<=2024.12.0,>=2023.1.0 in /usr/local/lib/python3.11/dist-packages (from fsspec[http]<=2024.12.0,>=2023.1.0->datasets) (2024.12.0)
     Requirement already satisfied: aiohttp in /usr/local/lib/python3.11/dist-packages (from datasets) (3.11.16)
     Requirement already satisfied: typing-extensions>=4.8.0 in /usr/local/lib/python3.11/dist-packages (from torch) (4.13.1)
     Requirement already satisfied: networkx in /usr/local/lib/python3.11/dist-packages (from torch) (3.4.2)
@@ -42,22 +40,15 @@ First, I'll import the necessary libraries and install any missing packages.
     Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.4.127 in /usr/local/lib/python3.11/dist-packages (from torch) (12.4.127)
     Requirement already satisfied: nvidia-cuda-runtime-cu12==12.4.127 in /usr/local/lib/python3.11/dist-packages (from torch) (12.4.127)
     Requirement already satisfied: nvidia-cuda-cupti-cu12==12.4.127 in /usr/local/lib/python3.11/dist-packages (from torch) (12.4.127)
-    Collecting nvidia-cudnn-cu12==9.1.0.70 (from torch)
-      Downloading nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl.metadata (1.6 kB)
-    Collecting nvidia-cublas-cu12==12.4.5.8 (from torch)
-      Downloading nvidia_cublas_cu12-12.4.5.8-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
-    Collecting nvidia-cufft-cu12==11.2.1.3 (from torch)
-      Downloading nvidia_cufft_cu12-11.2.1.3-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
-    Collecting nvidia-curand-cu12==10.3.5.147 (from torch)
-      Downloading nvidia_curand_cu12-10.3.5.147-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
-    Collecting nvidia-cusolver-cu12==11.6.1.9 (from torch)
-      Downloading nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_x86_64.whl.metadata (1.6 kB)
-    Collecting nvidia-cusparse-cu12==12.3.1.170 (from torch)
-      Downloading nvidia_cusparse_cu12-12.3.1.170-py3-none-manylinux2014_x86_64.whl.metadata (1.6 kB)
+    Requirement already satisfied: nvidia-cudnn-cu12==9.1.0.70 in /usr/local/lib/python3.11/dist-packages (from torch) (9.1.0.70)
+    Requirement already satisfied: nvidia-cublas-cu12==12.4.5.8 in /usr/local/lib/python3.11/dist-packages (from torch) (12.4.5.8)
+    Requirement already satisfied: nvidia-cufft-cu12==11.2.1.3 in /usr/local/lib/python3.11/dist-packages (from torch) (11.2.1.3)
+    Requirement already satisfied: nvidia-curand-cu12==10.3.5.147 in /usr/local/lib/python3.11/dist-packages (from torch) (10.3.5.147)
+    Requirement already satisfied: nvidia-cusolver-cu12==11.6.1.9 in /usr/local/lib/python3.11/dist-packages (from torch) (11.6.1.9)
+    Requirement already satisfied: nvidia-cusparse-cu12==12.3.1.170 in /usr/local/lib/python3.11/dist-packages (from torch) (12.3.1.170)
     Requirement already satisfied: nvidia-nccl-cu12==2.21.5 in /usr/local/lib/python3.11/dist-packages (from torch) (2.21.5)
     Requirement already satisfied: nvidia-nvtx-cu12==12.4.127 in /usr/local/lib/python3.11/dist-packages (from torch) (12.4.127)
-    Collecting nvidia-nvjitlink-cu12==12.4.127 (from torch)
-      Downloading nvidia_nvjitlink_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+    Requirement already satisfied: nvidia-nvjitlink-cu12==12.4.127 in /usr/local/lib/python3.11/dist-packages (from torch) (12.4.127)
     Requirement already satisfied: triton==3.1.0 in /usr/local/lib/python3.11/dist-packages (from torch) (3.1.0)
     Requirement already satisfied: sympy==1.13.1 in /usr/local/lib/python3.11/dist-packages (from torch) (1.13.1)
     Requirement already satisfied: mpmath<1.4,>=1.1.0 in /usr/local/lib/python3.11/dist-packages (from sympy==1.13.1->torch) (1.3.0)
@@ -91,63 +82,6 @@ First, I'll import the necessary libraries and install any missing packages.
     Requirement already satisfied: tcmlib==1.* in /usr/local/lib/python3.11/dist-packages (from tbb==2022.*->mkl->numpy>=1.17->transformers) (1.2.0)
     Requirement already satisfied: intel-cmplr-lib-rt in /usr/local/lib/python3.11/dist-packages (from mkl_umath->numpy>=1.17->transformers) (2024.2.0)
     Requirement already satisfied: intel-cmplr-lib-ur==2024.2.0 in /usr/local/lib/python3.11/dist-packages (from intel-openmp<2026,>=2024->mkl->numpy>=1.17->transformers) (2024.2.0)
-    Downloading nvidia_cublas_cu12-12.4.5.8-py3-none-manylinux2014_x86_64.whl (363.4 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m363.4/363.4 MB[0m [31m4.7 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
-    [?25hDownloading nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl (664.8 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m664.8/664.8 MB[0m [31m2.5 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
-    [?25hDownloading nvidia_cufft_cu12-11.2.1.3-py3-none-manylinux2014_x86_64.whl (211.5 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m211.5/211.5 MB[0m [31m5.3 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
-    [?25hDownloading nvidia_curand_cu12-10.3.5.147-py3-none-manylinux2014_x86_64.whl (56.3 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m56.3/56.3 MB[0m [31m31.5 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
-    [?25hDownloading nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_x86_64.whl (127.9 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m127.9/127.9 MB[0m [31m13.6 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
-    [?25hDownloading nvidia_cusparse_cu12-12.3.1.170-py3-none-manylinux2014_x86_64.whl (207.5 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m207.5/207.5 MB[0m [31m2.2 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
-    [?25hDownloading nvidia_nvjitlink_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl (21.1 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m21.1/21.1 MB[0m [31m70.3 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
-    [?25hDownloading evaluate-0.4.3-py3-none-any.whl (84 kB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m84.0/84.0 kB[0m [31m6.2 MB/s[0m eta [36m0:00:00[0m
-    [?25hDownloading fsspec-2024.12.0-py3-none-any.whl (183 kB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m183.9/183.9 kB[0m [31m12.3 MB/s[0m eta [36m0:00:00[0m
-    [?25hInstalling collected packages: nvidia-nvjitlink-cu12, nvidia-curand-cu12, nvidia-cufft-cu12, nvidia-cublas-cu12, fsspec, nvidia-cusparse-cu12, nvidia-cudnn-cu12, nvidia-cusolver-cu12, evaluate
-      Attempting uninstall: nvidia-nvjitlink-cu12
-        Found existing installation: nvidia-nvjitlink-cu12 12.8.93
-        Uninstalling nvidia-nvjitlink-cu12-12.8.93:
-          Successfully uninstalled nvidia-nvjitlink-cu12-12.8.93
-      Attempting uninstall: nvidia-curand-cu12
-        Found existing installation: nvidia-curand-cu12 10.3.9.90
-        Uninstalling nvidia-curand-cu12-10.3.9.90:
-          Successfully uninstalled nvidia-curand-cu12-10.3.9.90
-      Attempting uninstall: nvidia-cufft-cu12
-        Found existing installation: nvidia-cufft-cu12 11.3.3.83
-        Uninstalling nvidia-cufft-cu12-11.3.3.83:
-          Successfully uninstalled nvidia-cufft-cu12-11.3.3.83
-      Attempting uninstall: nvidia-cublas-cu12
-        Found existing installation: nvidia-cublas-cu12 12.8.4.1
-        Uninstalling nvidia-cublas-cu12-12.8.4.1:
-          Successfully uninstalled nvidia-cublas-cu12-12.8.4.1
-      Attempting uninstall: fsspec
-        Found existing installation: fsspec 2025.3.2
-        Uninstalling fsspec-2025.3.2:
-          Successfully uninstalled fsspec-2025.3.2
-      Attempting uninstall: nvidia-cusparse-cu12
-        Found existing installation: nvidia-cusparse-cu12 12.5.8.93
-        Uninstalling nvidia-cusparse-cu12-12.5.8.93:
-          Successfully uninstalled nvidia-cusparse-cu12-12.5.8.93
-      Attempting uninstall: nvidia-cudnn-cu12
-        Found existing installation: nvidia-cudnn-cu12 9.3.0.75
-        Uninstalling nvidia-cudnn-cu12-9.3.0.75:
-          Successfully uninstalled nvidia-cudnn-cu12-9.3.0.75
-      Attempting uninstall: nvidia-cusolver-cu12
-        Found existing installation: nvidia-cusolver-cu12 11.7.3.90
-        Uninstalling nvidia-cusolver-cu12-11.7.3.90:
-          Successfully uninstalled nvidia-cusolver-cu12-11.7.3.90
-    [31mERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-    gcsfs 2024.10.0 requires fsspec==2024.10.0, but you have fsspec 2024.12.0 which is incompatible.
-    bigframes 1.36.0 requires rich<14,>=12.4.4, but you have rich 14.0.0 which is incompatible.
-    pylibcugraph-cu12 24.12.0 requires pylibraft-cu12==24.12.*, but you have pylibraft-cu12 25.2.0 which is incompatible.
-    pylibcugraph-cu12 24.12.0 requires rmm-cu12==24.12.*, but you have rmm-cu12 25.2.0 which is incompatible.[0m[31m
-    [0mSuccessfully installed evaluate-0.4.3 fsspec-2024.12.0 nvidia-cublas-cu12-12.4.5.8 nvidia-cudnn-cu12-9.1.0.70 nvidia-cufft-cu12-11.2.1.3 nvidia-curand-cu12-10.3.5.147 nvidia-cusolver-cu12-11.6.1.9 nvidia-cusparse-cu12-12.3.1.170 nvidia-nvjitlink-cu12-12.4.127
 
 
 
@@ -157,7 +91,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import Trainer, TrainingArguments
 from transformers import EarlyStoppingCallback
 from datasets import Dataset as HFDataset
@@ -184,12 +118,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 ```
 
-    2025-05-06 07:53:52.728666: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-    WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-    E0000 00:00:1746518032.930675      62 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-    E0000 00:00:1746518032.991943      62 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-
-
     Using device: cuda
 
 
@@ -201,9 +129,9 @@ I'll load the preprocessed datasets from our previous work. If you're running th
 ```python
 # Load the preprocessed datasets
 try:
-    train_df = pd.read_csv('/kaggle/input/isot-processed-and-splitted/train_fake_news.csv')
-    val_df = pd.read_csv('/kaggle/input/isot-processed-and-splitted/val_fake_news.csv') 
-    test_df = pd.read_csv('/kaggle/input/isot-processed-and-splitted/test_fake_news.csv')
+    train_df = pd.read_csv('/kaggle/input/train_fake_news.csv')
+    val_df = pd.read_csv('/kaggle/input/val_fake_news.csv') 
+    test_df = pd.read_csv('/kaggle/input/test_fake_news.csv')
     
     print(f"Training set: {train_df.shape}")
     print(f"Validation set: {val_df.shape}")
@@ -286,7 +214,7 @@ Next, I'll convert our pandas DataFrames to the Hugging Face Dataset format, whi
 ```python
 # Function to convert pandas DataFrames to HuggingFace Datasets
 def convert_to_hf_dataset(df):
-    # For DistilBERT, we'll use both title and text
+    # For TinyBERT, we'll use both title and text
     df['text'] = df['title'] + " " + df['enhanced_cleaned_text']
     
     # Convert to HuggingFace Dataset format
@@ -310,7 +238,7 @@ print(f"Test dataset: {len(test_dataset)} examples")
 
 ## 3. Prepare Tokenizer and Model
 
-Now I'll set up the DistilBERT tokenizer and model:
+Now I'll set up the TinyBERT tokenizer and model:
 
 
 ```python
@@ -348,8 +276,10 @@ test_dataset = test_dataset.map(clean_dataset)
 
 
 ```python
-# Initialize the DistilBERT tokenizer
-tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+# Initialize the TinyBERT tokenizer
+# TinyBERT uses the same tokenizer as BERT
+
+tokenizer = BertTokenizer.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
 
 # Define the maximum sequence length
 max_length = 512  # This is the maximum that BERT models can handle
@@ -379,19 +309,11 @@ test_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'labe
 ```
 
 
-    tokenizer_config.json:   0%|          | 0.00/48.0 [00:00<?, ?B/s]
-
-
-
     vocab.txt:   0%|          | 0.00/232k [00:00<?, ?B/s]
 
 
 
-    tokenizer.json:   0%|          | 0.00/466k [00:00<?, ?B/s]
-
-
-
-    config.json:   0%|          | 0.00/483 [00:00<?, ?B/s]
+    config.json:   0%|          | 0.00/409 [00:00<?, ?B/s]
 
 
 
@@ -428,13 +350,13 @@ def compute_metrics(pred):
 
 ## 5. Initialize Model for Fine-tuning
 
-Now I'll initialize the DistilBERT model for sequence classification:
+Now I'll initialize the TinyBERT model for sequence classification:
 
 
 ```python
-# Initialize the DistilBERT model for sequence classification
-model = DistilBertForSequenceClassification.from_pretrained(
-    'distilbert-base-uncased',
+# Initialize the TinyBERT model for sequence classification
+model = BertForSequenceClassification.from_pretrained(
+    'huawei-noah/TinyBERT_General_4L_312D',
     num_labels=2  # Binary classification: 0 for fake, 1 for real
 )
 
@@ -442,53 +364,61 @@ model = DistilBertForSequenceClassification.from_pretrained(
 model.to(device)
 ```
 
-    Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+
+    pytorch_model.bin:   0%|          | 0.00/62.7M [00:00<?, ?B/s]
 
 
-
-    model.safetensors:   0%|          | 0.00/268M [00:00<?, ?B/s]
-
-
-    Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+    Some weights of BertForSequenceClassification were not initialized from the model checkpoint at huawei-noah/TinyBERT_General_4L_312D and are newly initialized: ['classifier.bias', 'classifier.weight']
     You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
 
 
 
 
 
-    DistilBertForSequenceClassification(
-      (distilbert): DistilBertModel(
-        (embeddings): Embeddings(
-          (word_embeddings): Embedding(30522, 768, padding_idx=0)
-          (position_embeddings): Embedding(512, 768)
-          (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
+    BertForSequenceClassification(
+      (bert): BertModel(
+        (embeddings): BertEmbeddings(
+          (word_embeddings): Embedding(30522, 312, padding_idx=0)
+          (position_embeddings): Embedding(512, 312)
+          (token_type_embeddings): Embedding(2, 312)
+          (LayerNorm): LayerNorm((312,), eps=1e-12, elementwise_affine=True)
           (dropout): Dropout(p=0.1, inplace=False)
         )
-        (transformer): Transformer(
+        (encoder): BertEncoder(
           (layer): ModuleList(
-            (0-5): 6 x TransformerBlock(
-              (attention): DistilBertSdpaAttention(
-                (dropout): Dropout(p=0.1, inplace=False)
-                (q_lin): Linear(in_features=768, out_features=768, bias=True)
-                (k_lin): Linear(in_features=768, out_features=768, bias=True)
-                (v_lin): Linear(in_features=768, out_features=768, bias=True)
-                (out_lin): Linear(in_features=768, out_features=768, bias=True)
+            (0-3): 4 x BertLayer(
+              (attention): BertAttention(
+                (self): BertSdpaSelfAttention(
+                  (query): Linear(in_features=312, out_features=312, bias=True)
+                  (key): Linear(in_features=312, out_features=312, bias=True)
+                  (value): Linear(in_features=312, out_features=312, bias=True)
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (output): BertSelfOutput(
+                  (dense): Linear(in_features=312, out_features=312, bias=True)
+                  (LayerNorm): LayerNorm((312,), eps=1e-12, elementwise_affine=True)
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
               )
-              (sa_layer_norm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
-              (ffn): FFN(
-                (dropout): Dropout(p=0.1, inplace=False)
-                (lin1): Linear(in_features=768, out_features=3072, bias=True)
-                (lin2): Linear(in_features=3072, out_features=768, bias=True)
-                (activation): GELUActivation()
+              (intermediate): BertIntermediate(
+                (dense): Linear(in_features=312, out_features=1200, bias=True)
+                (intermediate_act_fn): GELUActivation()
               )
-              (output_layer_norm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
+              (output): BertOutput(
+                (dense): Linear(in_features=1200, out_features=312, bias=True)
+                (LayerNorm): LayerNorm((312,), eps=1e-12, elementwise_affine=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
             )
           )
         )
+        (pooler): BertPooler(
+          (dense): Linear(in_features=312, out_features=312, bias=True)
+          (activation): Tanh()
+        )
       )
-      (pre_classifier): Linear(in_features=768, out_features=768, bias=True)
-      (classifier): Linear(in_features=768, out_features=2, bias=True)
-      (dropout): Dropout(p=0.2, inplace=False)
+      (dropout): Dropout(p=0.1, inplace=False)
+      (classifier): Linear(in_features=312, out_features=2, bias=True)
     )
 
 
@@ -503,8 +433,8 @@ Next, I'll configure the training parameters and create a Trainer:
 training_args = TrainingArguments(
     output_dir='./results',          # Output directory for model checkpoints
     num_train_epochs=3,              # Number of training epochs
-    per_device_train_batch_size=8,   # Batch size for training
-    per_device_eval_batch_size=16,   # Batch size for evaluation
+    per_device_train_batch_size=16,  # Increased batch size since TinyBERT is smaller
+    per_device_eval_batch_size=32,   # Increased batch size for evaluation
     warmup_steps=500,                # Number of warmup steps for learning rate scheduler
     weight_decay=0.01,               # Strength of weight decay
     logging_dir='./logs',            # Directory for storing logs
@@ -514,7 +444,8 @@ training_args = TrainingArguments(
     load_best_model_at_end=True,     # Load the best model at the end
     metric_for_best_model="f1",      # Use F1 score to determine the best model
     push_to_hub=False,               # Don't push to Hugging Face Hub
-    report_to="none"                 # Disable reporting to avoid wandb or other services
+    report_to="none",                 # Disable reporting to avoid wandb or other services
+    learning_rate=2e-5
 )
 
 # Create the Trainer
@@ -545,15 +476,19 @@ training_time = time.time() - start_time
 print(f"Training completed in {training_time/60:.2f} minutes")
 
 # Save the fine-tuned model
-trainer.save_model("./distilbert-fake-news-detector")
+trainer.save_model("./tinybert-fake-news-detector")
 ```
+
+
+    model.safetensors:   0%|          | 0.00/62.7M [00:00<?, ?B/s]
+
 
 
 
     <div>
 
-      <progress value='5895' max='5895' style='width:300px; height:20px; vertical-align: middle;'></progress>
-      [5895/5895 48:38, Epoch 3/3]
+      <progress value='2949' max='2949' style='width:300px; height:20px; vertical-align: middle;'></progress>
+      [2949/2949 08:57, Epoch 3/3]
     </div>
     <table border="1" class="dataframe">
   <thead>
@@ -570,36 +505,36 @@ trainer.save_model("./distilbert-fake-news-detector")
   <tbody>
     <tr>
       <td>1</td>
-      <td>0.004200</td>
-      <td>0.000038</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
+      <td>0.019500</td>
+      <td>0.008647</td>
+      <td>0.998070</td>
+      <td>0.998070</td>
+      <td>0.998072</td>
+      <td>0.998070</td>
     </tr>
     <tr>
       <td>2</td>
-      <td>0.000000</td>
-      <td>0.000297</td>
-      <td>0.999852</td>
-      <td>0.999852</td>
-      <td>0.999852</td>
-      <td>0.999852</td>
+      <td>0.013400</td>
+      <td>0.002532</td>
+      <td>0.999555</td>
+      <td>0.999555</td>
+      <td>0.999555</td>
+      <td>0.999555</td>
     </tr>
     <tr>
       <td>3</td>
-      <td>0.000000</td>
-      <td>0.000008</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
+      <td>0.002700</td>
+      <td>0.003985</td>
+      <td>0.999258</td>
+      <td>0.999258</td>
+      <td>0.999258</td>
+      <td>0.999258</td>
     </tr>
   </tbody>
 </table><p>
 
 
-    Training completed in 48.69 minutes
+    Training completed in 8.99 minutes
 
 
 ## 8. Evaluate Model Performance
@@ -617,7 +552,7 @@ print(f"Test results: {test_results}")
 
 
 
-    Test results: {'eval_loss': 0.0023615937680006027, 'eval_accuracy': 0.999554565701559, 'eval_f1': 0.999554556431033, 'eval_precision': 0.9995549446870654, 'eval_recall': 0.999554565701559, 'eval_runtime': 57.3478, 'eval_samples_per_second': 117.441, 'eval_steps_per_second': 3.679, 'epoch': 3.0}
+    Test results: {'eval_loss': 0.003912672400474548, 'eval_accuracy': 0.9991091314031181, 'eval_f1': 0.9991091190819527, 'eval_precision': 0.9991092833552526, 'eval_recall': 0.9991091314031181, 'eval_runtime': 10.1028, 'eval_samples_per_second': 666.65, 'eval_steps_per_second': 10.492, 'epoch': 3.0}
 
 
 Let's also look at the confusion matrix to get a better understanding of the errors:
@@ -641,8 +576,8 @@ plt.figure(figsize=(10, 8))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
 plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
-plt.title('DistilBERT Confusion Matrix')
-plt.savefig('distilbert_confusion_matrix.png')
+plt.title('TinyBERT Confusion Matrix')
+plt.savefig('tinybert_confusion_matrix.png')
 plt.show()
 
 # Print classification report
@@ -651,8 +586,8 @@ print(classification_report(y_true, y_preds, target_names=['Fake News', 'Real Ne
 ```
 
     Confusion Matrix:
-    [[3523    0]
-     [   3 3209]]
+    [[3521    2]
+     [   4 3208]]
 
 
 
@@ -710,7 +645,7 @@ if len(misclassified_indices) > 0:
     display(pd.DataFrame(misclassified_texts))
 ```
 
-    Number of misclassified examples: 3
+    Number of misclassified examples: 6
     
     Sample of misclassified examples:
 
@@ -742,42 +677,54 @@ if len(misclassified_indices) > 0:
   <tbody>
     <tr>
       <th>0</th>
-      <td>Trump on Twitter (August 10): Mitch McConnell</td>
-      <td>Real</td>
+      <td>Energy Department To Close Office Of Internat...</td>
       <td>Fake</td>
+      <td>Real</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>Uber joins forces with global public transport...</td>
+      <td>German broadcasters won't promote ex-Pink Floy...</td>
       <td>Real</td>
       <td>Fake</td>
     </tr>
     <tr>
       <th>2</th>
+      <td>Timeline: Zika's origin and global spread</td>
+      <td>Real</td>
+      <td>Fake</td>
+    </tr>
+    <tr>
+      <th>3</th>
       <td>'Gates of Hell': Iraqi army says fighting near...</td>
       <td>Real</td>
       <td>Fake</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Russia Claims They May Have Killed ISIS Leade...</td>
+      <td>Fake</td>
+      <td>Real</td>
     </tr>
   </tbody>
 </table>
 </div>
 
 
-## 10. Conclusions and Next Steps
+# 10. Conclusions from TinyBERT Fine-tuning
 
-In this notebook, I've fine-tuned a DistilBERT model for fake news detection on the ISOT dataset. Here are the key findings:
+In this notebook, I've fine-tuned a TinyBERT model for fake news detection on the ISOT dataset. Here are the key findings:
 
-1. **Performance Comparison**: The DistilBERT model achieved [insert accuracy here] accuracy, which is [better/worse/comparable] to our previous models using engineered features (99.98%) and TF-IDF (98.4%).
+1. **Performance Comparison**: The TinyBERT model achieved excellent accuracy, comparable to our previous models using engineered features (99.98%) and better than TF-IDF (98.4%).
 
-2. **Training Efficiency**: Despite being more complex, DistilBERT is quite efficient for fine-tuning, with the process completing in approximately [insert time] minutes.
+2. **Training Efficiency**: TinyBERT is significantly more efficient for fine-tuning than larger models like BERT or even DistilBERT, with the process completing faster while maintaining high accuracy.
 
-3. **Error Analysis**: Analysis of misclassified examples shows that DistilBERT struggles with [insert observations about errors].
+3. **Error Analysis**: Analysis of misclassified examples shows patterns that can guide further improvements in model robustness.
 
-4. **Generalization Potential**: Transformer models like DistilBERT likely have better generalization capabilities to new and unseen fake news, as they understand context and semantic meaning more deeply.
+4. **Generalization Potential**: Transformer models like TinyBERT likely have better generalization capabilities to new and unseen fake news, as they understand context and semantic meaning more deeply while being more efficient than larger models.
 
 ## Next Steps
 
-1. **Experiment with Other Pretrained Models**: Try fine-tuning larger models like BERT-base or RoBERTa to see if they offer improvements.
+1. **Experiment with Knowledge Distillation**: TinyBERT performs task-specific distillation, which could be applied to further improve performance by distilling from a larger BERT model specifically fine-tuned for fake news detection.
 
 2. **Combined Approach**: Develop an ensemble model that combines our engineered features with transformer-based features.
 
@@ -785,8 +732,8 @@ In this notebook, I've fine-tuned a DistilBERT model for fake news detection on 
 
 4. **Model Explainability**: Implement techniques like LIME or SHAP to understand which parts of text the model relies on for classification.
 
-5. **Deployment Considerations**: Optimize the model for inference time if it's to be used in a real-time application.
+5. **Deployment Considerations**: TinyBERT's smaller size makes it particularly suitable for deployment in resource-constrained environments or applications requiring low latency.
 
-The transformer-based approach offers a powerful complement to our feature engineering work, potentially providing better generalization to evolving fake news tactics and new domains.
+The transformer-based approach offers a powerful complement to our feature engineering work, potentially providing better generalization to evolving fake news tactics and new domains, while TinyBERT's efficiency makes it a practical choice for real-world applications.
 
-This notebook provides a comprehensive approach to fine-tuning DistilBERT for fake news detection, building on our previous work of exploratory data analysis and feature engineering. The transformer-based approach captures complex linguistic patterns that may complement our engineered features and improve model robustness.
+This notebook provides a comprehensive approach to fine-tuning TinyBERT for fake news detection, building on our previous work of exploratory data analysis and feature engineering. The transformer-based approach captures complex linguistic patterns that may complement our engineered features and improve model robustness, while TinyBERT's smaller size offers efficiency advantages over larger transformer models.
