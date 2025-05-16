@@ -1,8 +1,14 @@
 # Fake News Dataset Analysis: Understanding Linguistic Patterns for Transformer Model Comparison
 
-In this analysis, I explore the underlying patterns that distinguish real from fake news in the ISOT dataset. By identifying these patterns, I can better interpret how different transformer models learn to detect deceptive content and evaluate their effectiveness at capturing linguistic and stylistic differences. This analysis provides crucial context for comparing pre-trained language models like DistilBERT and TinyBERT on fake news detection tasks.
+## Introduction
+
+This notebook documents the detailed analysis of linguistic patterns that distinguish real from fake news in the ISOT dataset. This analysis is crucial for understanding how different transformer models learn to detect deceptive content and for evaluating their effectiveness at capturing linguistic and stylistic differences. By identifying these patterns, we can better interpret model performance and provide context for comparing lightweight pretrained models like DistilBERT, TinyBERT, MobileBERT, and RoBERTa on fake news detection tasks.
 
 ## 1. Setup and Data Loading
+
+### Library Imports
+
+First, I import the necessary libraries for data manipulation, visualization, and text analysis:
 
 
 ```python
@@ -31,6 +37,16 @@ warnings.filterwarnings('ignore')
     [nltk_data]   Package punkt is already up-to-date!
 
 
+I've selected these libraries for the following reasons:
+- `pandas` and `numpy` for efficient data manipulation and numerical operations
+- `matplotlib` and `seaborn` for creating informative visualizations
+- `re` for regular expression pattern matching in text analysis
+- `Counter` for frequency analysis of words and patterns
+- `WordCloud` for visualizing common terms in an intuitive way
+- `CountVectorizer` and `TfidfVectorizer` for text feature extraction
+- `nltk` for natural language processing tasks like tokenization and stopword removal
+- `sklearn.model_selection` for data splitting utilities
+
 
 ```python
 # Set plot style
@@ -44,6 +60,12 @@ pd.set_option('display.max_rows', 20)
 pd.set_option('display.width', 1000)
 pd.set_option('display.max_colwidth', 200)
 ```
+
+I configure visualization settings to ensure clear and readable plots, and set pandas display options to show more comprehensive information during analysis.
+
+### Loading the Dataset
+
+Now I load the datasets, checking first for previously cleaned versions:
 
 
 ```python
@@ -67,7 +89,14 @@ except:
     Loaded previously cleaned datasets
 
 
+This approach is efficient because:
+1. It attempts to use previously cleaned data if available, saving processing time
+2. It falls back to loading raw data if needed
+3. It ensures consistent labeling of the data for analysis
+
 ## 2. Critical Dataset Bias Identification
+
+Before proceeding with linguistic analysis, I investigate potential biases in the dataset that could affect model training:
 
 
 ```python
@@ -93,11 +122,18 @@ print(f"Percentage: {fake_reuters_count / len(fake_news) * 100:.2f}%")
     Percentage: 0.04%
 
 
-This analysis reveals that 99.21% of true news articles contain "(Reuters)" while only 0.04% of fake news does. This pattern creates a significant bias that would allow models to "cheat" by using this marker rather than learning substantive differences between real and fake news content.
+This analysis reveals a critical finding: 99.21% of true news articles contain the "(Reuters)" pattern, while only 0.04% of fake news articles do. This pattern creates a significant bias that would allow models to "cheat" by using this marker rather than learning substantive differences between real and fake news content.
+
+This finding is crucial for our comparative evaluation of transformer models because:
+1. Models might learn to rely on this simple pattern rather than deeper linguistic features
+2. This would lead to poor generalization when applied to news from other sources
+3. It would make model comparison less meaningful, as all models might simply learn this shortcut
 
 For a fair comparison of transformer models on this dataset, we need to remove these dataset-specific markers.
 
 ## 3. Enhanced Data Cleaning
+
+Based on the identified biases, I implement an enhanced cleaning function:
 
 
 ```python
@@ -149,6 +185,12 @@ def enhanced_clean_text(text, is_true_news=True):
     return cleaned_text
 ```
 
+This cleaning function is carefully designed to:
+1. Remove dataset-specific patterns that could create shortcuts for models
+2. Preserve legitimate stylistic differences between real and fake news
+3. Handle different types of artifacts in each dataset
+4. Apply appropriate cleaning based on the source type
+
 
 ```python
 # Apply enhanced cleaning
@@ -160,9 +202,11 @@ By carefully removing dataset-specific patterns while preserving legitimate styl
 
 ## 4. News Content Analysis
 
-I'll now analyze different aspects of news content to understand what linguistic patterns transformer models need to learn for effective fake news detection.
+After cleaning the data, I analyze different aspects of news content to understand what linguistic patterns transformer models need to learn for effective fake news detection.
 
 ### 4.1 Text Structure Analysis
+
+I begin by analyzing basic structural features of the text:
 
 
 ```python
@@ -198,6 +242,12 @@ true_news['avg_sentence_length'] = true_news['word_count'] / true_news['sentence
 fake_news['avg_sentence_length'] = fake_news['word_count'] / fake_news['sentence_count']
 ```
 
+These metrics capture different aspects of text structure:
+- Text length (in characters) measures overall content volume
+- Word count provides a measure of information density
+- Average word length indicates vocabulary complexity
+- Sentence count and average sentence length reflect syntactic complexity
+
 
 ```python
 # Compare text structure statistics
@@ -213,9 +263,13 @@ print("Average sentence length in Fake News: {:.2f} words".format(fake_news['avg
     Average sentence length in Fake News: 17.78 words
 
 
-Transformer models processing this dataset will need to detect that real news tends to use longer words (technical vocabulary) but may have comparable sentence lengths. This suggests that the models must be sensitive to vocabulary sophistication rather than just sentence complexity.
+The results show that real news tends to use longer words (5.16 characters on average) compared to fake news (4.81 characters), suggesting more technical or sophisticated vocabulary. However, sentence lengths are comparable (17.98 words for real news vs. 17.78 for fake news).
+
+This analysis informs our understanding of what transformer models need to detect: they must be sensitive to vocabulary sophistication rather than just sentence complexity. The attention mechanisms in transformer architectures should allow them to focus on word choice patterns while processing the text.
 
 ### 4.2 Citation Patterns Analysis
+
+Next, I analyze how sources are cited in real versus fake news:
 
 
 ```python
@@ -244,6 +298,8 @@ true_news['quotes_per_1000_words'] = true_news['quote_count'] * 1000 / true_news
 fake_news['quotes_per_1000_words'] = fake_news['quote_count'] * 1000 / fake_news['word_count']
 ```
 
+I normalize these counts by text length to ensure fair comparison between articles of different lengths.
+
 
 ```python
 # Compare citation patterns
@@ -262,9 +318,16 @@ print("Quotes in Fake News: {:.2f}".format(fake_news['quotes_per_1000_words'].me
     Quotes in Fake News: 0.46
 
 
-The significant difference in citation frequency between real and fake news represents an important pattern that effective transformer models should capture. Real news articles contain approximately 8.74 mentions of 'said' per 1000 words compared to 2.14 in fake news. This attribution pattern is a key journalistic convention that models may learn to identify through their attention mechanisms.
+The analysis reveals a striking difference: real news articles contain approximately 10.16 mentions of 'said' per 1000 words compared to only 2.20 in fake news. This reflects journalistic conventions of attribution and source citation that are more common in legitimate reporting.
+
+This finding is particularly relevant for transformer models because:
+1. The self-attention mechanism should be able to detect these attribution patterns
+2. Models can learn to associate higher frequencies of attribution verbs with real news
+3. This pattern represents a legitimate stylistic difference rather than a dataset artifact
 
 ### 4.3 Emotional Language Analysis
+
+I analyze the use of emotional language and emphatic punctuation:
 
 
 ```python
@@ -319,9 +382,16 @@ print("Question/exclamation marks in Fake News: {:.2f}".format(fake_news['questi
     Question/exclamation marks in Fake News: 7.14
 
 
-Fake news demonstrates consistently higher usage of emotional language and emphatic punctuation. Transformer models will need to effectively identify these subtle stylistic differences in tone and intensity to achieve high accuracy. The self-attention mechanism in transformer architectures should allow them to detect emotional language in context.
+The results show that fake news uses significantly more emotional language (1.75 emotional words per 1000 words vs. 0.86 in real news) and dramatically more emphatic punctuation (7.14 question/exclamation marks per 1000 words vs. 0.40 in real news).
+
+This finding is important for transformer models because:
+1. The emotional tone difference is a key distinguishing feature between real and fake news
+2. Transformer attention mechanisms should be able to detect these patterns in context
+3. The models need to recognize when news content is attempting to evoke emotional responses rather than inform
 
 ### 4.4 Voice and Perspective Analysis
+
+I analyze the use of pronouns to understand differences in narrative voice:
 
 
 ```python
@@ -378,9 +448,16 @@ print("Second-person pronouns in Fake News: {:.2f}".format(fake_news['second_per
     Second-person pronouns in Fake News: 5.00
 
 
-A key difference is that fake news tends to use more first-person and second-person perspective, directly addressing or including the reader, while real news maintains a more objective third-person stance. Transformer models comparing these content types will need to detect these narrative voice differences.
+The analysis reveals that fake news uses significantly more first-person (12.00 vs. 4.78 per 1000 words) and second-person pronouns (5.00 vs. 0.55 per 1000 words) compared to real news.
+
+This difference in narrative voice is important for transformer models to detect because:
+1. Real news tends to maintain an objective third-person stance
+2. Fake news often directly addresses the reader or includes the author's perspective
+3. This difference in voice can be a reliable signal of journalistic standards
 
 ### 4.5 Policy Coverage Analysis
+
+I analyze how different policy areas are covered in real versus fake news:
 
 
 ```python
@@ -446,7 +523,7 @@ plt.title('Policy Area Coverage in Real vs. Fake News')
 plt.ylabel('Average Mentions per 1000 Words')
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig('policy_coverage.png')
+plt.savefig('./figures/policy_coverage.png')
 plt.show()
 ```
 
@@ -456,13 +533,20 @@ plt.show()
 
 
     
-![png](output_38_1.png)
+![png](output_43_1.png)
     
 
 
-The analysis shows real news contains substantially more coverage of substantive policy areas, particularly economy, foreign policy, and healthcare topics. Transformer models will need to detect both the presence of these policy discussions and their depth to differentiate between genuine reporting and fake news content.
+The analysis shows that real news contains substantially more coverage of substantive policy areas, particularly economy (2.74 vs. 0.77), foreign policy (2.95 vs. 0.66), and healthcare (1.22 vs. 0.71).
+
+This finding is significant for transformer models because:
+1. The depth of policy discussion is a key indicator of journalistic quality
+2. Models need to detect both the presence and depth of these policy discussions
+3. The attention mechanism in transformers should allow them to recognize when articles focus on substantive issues versus personality-driven content
 
 ## 5. Word Choice and Vocabulary Analysis
+
+I analyze the vocabulary differences between real and fake news:
 
 
 ```python
@@ -477,7 +561,7 @@ def create_wordcloud(text_series, title):
     plt.axis('off')
     plt.title(title)
     plt.tight_layout()
-    plt.savefig(f"{title.lower().replace(' ', '_')}.png")
+    plt.savefig(f"./figures/{title.lower().replace(' ', '_')}.png")
     plt.show()
 ```
 
@@ -490,15 +574,17 @@ create_wordcloud(fake_news['enhanced_cleaned_text'], 'Fake News Word Cloud')
 
 
     
-![png](output_41_0.png)
+![png](output_46_0.png)
     
 
 
 
     
-![png](output_41_1.png)
+![png](output_46_1.png)
     
 
+
+The word clouds provide a visual representation of the most common terms in each dataset, making it easier to identify thematic differences.
 
 
 ```python
@@ -538,9 +624,17 @@ print(fake_common_words)
     [('trump', 74287), ('said', 31156), ('people', 26024), ('president', 25800), ('would', 23461), ('one', 23014), ('clinton', 18094), ('obama', 17936), ('like', 17666), ('donald', 17244), ('also', 15246), ('news', 14211), ('new', 14201), ('even', 13700), ('hillary', 13692), ('time', 12799), ('white', 12798), ('state', 12543), ('via', 11408), ('media', 11068)]
 
 
-The vocabulary analysis shows that real news focuses more on institutional terms (government, states, party) while fake news emphasizes personalities (Trump, Clinton, Obama). Transformer models will need to be sensitive to these content focus differences, detecting when news emphasizes personalities over substance.
+The vocabulary analysis shows that:
+1. Real news focuses more on institutional terms (government, states, party)
+2. Fake news emphasizes personalities (Trump, Clinton, Obama)
+3. Both mention "said" frequently, but it's much more common in real news
+4. Fake news uses more informal language and includes terms like "media" and "via"
+
+Transformer models will need to be sensitive to these content focus differences, detecting when news emphasizes personalities over substance. The contextual embeddings in transformer architectures should allow them to understand these words in their proper context.
 
 ## 6. TF-IDF Analysis of Distinctive Terms
+
+Finally, I use TF-IDF analysis to identify the most distinctive terms in each dataset:
 
 
 ```python
@@ -620,93 +714,79 @@ for feature, score in feature_idf[-10:]:
     - amp: 8.7677
 
 
-This TF-IDF analysis identifies the most common terms across all articles and the most distinctive terms that appear rarely. Transformer models must learn to weigh common journalistic terms appropriately while also capturing the significance of distinctive terminology that may signal content reliability.
+The TF-IDF analysis identifies both common terms across all articles and distinctive terms that appear in few documents. This helps us understand what features might be most informative for classification.
 
-## 7. Key Pattern Summary and Implications for Transformer Models
+## 7. Implications for Transformer Model Comparison
 
-Based on the analysis, here are the key linguistic patterns that transformer models should learn to distinguish between real and fake news:
+Based on this linguistic analysis, I can draw several conclusions about what transformer models need to detect for effective fake news classification:
 
-### Summary Table of Key Linguistic Patterns
+1. **Attribution Patterns**: Real news uses more source attribution ("said", "told") than fake news. Transformer attention mechanisms should be able to detect these patterns.
 
-| Pattern Category | Real News Characteristics | Fake News Characteristics | Implications for Transformer Models |
-|------------------|---------------------------|---------------------------|-------------------------------------|
-| Attribution | High frequency of source citations (8.74 mentions/1000 words) | Low attribution to sources (2.14 mentions/1000 words) | Models must capture attribution patterns through attention to citation phrases |
-| Emotional Content | Predominantly neutral language | Higher emotional word usage | Models need sensitivity to emotional tone in context |
-| Voice | Third-person perspective | More direct reader address (second-person) | Models should detect shifts in perspective and narrative voice |
-| Policy Coverage | Substantive coverage of complex topics | Personality-focused with less policy depth | Models must recognize topic depth and substance vs. personality focus |
-| Punctuation | Minimal question/exclamation marks | More frequent emphatic punctuation | Models need to detect patterns of emphatic language markers |
-| Vocabulary | Institutional/governmental focus | Personality/individual focus | Models must recognize systematic vocabulary differences |
+2. **Emotional Language**: Fake news uses more emotional language and emphatic punctuation. Models need to recognize when content is attempting to evoke emotional responses rather than inform.
 
-## 8. Preparing Datasets for Model Comparison
+3. **Narrative Voice**: Real news maintains an objective third-person stance, while fake news uses more first-person and second-person pronouns. This difference in voice is a reliable signal of journalistic standards.
 
+4. **Policy Coverage**: Real news contains more substantive policy discussions across multiple domains. Models need to detect both the presence and depth of these policy discussions.
 
-```python
-# Create final datasets with clean text
-true_news_final = true_news[['title', 'enhanced_cleaned_text']].copy()
-true_news_final['label'] = 1  # 1 for real news
+5. **Vocabulary Differences**: Real news focuses on institutional terms, while fake news emphasizes personalities. The contextual embeddings in transformer architectures should allow them to understand these words in their proper context.
 
-fake_news_final = fake_news[['title', 'enhanced_cleaned_text']].copy()
-fake_news_final['label'] = 0  # 0 for fake news
-```
+These findings provide a framework for interpreting the performance of different transformer models in our comparative evaluation. Models that effectively capture these linguistic patterns should perform better at fake news detection.
+
+## 8. Data Preparation for Model Training
+
+Based on this analysis, I prepare the data for model training:
 
 
 ```python
-# Combine datasets
-combined_final = pd.concat([true_news_final, fake_news_final], axis=0, ignore_index=True)
-```
+# First, check if 'enhanced_cleaned_text' exists, otherwise use 'text'
+text_column = 'enhanced_cleaned_text' if 'enhanced_cleaned_text' in true_news.columns else 'text'
 
+# Add label columns to each dataframe before concatenating
+true_news['label'] = 1  # 1 for real news
+fake_news['label'] = 0  # 0 for fake news
 
-```python
-# Shuffle the dataset
-combined_final = combined_final.sample(frac=1, random_state=42).reset_index(drop=True)
-```
+# Combine datasets for splitting
+combined_df = pd.concat([
+    true_news[['title', text_column, 'label']],
+    fake_news[['title', text_column, 'label']]
+])
 
-
-```python
-# Create train, validation, and test splits
-train_df, temp_df = train_test_split(combined_final, test_size=0.3, random_state=42, stratify=combined_final['label'])
+# Split into train, validation, and test sets (70/15/15)
+train_df, temp_df = train_test_split(combined_df, test_size=0.3, random_state=42, stratify=combined_df['label'])
 val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42, stratify=temp_df['label'])
-```
 
-
-```python
-# Print dataset statistics
-print("Dataset splits:")
-print(f"Training set: {len(train_df)} samples ({len(train_df)/len(combined_final)*100:.1f}%)")
-print(f"Validation set: {len(val_df)} samples ({len(val_df)/len(combined_final)*100:.1f}%)")
-print(f"Test set: {len(test_df)} samples ({len(test_df)/len(combined_final)*100:.1f}%)")
-```
-
-    Dataset splits:
-    Training set: 31428 samples (70.0%)
-    Validation set: 6735 samples (15.0%)
-    Test set: 6735 samples (15.0%)
-
-
-
-```python
-# Save the splits
+# Save the datasets
 train_df.to_csv('./datasets/train_fake_news.csv', index=False)
 val_df.to_csv('./datasets/val_fake_news.csv', index=False)
 test_df.to_csv('./datasets/test_fake_news.csv', index=False)
-print("Train, validation, and test sets saved to CSV files")
+
+print(f"Training set: {train_df.shape}")
+print(f"Validation set: {val_df.shape}")
+print(f"Test set: {test_df.shape}")
 ```
 
-    Train, validation, and test sets saved to CSV files
+    Training set: (31428, 3)
+    Validation set: (6735, 3)
+    Test set: (6735, 3)
 
 
-## 9. Conclusions and Next Steps for Model Comparison
+This data preparation process:
+1. Combines the cleaned real and fake news datasets
+2. Converts labels to numeric format (0 for fake, 1 for real)
+3. Splits the data into training (70%), validation (15%), and test (15%) sets
+4. Ensures stratification to maintain the same class distribution in all splits
+5. Saves the prepared datasets for use in model training
 
-This comprehensive analysis of the ISOT dataset reveals clear linguistic patterns differentiating real from fake news. Understanding these patterns provides critical context for comparing how different transformer architectures learn to detect deceptive content.
+The resulting datasets will be used in subsequent notebooks to train and evaluate different transformer models for fake news detection.
 
-For transformer model comparison, we should evaluate whether models can effectively capture:
+## 9. Conclusion
 
-1. **Attribution patterns**: A key marker of journalistic standards
-2. **Emotional tone**: Detecting subjective language in deceptive content
-3. **Perspective shifts**: Recognizing changes in narrative voice
-4. **Content depth**: Differentiating substantive policy coverage from superficial content
-5. **Stylistic elements**: Identifying punctuation and emphasis patterns
+This analysis has provided deep insights into the linguistic patterns that distinguish real from fake news in the ISOT dataset. By identifying these patterns, we can better understand what features transformer models need to learn for effective fake news detection.
 
-The cleaned datasets prepared from this analysis will enable fair comparison of transformer models like DistilBERT and TinyBERT, allowing us to evaluate their performance, efficiency, and resource requirements while ensuring they learn meaningful content differences rather than dataset artifacts.
+The key findings include:
+1. Real news follows journalistic conventions like attribution and objective reporting
+2. Fake news uses more emotional language and direct reader address
+3. Real news contains more substantive policy discussions
+4. Vocabulary and focus differ significantly between the two types
 
-In the next phase, we'll fine-tune and compare several pre-trained transformer models on these prepared datasets to determine which architecture best captures these linguistic patterns while optimizing for performance and computational efficiency.
+These insights will inform our interpretation of model performance in the comparative evaluation of lightweight pretrained transformer models. By understanding what linguistic patterns each model needs to capture, we can better assess their strengths and limitations for fake news detection.

@@ -1,10 +1,14 @@
 # ISOT Fake News Dataset - Exploratory Data Analysis
 
-This notebook focuses on exploratory data analysis of the ISOT Fake News Dataset, which contains real news from Reuters.com and fake news from various unreliable sources. My goal is to understand the data characteristics and identify potential biases that might impact model training.
+## Introduction
+
+This notebook documents the exploratory data analysis (EDA) of the ISOT Fake News Dataset, which contains real news from Reuters.com and fake news from various unreliable sources. The goal of this analysis is to understand the data characteristics, identify potential biases, and prepare the data for subsequent modeling. This exploration is a critical first step in our fake news detection project as it informs preprocessing decisions and helps prevent models from learning spurious patterns.
 
 ## 1. Setup and Data Loading
 
-First, I'll import the necessary libraries and load our datasets.
+### Library Imports
+
+First, I import the necessary libraries for data manipulation, visualization, and text analysis:
 
 
 ```python
@@ -43,7 +47,20 @@ pd.set_option('display.max_colwidth', 200)
     [nltk_data]   Package punkt is already up-to-date!
 
 
-Now I'll load both datasets and take a quick look at them:
+I've chosen these libraries for the following reasons:
+- `pandas` and `numpy` for efficient data manipulation
+- `matplotlib` and `seaborn` for creating informative visualizations
+- `re` for regular expression pattern matching in text
+- `Counter` for frequency analysis
+- `WordCloud` for visualizing common terms
+- `CountVectorizer` for text feature extraction
+- `nltk` for natural language processing tasks
+
+The visualization settings are configured to ensure clear and readable plots, and warning messages are suppressed to maintain notebook readability.
+
+### Loading the Dataset
+
+Now I load both the real and fake news datasets:
 
 
 ```python
@@ -60,9 +77,17 @@ print("Fake News Dataset Shape:", fake_news.shape)
     Fake News Dataset Shape: (23481, 4)
 
 
+The ISOT dataset is split into two separate CSV files:
+1. `True.csv` containing real news articles from Reuters
+2. `Fake.csv` containing fake news articles from various unreliable sources
+
+This initial check of the dataset dimensions helps us understand the overall size and balance of our data. Having a relatively balanced dataset (21,417 real vs. 23,481 fake articles) is advantageous for model training as it reduces the risk of class imbalance problems.
+
 ## 2. Initial Data Exploration
 
-I'll examine both datasets to understand their structure and content.
+### Examining Dataset Structure
+
+I examine both datasets to understand their structure and content:
 
 
 ```python
@@ -193,7 +218,17 @@ fake_news.head(3)
 
 
 
-Let's check the columns in each dataset to ensure they have similar structures:
+This initial exploration reveals that both datasets have the same structure with four columns:
+- `title`: The headline of the article
+- `text`: The body content of the article
+- `subject`: The category or topic of the article
+- `date`: The publication date
+
+Examining the actual content shows clear differences in style and presentation between real and fake news articles. Real news articles from Reuters follow a more formal journalistic style with location datelines, while fake news articles often have more sensationalist headlines and less structured content.
+
+### Checking Data Completeness
+
+I check for missing values and confirm the column structure:
 
 
 ```python
@@ -226,9 +261,15 @@ print(fake_news.isnull().sum())
     dtype: int64
 
 
+This check confirms that:
+1. Both datasets have identical column structures
+2. There are no missing values in either dataset
+
+Having complete data without missing values simplifies our preprocessing pipeline, as we won't need to implement imputation strategies.
+
 ## 3. Identifying the "(Reuters)" Pattern
 
-I suspect that true news articles contain a specific pattern "(Reuters)" that might lead to model overfitting. Let's investigate this:
+One of the most important aspects of this analysis is identifying patterns that might lead to model overfitting. I investigate the presence of the "(Reuters)" pattern in the real news articles:
 
 
 ```python
@@ -259,8 +300,6 @@ for i in range(3):
     WASHINGTON (Reuters) - The special counsel investigation of links between Russia and President Trump’s 2016 election campaign should continue without interference in 2018, despite calls from some Trum
 
 
-Let's also check if fake news ever contains this pattern:
-
 
 ```python
 # Check if fake news articles contain "(Reuters)"
@@ -273,11 +312,15 @@ print(f"Percentage: {fake_reuters_count / len(fake_news) * 100:.2f}%")
     Percentage: 0.04%
 
 
-I'm checking for the "(Reuters)" pattern because if all true news articles contain this pattern and fake news doesn't, our model might learn to classify articles based on this pattern alone rather than learning the actual substantive differences. This would lead to poor generalization when applied to new data without this specific marker.
+This analysis reveals a critical finding: 99.21% of real news articles contain the "(Reuters)" pattern, while only 0.04% of fake news articles contain it. This is a significant potential source of bias.
+
+The concern here is that a machine learning model could learn to classify articles based solely on the presence of "(Reuters)" rather than learning the actual substantive differences between real and fake news. This would lead to poor generalization when applied to new data without this specific marker, such as real news from sources other than Reuters.
+
+This finding informs a key preprocessing decision: we should remove this pattern from the text to force the model to learn more meaningful features.
 
 ## 4. Exploring Other Potential Patterns or Biases
 
-Now I'll look for other patterns or markers that might create similar biases:
+I continue the investigation by looking for other patterns or markers that might create similar biases:
 
 
 ```python
@@ -330,7 +373,15 @@ for prefix, count in fake_patterns['prefixes'][:5]:
     Prefix: 'Amateur president Donald Trump' - Count: 17
 
 
-Let's analyze location patterns in true news articles:
+This analysis reveals additional patterns:
+1. Real news articles often begin with a location followed by "(Reuters)" - e.g., "WASHINGTON (Reuters)"
+2. Fake news articles have their own common patterns, like "Tune in to the Alternate Current" or URLs
+
+These patterns could also serve as easy shortcuts for a model to distinguish between classes without learning the actual content differences.
+
+### Location Pattern Analysis
+
+I analyze location patterns in real news articles:
 
 
 ```python
@@ -362,7 +413,15 @@ print(f"Percentage: {fake_locations_pattern / len(fake_news) * 100:.2f}%")
     Percentage: 0.00%
 
 
-Let's also look at common sources mentioned in both datasets:
+This analysis shows that:
+1. Real news articles frequently begin with location datelines, with "WASHINGTON" being the most common (6,392 articles)
+2. Fake news articles almost never use this journalistic convention (only 0.00% have similar patterns)
+
+The location dateline is another strong signal that could lead to overfitting if not addressed in preprocessing.
+
+### Source Pattern Analysis
+
+I also examine source patterns in both datasets:
 
 
 ```python
@@ -399,9 +458,15 @@ print(Counter(fake_sources).most_common(10))
     [('(s)', 409), ('(ACR)', 217), ('(id)', 174), ('(a)', 130), ('(R)', 109), ('(US)', 79), ('(D)', 74), ('(b)', 73), ('(DHS)', 64), ('(c)', 55)]
 
 
+This analysis reveals distinct patterns in how sources are cited:
+1. Real news predominantly cites "(Reuters)" with some political party abbreviations like "(SPD)" or "(CDU)"
+2. Fake news has different patterns, with many single-letter abbreviations like "(s)", "(a)", "(R)" that likely serve different purposes
+
+These differences in source citation patterns could also be learned by the model as shortcuts for classification.
+
 ## 5. Text Length Analysis
 
-I'll analyze the text length distribution for both real and fake news to identify any significant differences:
+I analyze the text length distribution for both real and fake news to identify any significant differences:
 
 
 ```python
@@ -421,7 +486,7 @@ plt.title('Distribution of Text Length for Real and Fake News')
 plt.xlabel('Text Length (characters)')
 plt.ylabel('Count')
 plt.xlim(0, combined_df['text_length'].quantile(0.99))  # Limit to 99th percentile for better visualization
-plt.savefig('text_length_distribution.png')
+plt.savefig('./figures/text_length_distribution.png')
 plt.show()
 
 # Print summary statistics
@@ -431,7 +496,7 @@ print(combined_df.groupby('label')['text_length'].describe())
 
 
     
-![png](output_20_0.png)
+![png](output_19_0.png)
     
 
 
@@ -442,11 +507,16 @@ print(combined_df.groupby('label')['text_length'].describe())
     Real   21417.0  2383.278517  1684.835730  1.0   914.0  2222.0  3237.0  29781.0
 
 
-Analyzing text length is important because significant differences between real and fake news could become a feature that the model relies on too heavily. For instance, if fake news articles are consistently shorter, the model might classify short articles as fake regardless of content.
+This analysis shows that:
+1. Fake news articles have a slightly higher mean length (2,547 characters) compared to real news (2,383 characters)
+2. Fake news articles have higher variance in length (std dev of 2,533 vs. 1,685 for real news)
+3. The distributions overlap significantly, but fake news has more extreme outliers
+
+While the length differences aren't dramatic, they could still influence model decisions. If a model gives too much weight to text length, it might misclassify longer real news articles as fake or shorter fake news articles as real.
 
 ## 6. Basic Content Cleaning
 
-Now I'll create a basic cleaning function to remove the "(Reuters)" pattern and any other identified markers that might bias our model:
+Based on the identified patterns, I create a cleaning function to remove potential sources of bias:
 
 
 ```python
@@ -510,11 +580,13 @@ for i in range(3):
     Cleaned text beginning: WASHINGTON - The special counsel investigation of links between Russia and President Trump’s 2016 el
 
 
-I'm removing these patterns because they could create artificial signals that the model might latch onto during training. By removing them, I'm forcing the model to learn the actual stylistic and content differences between real and fake news rather than relying on specific markers.
+This cleaning step is crucial for preventing model overfitting. By removing the "(Reuters)" pattern and other identified markers, I'm forcing the model to learn the actual stylistic and content differences between real and fake news rather than relying on specific markers.
+
+The verification shows that the cleaning successfully removes the "(Reuters)" pattern while preserving the rest of the content. This cleaned text will be more suitable for model training.
 
 ## 7. Content Analysis
 
-Let's analyze the actual content differences between real and fake news using word frequencies:
+To understand the actual content differences between real and fake news, I analyze word frequencies:
 
 
 ```python
@@ -538,469 +610,190 @@ def get_common_words(texts, n=20, min_length=3):
         if isinstance(text, str):
             # Tokenize, convert to lowercase, remove punctuation and stopwords
             words_in_text = [word.lower().strip(string.punctuation) for word in nltk.word_tokenize(text)]
-            words_in_text = [word for word in words_in_text if word not in stop_words and len(word) >= min_length and word.isalpha()]
+            words_in_text = [word for word in words_in_text if word not in stop_words and len(word) >= min_length]
             words.extend(words_in_text)
     
     return Counter(words).most_common(n)
 
-# Get common words for both datasets
+# Get most common words in cleaned texts
 true_common_words = get_common_words(true_news['cleaned_text'])
 fake_common_words = get_common_words(fake_news['cleaned_text'])
 
-print("Most common words in True News:")
+# Display results
+print("Most common words in Real News:")
 print(true_common_words)
 
 print("\nMost common words in Fake News:")
 print(fake_common_words)
 ```
 
-    Most common words in True News:
-    [('said', 99045), ('trump', 54322), ('would', 31528), ('president', 26456), ('state', 19760), ('government', 18323), ('new', 16786), ('states', 16628), ('house', 16548), ('also', 15953), ('united', 15576), ('republican', 15347), ('people', 15255), ('told', 14244), ('could', 13710), ('one', 12704), ('last', 12614), ('party', 12462), ('washington', 12431), ('two', 11624)]
+    Most common words in Real News:
+    [('said', 99045), ('trump', 54322), ('u.s', 38650), ('would', 31528), ('president', 26456), ('state', 19760), ('government', 18323), ('new', 16786), ('states', 16628), ('house', 16548), ('also', 15953), ('united', 15576), ('republican', 15347), ('people', 15255), ('told', 14244), ('could', 13710), ('one', 12704), ('last', 12614), ('party', 12462), ('washington', 12431)]
     
     Most common words in Fake News:
     [('trump', 74285), ('said', 31151), ('people', 26016), ('president', 25788), ('would', 23461), ('one', 23013), ('clinton', 18091), ('obama', 17935), ('like', 17666), ('donald', 17243), ('also', 15246), ('news', 14206), ('new', 14201), ('even', 13700), ('hillary', 13691), ('white', 12799), ('time', 12792), ('state', 12543), ('via', 11408), ('media', 11065)]
 
 
-Let's analyze which words are disproportionately common in each dataset:
+This analysis reveals the most frequent content words in each dataset, helping us understand the topical focus of real and fake news. Real news tends to focus more on political and international topics, while fake news often contains more sensationalist or emotionally charged language.
+
+### Word Clouds
+
+I create word clouds to visualize the most common terms in each dataset:
 
 
 ```python
-# Function to analyze word ratio between datasets
-def word_ratio_analysis(true_words, fake_words, min_count=1000):
+# Function to create word cloud
+def create_wordcloud(texts, title, max_words=100):
     """
-    Analyze the ratio of word frequencies between fake and real news
+    Create and display a word cloud from a list of texts
     
     Args:
-        true_words: Counter object with word counts from true news
-        fake_words: Counter object with word counts from fake news
-        min_count: Minimum count for a word to be considered
-        
-    Returns:
-        DataFrames with words more common in fake and true news respectively
+        texts: List of text strings
+        title: Title for the word cloud
+        max_words: Maximum number of words to include
     """
-    # Convert counters to dictionaries
-    true_dict = dict(true_words)
-    fake_dict = dict(fake_words)
+    # Combine all texts
+    text = ' '.join([str(t) for t in texts])
     
-    # Get all words
-    all_words = set(list(true_dict.keys()) + list(fake_dict.keys()))
+    # Create word cloud
+    wordcloud = WordCloud(
+        width=800, height=400,
+        background_color='white',
+        max_words=max_words,
+        contour_width=3,
+        contour_color='steelblue'
+    ).generate(text)
     
-    # Calculate ratios
-    word_ratios = []
-    for word in all_words:
-        true_count = true_dict.get(word, 0)
-        fake_count = fake_dict.get(word, 0)
-        
-        # Only consider words with sufficient frequency
-        if true_count + fake_count >= min_count:
-            # Add small value to avoid division by zero
-            fake_true_ratio = (fake_count + 0.1) / (true_count + 0.1)
-            true_fake_ratio = (true_count + 0.1) / (fake_count + 0.1)
-            
-            word_ratios.append({
-                'word': word,
-                'true_count': true_count,
-                'fake_count': fake_count,
-                'fake_true_ratio': fake_true_ratio,
-                'true_fake_ratio': true_fake_ratio
-            })
-    
-    # Convert to DataFrame and sort
-    df = pd.DataFrame(word_ratios)
-    more_in_fake = df.sort_values('fake_true_ratio', ascending=False).head(20)
-    more_in_true = df.sort_values('true_fake_ratio', ascending=False).head(20)
-    
-    return more_in_fake, more_in_true
-
-# Get words that are disproportionately common in each dataset
-more_in_fake, more_in_true = word_ratio_analysis(
-    dict(true_common_words), 
-    dict(fake_common_words),
-    min_count=1000
-)
-
-print("Words much more common in fake news:")
-print(more_in_fake[['word', 'fake_count', 'true_count', 'fake_true_ratio']].head(10))
-
-print("\nWords much more common in true news:")
-print(more_in_true[['word', 'true_count', 'fake_count', 'true_fake_ratio']].head(10))
-```
-
-    Words much more common in fake news:
-           word  fake_count  true_count  fake_true_ratio
-    20  clinton       18091           0         180911.0
-    2     obama       17935           0         179351.0
-    18     like       17666           0         176661.0
-    17   donald       17243           0         172431.0
-    28     news       14206           0         142061.0
-    1      even       13700           0         137001.0
-    12  hillary       13691           0         136911.0
-    7     white       12799           0         127991.0
-    29     time       12792           0         127921.0
-    30      via       11408           0         114081.0
-    
-    Words much more common in true news:
-              word  true_count  fake_count  true_fake_ratio
-    26  government       18323           0         183231.0
-    14      states       16628           0         166281.0
-    3        house       16548           0         165481.0
-    15      united       15576           0         155761.0
-    23  republican       15347           0         153471.0
-    22        told       14244           0         142441.0
-    5        could       13710           0         137101.0
-    13        last       12614           0         126141.0
-    27       party       12462           0         124621.0
-    0   washington       12431           0         124311.0
-
-
-Let's create word clouds to visualize the most common words in each dataset:
-
-
-```python
-# Create word clouds
-def create_wordcloud(text_series, title):
-    """Create and save wordcloud from text series"""
-    all_text = ' '.join([str(text) for text in text_series])
-    wordcloud = WordCloud(width=800, height=400, background_color='white', max_words=100, contour_width=3).generate(all_text)
-    
-    plt.figure(figsize=(10, 5))
+    # Display
+    plt.figure(figsize=(10, 6))
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
-    plt.title(title)
+    plt.title(title, fontsize=16)
     plt.tight_layout()
-    plt.savefig(f"{title.lower().replace(' ', '_')}.png")
+    plt.savefig(f"./figures/{title.lower().replace(' ', '_')}_wordcloud.png")
     plt.show()
 
-create_wordcloud(true_news['cleaned_text'], 'True News Word Cloud')
+# Create word clouds
+create_wordcloud(true_news['cleaned_text'], 'Real News Word Cloud')
 create_wordcloud(fake_news['cleaned_text'], 'Fake News Word Cloud')
 ```
 
 
     
-![png](output_28_0.png)
+![png](output_25_0.png)
     
 
 
 
     
-![png](output_28_1.png)
+![png](output_25_1.png)
     
 
 
-## 8. Topic Analysis
+The word clouds provide a visual representation of the most common terms in each dataset, making it easier to identify thematic differences between real and fake news.
 
-Let's try to identify the main topics in each dataset:
+## 8. Subject Distribution Analysis
+
+I analyze the distribution of subjects/categories in both datasets:
 
 
 ```python
-# Simple topic analysis using TF-IDF
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import NMF
-
-def extract_topics(texts, n_topics=5, n_words=10):
-    """
-    Extract topics from texts using NMF
-    
-    Args:
-        texts: List of text strings
-        n_topics: Number of topics to extract
-        n_words: Number of words per topic to display
-    
-    Returns:
-        List of topics (each topic is a list of words)
-    """
-    # Create TF-IDF vectors
-    tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
-    tfidf = tfidf_vectorizer.fit_transform(texts)
-    
-    # Run NMF
-    nmf = NMF(n_components=n_topics, random_state=42)
-    nmf.fit(tfidf)
-    
-    # Get feature names
-    feature_names = tfidf_vectorizer.get_feature_names_out()
-    
-    # Extract topics
-    topics = []
-    for topic_idx, topic in enumerate(nmf.components_):
-        top_features_idx = topic.argsort()[:-n_words-1:-1]
-        top_features = [feature_names[i] for i in top_features_idx]
-        topics.append(top_features)
-    
-    return topics
-
-# Extract topics from true and fake news
-true_topics = extract_topics([text for text in true_news['cleaned_text'] if isinstance(text, str)])
-fake_topics = extract_topics([text for text in fake_news['cleaned_text'] if isinstance(text, str)])
-
-print("Topics in True News:")
-for i, topic in enumerate(true_topics):
-    print(f"Topic {i+1}: {', '.join(topic)}")
-
-print("\nTopics in Fake News:")
-for i, topic in enumerate(fake_topics):
-    print(f"Topic {i+1}: {', '.join(topic)}")
-```
-
-    Topics in True News:
-    Topic 1: trump, clinton, said, campaign, president, republican, election, presidential, white, russia
-    Topic 2: korea, north, china, nuclear, korean, missile, south, sanctions, pyongyang, united
-    Topic 3: said, state, syria, iran, islamic, syrian, saudi, myanmar, military, al
-    Topic 4: tax, senate, house, republicans, republican, obamacare, legislation, said, healthcare, congress
-    Topic 5: eu, britain, brexit, european, said, minister, party, talks, union, merkel
-    
-    Topics in Fake News:
-    Topic 1: trump, donald, president, twitter, campaign, realdonaldtrump, just, republican, people, said
-    Topic 2: obama, people, police, said, black, president, gun, america, law, year
-    Topic 3: boiler, acr, pm, room, radio, join, 00, broadcast, animals, tune
-    Topic 4: clinton, hillary, sanders, campaign, democratic, state, emails, email, foundation, bernie
-    Topic 5: russia, fbi, russian, comey, intelligence, investigation, news, information, director, putin
-
-
-Let's analyze policy area coverage in both datasets:
-
-
-```python
-# Define policy areas and related terms
-policy_areas = {
-    'economy': ['economy', 'economic', 'tax', 'budget', 'deficit', 'gdp', 'inflation', 'unemployment', 'jobs', 'trade'],
-    'healthcare': ['healthcare', 'health', 'obamacare', 'insurance', 'hospital', 'medical', 'medicare', 'medicaid'],
-    'immigration': ['immigration', 'immigrant', 'border', 'refugee', 'asylum', 'visa', 'deportation'],
-    'foreign_policy': ['foreign', 'diplomatic', 'embassy', 'sanctions', 'treaty', 'international', 'relations'],
-    'environment': ['environment', 'climate', 'pollution', 'emissions', 'epa', 'warming', 'renewable', 'carbon']
-}
-
-# Function to count policy terms
-def count_policy_terms(texts, terms_dict):
-    """Count occurrences of terms related to different policy areas"""
-    results = {area: 0 for area in terms_dict.keys()}
-    
-    for text in texts:
-        if not isinstance(text, str):
-            continue
-        
-        lowercase_text = text.lower()
-        for area, terms in terms_dict.items():
-            for term in terms:
-                results[area] += lowercase_text.count(term)
-    
-    return results
-
-# Count terms in both datasets
-true_policy_counts = count_policy_terms(true_news['cleaned_text'], policy_areas)
-fake_policy_counts = count_policy_terms(fake_news['cleaned_text'], policy_areas)
-
-# Calculate per-document averages
-true_per_doc = {area: count / len(true_news) for area, count in true_policy_counts.items()}
-fake_per_doc = {area: count / len(fake_news) for area, count in fake_policy_counts.items()}
-
-# Create a DataFrame for visualization
-policy_df = pd.DataFrame({
-    'Policy Area': list(policy_areas.keys()),
-    'True News (per doc)': list(true_per_doc.values()),
-    'Fake News (per doc)': list(fake_per_doc.values())
-})
-
-# Calculate ratio of fake to true
-policy_df['Fake/True Ratio'] = policy_df['Fake News (per doc)'] / policy_df['True News (per doc)']
-
-print("Policy area coverage comparison:")
-print(policy_df)
-
-# Visualize the comparison
+# Analyze subject distribution
 plt.figure(figsize=(12, 6))
-policy_df.plot(x='Policy Area', y=['True News (per doc)', 'Fake News (per doc)'], kind='bar', figsize=(12, 6))
-plt.title('Policy Area Coverage in Real vs. Fake News')
-plt.ylabel('Average Mentions per Document')
-plt.xticks(rotation=45)
+true_news['subject'].value_counts().plot(kind='bar', color='blue', alpha=0.7)
+plt.title('Subject Distribution in Real News')
+plt.xlabel('Subject')
+plt.ylabel('Count')
+plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
-plt.savefig('policy_coverage.png')
+plt.savefig('./figures/real_news_subject_distribution.png')
+plt.show()
+
+plt.figure(figsize=(12, 6))
+fake_news['subject'].value_counts().plot(kind='bar', color='red', alpha=0.7)
+plt.title('Subject Distribution in Fake News')
+plt.xlabel('Subject')
+plt.ylabel('Count')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig('./figures/fake_news_subject_distribution.png')
 plt.show()
 ```
 
-    Policy area coverage comparison:
-          Policy Area  True News (per doc)  Fake News (per doc)  Fake/True Ratio
-    0         economy             1.463277             0.588093         0.401901
-    1      healthcare             0.711397             0.466249         0.655399
-    2     immigration             0.721343             0.602700         0.835525
-    3  foreign_policy             1.178036             0.410545         0.348499
-    4     environment             0.850819             0.572463         0.672837
 
-
-
-    <Figure size 1200x600 with 0 Axes>
+    
+![png](output_27_0.png)
+    
 
 
 
     
-![png](output_32_2.png)
+![png](output_27_1.png)
     
 
 
-## 9. Citation Analysis
+This analysis shows the distribution of topics in each dataset, which can help identify potential topical biases. If certain subjects are exclusively or predominantly associated with one class, the model might learn to classify based on topic rather than veracity.
 
-Let's examine how sources are cited in both datasets:
+## 9. Temporal Analysis
+
+I analyze the publication dates to identify any temporal patterns:
 
 
 ```python
-# Function to analyze citation patterns
-def analyze_citations(texts):
-    """Analyze how sources are cited in articles"""
-    said_patterns = [
-        r'"([^"]+)" said',
-        r"'([^']+)' said",
-        r'said ([A-Z][a-z]+ [A-Z][a-z]+)',
-        r'according to ([^,.]+)'
-    ]
-    
-    citations = []
-    for text in texts:
-        if not isinstance(text, str):
-            continue
-        
-        for pattern in said_patterns:
-            matches = re.findall(pattern, text)
-            citations.extend(matches)
-    
-    return Counter(citations).most_common(20)
+# Convert date strings to datetime objects with mixed format handling
+true_news['date'] = pd.to_datetime(true_news['date'], errors='coerce')
+fake_news['date'] = pd.to_datetime(fake_news['date'], format='mixed', errors='coerce')
 
-# Analyze citation patterns
-true_citations = analyze_citations(true_news['cleaned_text'])
-fake_citations = analyze_citations(fake_news['cleaned_text'])
+# Extract month and year
+true_news['month_year'] = true_news['date'].dt.to_period('M')
+fake_news['month_year'] = fake_news['date'].dt.to_period('M')
 
-print("Most common citation patterns in True News:")
-for citation, count in true_citations[:5]:
-    print(f"- '{citation}': {count} occurrences")
+# Count articles by month - handle potential NaT values
+true_monthly = true_news.dropna(subset=['month_year'])['month_year'].value_counts().sort_index()
+fake_monthly = fake_news.dropna(subset=['month_year'])['month_year'].value_counts().sort_index()
 
-print("\nMost common citation patterns in Fake News:")
-for citation, count in fake_citations[:5]:
-    print(f"- '{citation}': {count} occurrences")
-
-# Analyze citation frequency
-def count_citation_phrases(texts):
-    """Count occurrences of common citation phrases"""
-    citation_phrases = ['said', 'told', 'according to', 'reported', 'stated', 'announced', 'claimed']
-    
-    results = {phrase: 0 for phrase in citation_phrases}
-    total_words = 0
-    
-    for text in texts:
-        if not isinstance(text, str):
-            continue
-            
-        words = text.lower().split()
-        total_words += len(words)
-        
-        for phrase in citation_phrases:
-            if ' ' in phrase:
-                results[phrase] += text.lower().count(phrase)
-            else:
-                results[phrase] += words.count(phrase)
-    
-    # Calculate per 1000 words
-    for phrase in results:
-        results[phrase] = results[phrase] * 1000 / total_words if total_words > 0 else 0
-        
-    return results
-
-true_citation_freq = count_citation_phrases(true_news['cleaned_text'])
-fake_citation_freq = count_citation_phrases(fake_news['cleaned_text'])
-
-# Create DataFrame for comparison
-citation_df = pd.DataFrame({
-    'Citation Phrase': list(true_citation_freq.keys()),
-    'True News (per 1000 words)': list(true_citation_freq.values()),
-    'Fake News (per 1000 words)': list(fake_citation_freq.values())
-})
-
-citation_df['Ratio (True/Fake)'] = citation_df['True News (per 1000 words)'] / citation_df['Fake News (per 1000 words)']
-
-print("\nCitation phrase frequency comparison (per 1000 words):")
-print(citation_df)
-
-# Visualize the citation frequency comparison
-plt.figure(figsize=(12, 6))
-citation_df.plot(x='Citation Phrase', y=['True News (per 1000 words)', 'Fake News (per 1000 words)'], 
-                kind='bar', figsize=(12, 6))
-plt.title('Citation Phrase Frequency in Real vs. Fake News')
-plt.ylabel('Occurrences per 1000 words')
-plt.xticks(rotation=45)
+# Plot
+plt.figure(figsize=(14, 6))
+true_monthly.plot(label='Real News', color='blue', alpha=0.7)
+fake_monthly.plot(label='Fake News', color='red', alpha=0.7)
+plt.title('Number of Articles by Month')
+plt.xlabel('Month')
+plt.ylabel('Count')
+plt.legend()
+plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('citation_frequency.png')
+plt.savefig('./figures/temporal_distribution.png')
 plt.show()
 ```
 
-    Most common citation patterns in True News:
-    - 'the U': 85 occurrences
-    - 'U': 75 occurrences
-    - 'North Korea': 60 occurrences
-    - 'media reports': 50 occurrences
-    - 'Saudi Arabia': 34 occurrences
-    
-    Most common citation patterns in Fake News:
-    - 'the report': 59 occurrences
-    - 'police': 39 occurrences
-    - 'Politico': 32 occurrences
-    - 'U': 32 occurrences
-    - 'reports': 30 occurrences
-    
-    Citation phrase frequency comparison (per 1000 words):
-      Citation Phrase  True News (per 1000 words)  Fake News (per 1000 words)  Ratio (True/Fake)
-    0            said                    8.744218                    2.135530           4.094635
-    1            told                    1.726265                    0.904086           1.909404
-    2    according to                    0.743019                    0.816837           0.909629
-    3        reported                    0.287448                    0.292842           0.981581
-    4          stated                    0.020515                    0.101840           0.201439
-    5       announced                    0.220199                    0.182951           1.203597
-    6         claimed                    0.080238                    0.197945           0.405354
-
-
-
-    <Figure size 1200x600 with 0 Axes>
-
-
 
     
-![png](output_34_2.png)
+![png](output_29_0.png)
     
 
 
-## 10. Summary of Findings and Next Steps
+This temporal analysis helps identify whether the real and fake news articles cover the same time periods. Significant differences in temporal distribution could lead to models that learn time-specific patterns rather than general indicators of fake news.
 
-Based on my exploratory data analysis, here are the key findings:
+## 10. Conclusion and Next Steps
 
+Based on this exploratory data analysis, I've identified several key insights and potential biases in the ISOT dataset:
 
-```python
-# Create a summary of findings
-findings = [
-    "99.21% of real news articles contain '(Reuters)', making it a strong bias signal",
-    "Real news articles typically begin with a location dateline (e.g., 'WASHINGTON') followed by '(Reuters)'",
-    "Text length distributions differ between real and fake news, but not dramatically",
-    "Vocabulary usage shows meaningful differences: real news uses more formal institutional language while fake news is more personality-focused",
-    "Real news has more citations and source attributions than fake news",
-    "Real news provides more substantive policy coverage across most policy areas",
-    "Topic analysis shows different focuses: real news focuses on formal reporting while fake news leans toward political personalities"
-]
+1. **Source Markers**: The "(Reuters)" pattern appears in 99.21% of real news but only 0.04% of fake news, creating a strong potential for overfitting.
 
-print("Key Findings from Exploratory Data Analysis:")
-for i, finding in enumerate(findings, 1):
-    print(f"{i}. {finding}")
-```
+2. **Structural Patterns**: Real news articles follow journalistic conventions like location datelines, while fake news rarely does.
 
-    Key Findings from Exploratory Data Analysis:
-    1. 99.21% of real news articles contain '(Reuters)', making it a strong bias signal
-    2. Real news articles typically begin with a location dateline (e.g., 'WASHINGTON') followed by '(Reuters)'
-    3. Text length distributions differ between real and fake news, but not dramatically
-    4. Vocabulary usage shows meaningful differences: real news uses more formal institutional language while fake news is more personality-focused
-    5. Real news has more citations and source attributions than fake news
-    6. Real news provides more substantive policy coverage across most policy areas
-    7. Topic analysis shows different focuses: real news focuses on formal reporting while fake news leans toward political personalities
+3. **Content Differences**: Real and fake news focus on different topics and use different language, which are legitimate signals for classification.
 
+4. **Length Distribution**: Fake news shows higher variance in length, with more extreme outliers.
 
-In the next notebook, I'll focus on:
+To address these issues, I'll implement the following preprocessing steps for model training:
 
-1. Enhanced data cleaning to remove identified biases
-2. Feature engineering to capture legitimate stylistic and content differences
-3. Preparing the datasets for model training
+1. Remove source markers like "(Reuters)" to prevent the model from relying on these shortcuts.
 
-This initial analysis has given us a solid understanding of the characteristics and potential biases in our datasets. By addressing these issues, we can build more robust models that truly learn to distinguish between real and fake news based on substantive differences rather than dataset-specific artifacts.
+2. Consider removing location datelines or converting them to a more general format.
+
+3. Implement robust cross-validation to ensure the model generalizes beyond the specific patterns in this dataset.
+
+4. Create features that capture legitimate stylistic and content differences while avoiding dataset-specific artifacts.
+
+These preprocessing steps will be implemented in the next notebook, where I'll prepare the data for model training.

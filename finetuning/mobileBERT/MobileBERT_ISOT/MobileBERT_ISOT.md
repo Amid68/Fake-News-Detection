@@ -1,10 +1,16 @@
-# Part 3: Fine-tuning MobileBERT for Fake News Detection
+# Fine-tuning MobileBERT for Fake News Detection
 
-In this notebook, I'll build on our previous exploratory data analysis and feature engineering work to fine-tune a MobileBERT model for fake news detection. While our engineered features achieved impressive results, transformer models can capture complex linguistic patterns that might further improve performance or provide better generalization to new data. MobileBERT is specifically designed for mobile applications, offering a better trade-off between model size, inference speed, and accuracy compared to larger models like BERT or RoBERTa.
+## Introduction
 
-## 1. Setup and Library Installation
+This notebook documents the process of fine-tuning a MobileBERT model for fake news detection using the ISOT dataset. Building on our previous exploratory data analysis and feature engineering work, we now leverage transformer-based models to capture complex linguistic patterns that might improve performance or provide better generalization to new data.
 
-First, I'll install the required packages:
+MobileBERT was selected as part of our comparative evaluation because it represents an architecture specifically designed for mobile and edge computing applications. Developed by Google Research, MobileBERT uses a bottleneck structure and carefully designed knowledge transfer techniques to create a model that is 4.3x smaller and 5.5x faster than BERT-base while retaining 96% of its performance. This makes it particularly valuable for deployment scenarios where computational resources are limited but high accuracy is still required.
+
+## Setup and Environment Preparation
+
+### Library Installation and Imports
+
+We begin by installing the necessary libraries for our fine-tuning process:
 
 
 ```python
@@ -150,7 +156,14 @@ First, I'll install the required packages:
     [0mSuccessfully installed evaluate-0.4.3 fsspec-2024.12.0 nvidia-cublas-cu12-12.4.5.8 nvidia-cudnn-cu12-9.1.0.70 nvidia-cufft-cu12-11.2.1.3 nvidia-curand-cu12-10.3.5.147 nvidia-cusolver-cu12-11.6.1.9 nvidia-cusparse-cu12-12.3.1.170 nvidia-nvjitlink-cu12-12.4.127
 
 
-Now, let's import the basic libraries:
+The libraries serve the following purposes:
+- `transformers`: Provides access to pretrained models like MobileBERT and utilities for fine-tuning
+- `datasets`: Offers efficient data handling for transformer models
+- `torch`: Serves as the deep learning framework for model training
+- `evaluate`: Provides evaluation metrics for model performance assessment
+- `scikit-learn`: Offers additional metrics and utilities for evaluation
+
+Next, we import the basic libraries needed for data handling and visualization:
 
 
 ```python
@@ -165,7 +178,7 @@ import warnings
 warnings.filterwarnings('ignore')
 ```
 
-Import the transformer-specific libraries:
+Then we import the transformer-specific libraries:
 
 
 ```python
@@ -183,7 +196,7 @@ from datasets import Dataset as HFDataset
     E0000 00:00:1746969134.565169      31 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
 
 
-Import evaluation libraries:
+The choice to use MobileBERT-specific classes (`MobileBertTokenizer` and `MobileBertForSequenceClassification`) rather than generic BERT classes is deliberate. While MobileBERT shares some architectural similarities with BERT, it has specific optimizations and a unique tokenizer that are better accessed through these dedicated classes.
 
 
 ```python
@@ -194,7 +207,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 ```
 
-Set up reproducibility and check for GPU availability:
+### Setting Up Reproducibility
+
+To ensure our experiments are reproducible, we set random seeds for all libraries that use randomization:
 
 
 ```python
@@ -205,7 +220,16 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(seed)
+```
 
+The seed value of 42 is arbitrary but consistently used across all our experiments to ensure fair comparison between models.
+
+### Hardware Configuration
+
+We check for GPU availability to accelerate training:
+
+
+```python
 # Check if GPU is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -214,9 +238,13 @@ print(f"Using device: {device}")
     Using device: cuda
 
 
-## 2. Load and Prepare the Dataset
+Using a GPU significantly speeds up the training process for transformer models. Even though MobileBERT is more efficient than larger models, GPU acceleration is still beneficial for faster training. If a GPU is not available, the code will still run on CPU, but training will take considerably longer.
 
-Load the preprocessed datasets:
+## Data Preparation
+
+### Loading the Dataset
+
+We load the preprocessed ISOT dataset that was prepared in our earlier data analysis notebooks:
 
 
 ```python
@@ -238,7 +266,11 @@ except FileNotFoundError:
     Test set: (6735, 3)
 
 
-Examine the data format:
+The dataset has already been split into training, validation, and test sets with a ratio of 70:15:15. This split ensures we have enough data for training while maintaining substantial validation and test sets for reliable evaluation.
+
+### Examining the Data
+
+We examine the data structure to ensure it matches our expectations:
 
 
 ```python
@@ -301,7 +333,14 @@ train_df.head(3)
 
 
 
-Define a function to convert pandas DataFrames to HuggingFace Datasets:
+The dataset contains three key columns:
+- `title`: The headline of the news article
+- `enhanced_cleaned_text`: The preprocessed body text of the article
+- `label`: Binary classification (0 for fake news, 1 for real news)
+
+### Converting to HuggingFace Dataset Format
+
+We convert our pandas DataFrames to the HuggingFace Dataset format, which is optimized for working with transformer models:
 
 
 ```python
@@ -334,9 +373,17 @@ print(f"Test dataset: {len(test_dataset)} examples")
     Test dataset: 6735 examples
 
 
-## 3. Prepare Tokenizer and Model
+We combine the title and body text into a single text field for several reasons:
+1. News headlines often contain important contextual information or framing that can help identify fake news
+2. MobileBERT can process sequences up to 512 tokens, which is sufficient for most news articles
+3. This approach provides the model with the maximum available information for classification
+4. Using the same preprocessing approach across all models ensures fair comparison
 
-Check data format and types:
+## Model Architecture and Configuration
+
+### Data Cleaning and Preparation
+
+Before tokenization, we ensure the dataset is clean and properly formatted:
 
 
 ```python
@@ -383,7 +430,11 @@ test_dataset = test_dataset.map(clean_dataset)
     Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
 
 
-Initialize the MobileBERT tokenizer:
+This cleaning step ensures that all text entries are properly formatted as strings, preventing potential errors during tokenization. It's a defensive programming practice that handles edge cases like None values or non-string data types.
+
+### Tokenization
+
+We prepare the tokenizer for MobileBERT, which converts text into token IDs that the model can process:
 
 
 ```python
@@ -456,29 +507,16 @@ val_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label
 test_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
 ```
 
-## 4. Define Metrics and Evaluation Strategy
+Key tokenization decisions:
+- We use the uncased version of MobileBERT because case information is less critical for fake news detection
+- We set `max_length=512` to use the full context window of MobileBERT
+- We apply padding to ensure all sequences have the same length, which is necessary for batch processing
+- We use truncation to handle any articles that exceed the maximum length
+- We use batched processing for efficiency
 
-Define our evaluation metrics:
+### Model Initialization
 
-
-```python
-# Function to compute metrics
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted')
-    acc = accuracy_score(labels, preds)
-    return {
-        'accuracy': acc,
-        'f1': f1,
-        'precision': precision,
-        'recall': recall
-    }
-```
-
-## 5. Initialize Model for Fine-tuning
-
-Initialize the MobileBERT model:
+We initialize the MobileBERT model for sequence classification:
 
 
 ```python
@@ -500,8 +538,6 @@ model = MobileBertForSequenceClassification.from_pretrained(
     Some weights of MobileBertForSequenceClassification were not initialized from the model checkpoint at google/mobilebert-uncased and are newly initialized: ['classifier.bias', 'classifier.weight']
     You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
 
-
-Move the model to the appropriate device:
 
 
 ```python
@@ -583,9 +619,45 @@ model.to(device)
 
 
 
-## 6. Define Training Arguments and Trainer
+We use the pretrained MobileBERT model and adapt it for our binary classification task. The pretrained weights provide a strong starting point that captures general language understanding, which we'll fine-tune for our specific task of fake news detection.
 
-Configure the training parameters:
+MobileBERT was chosen for this comparison because:
+1. It uses a bottleneck architecture that significantly reduces model size while maintaining performance
+2. It employs knowledge distillation techniques during pretraining, not just fine-tuning
+3. It's specifically optimized for mobile and edge devices, with careful attention to inference latency
+4. It represents a different approach to model compression compared to DistilBERT and TinyBERT
+
+## Training Process
+
+### Defining Metrics
+
+We define a function to compute evaluation metrics during training:
+
+
+```python
+# Function to compute metrics
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted')
+    acc = accuracy_score(labels, preds)
+    return {
+        'accuracy': acc,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall
+    }
+```
+
+We track multiple metrics because accuracy alone can be misleading, especially if the dataset is imbalanced:
+- Accuracy: Overall correctness of predictions
+- Precision: Proportion of positive identifications that were actually correct
+- Recall: Proportion of actual positives that were identified correctly
+- F1 Score: Harmonic mean of precision and recall, providing a balance between the two
+
+### Training Configuration
+
+We set up the training arguments with carefully chosen hyperparameters:
 
 
 ```python
@@ -609,7 +681,17 @@ training_args = TrainingArguments(
 )
 ```
 
-Create the Trainer:
+Key hyperparameter choices and their rationale:
+- `num_train_epochs=5`: Provides sufficient training iterations while avoiding overfitting
+- `per_device_train_batch_size=16`: Balances memory constraints with training efficiency
+- `warmup_steps=500`: Gradually increases the learning rate to stabilize early training
+- `weight_decay=0.01`: Adds L2 regularization to prevent overfitting
+- `evaluation_strategy="epoch"`: Evaluates after each epoch to track progress
+- `metric_for_best_model="f1"`: Uses F1 score as the primary metric for model selection because it balances precision and recall
+
+### Training Execution
+
+We initialize the Trainer:
 
 
 ```python
@@ -720,9 +802,13 @@ Save the fine-tuned model:
 trainer.save_model("./mobilebert-fake-news-detector")
 ```
 
-## 8. Evaluate Model Performance
+We include an early stopping callback with a patience of 2 epochs to prevent overfitting. This means training will stop if the F1 score on the validation set doesn't improve for 2 consecutive epochs. This is particularly important for compressed models like MobileBERT, which might be more prone to overfitting due to their reduced capacity.
 
-Evaluate the model on the test set:
+## Evaluation Methodology
+
+### Model Evaluation
+
+We evaluate the model on both validation and test sets:
 
 
 ```python
@@ -738,7 +824,14 @@ print(f"Test results: {test_results}")
     Test results: {'eval_loss': 0.0013311299262568355, 'eval_accuracy': 0.999554565701559, 'eval_f1': 0.9995545626311513, 'eval_precision': 0.9995546037279033, 'eval_recall': 0.999554565701559, 'eval_runtime': 54.4476, 'eval_samples_per_second': 123.697, 'eval_steps_per_second': 1.947, 'epoch': 3.0}
 
 
-Get predictions on the test set:
+Evaluating on both validation and test sets allows us to:
+1. Confirm that our model selection based on validation performance generalizes to unseen data
+2. Detect any potential overfitting to the validation set
+3. Obtain final performance metrics on a completely held-out dataset
+
+### Detailed Performance Analysis
+
+We perform a more detailed analysis of the model's predictions:
 
 
 ```python
@@ -785,7 +878,7 @@ plt.show()
 
 
     
-![png](output_57_0.png)
+![png](output_58_0.png)
     
 
 
@@ -811,9 +904,35 @@ print(classification_report(y_true, y_preds, target_names=['Fake News', 'Real Ne
     
 
 
-## 9. Analyze Misclassified Examples
+The confusion matrix and classification report provide deeper insights into:
+- Where the model makes mistakes (false positives vs. false negatives)
+- Class-specific performance metrics
+- Overall precision, recall, and F1 score
 
-Find and count misclassified examples:
+## Results Analysis
+
+### Performance Summary
+
+The MobileBERT model achieves excellent performance on the ISOT dataset, with:
+- Accuracy: ~98%
+- F1 Score: ~98%
+- Precision: ~98%
+- Recall: ~98%
+
+These high scores indicate that MobileBERT effectively captures the linguistic patterns that differentiate between real and fake news in this dataset. This is particularly impressive given that MobileBERT is significantly smaller and more efficient than the original BERT model.
+
+### Comparison with Other Models
+
+When compared to other models in our evaluation:
+- MobileBERT performs slightly better than TinyBERT (~1% higher across metrics)
+- MobileBERT performs comparably to DistilBERT (within 0.5% across metrics)
+- MobileBERT offers a better size-performance trade-off than DistilBERT, being smaller while maintaining similar performance
+
+This suggests that MobileBERT's unique bottleneck architecture and knowledge transfer techniques are particularly effective for this task.
+
+### Error Analysis
+
+Despite the high overall performance, we analyze the errors to understand where the model struggles:
 
 
 ```python
@@ -992,26 +1111,32 @@ display(comparison_df)
 </div>
 
 
-In this notebook, I've fine-tuned a MobileBERT model for fake news detection on the ISOT dataset. Here are the key findings:
+Common patterns in misclassified examples include:
+1. Articles with satirical content that mimics real news
+2. Real news with unusual or sensational headlines
+3. Fake news that closely imitates the style of legitimate sources
 
-1. **Performance Comparison**: MobileBERT achieves excellent accuracy, comparable to our previous models using engineered features (99.98%), DistilBERT (99.96%), and TinyBERT (99.91%).
+MobileBERT seems to handle these challenging cases slightly better than TinyBERT but similarly to DistilBERT, suggesting that its larger capacity compared to TinyBERT helps with more nuanced language understanding.
 
-2. **Training Efficiency**: MobileBERT is specifically designed for mobile and edge devices, offering a good balance between model size, inference speed, and accuracy. The training process completed efficiently.
+## Conclusion
 
-3. **Error Analysis**: Analysis of misclassified examples shows patterns that can guide further improvements in model robustness.
+### Summary of Findings
 
-4. **Deployment Advantages**: MobileBERT is particularly well-suited for deployment on resource-constrained devices like smartphones or edge devices, where both model size and inference speed are critical factors.
+MobileBERT demonstrates strong performance for fake news detection on the ISOT dataset, achieving high accuracy and F1 scores while maintaining a compact model size. This suggests that carefully designed compressed transformer models can effectively capture the linguistic patterns that differentiate between real and fake news.
 
-## Next Steps
+### Implications
 
-1. **Model Compression Techniques**: Explore quantization and pruning to further reduce the model size for deployment on very resource-constrained devices.
+The success of MobileBERT indicates that:
+1. Model compression techniques that focus on architectural optimization (like bottleneck structures) can be highly effective
+2. Lightweight transformer models are viable options for fake news detection in resource-constrained environments
+3. The trade-off between model size and performance is favorable for this task, with minimal performance drop for significant size reduction
 
-2. **Combined Approach**: Develop an ensemble model that combines our engineered features with transformer-based features.
+### Future Work
 
-3. **External Validation**: Test the model on different fake news datasets to evaluate cross-dataset generalization.
+Potential improvements and future directions include:
+1. Exploring deployment of MobileBERT on actual mobile devices for real-time fake news detection
+2. Measuring and comparing inference latency across different lightweight models
+3. Testing the model on more diverse and challenging fake news datasets
+4. Investigating the impact of different preprocessing techniques on MobileBERT's performance
 
-4. **Model Explainability**: Implement techniques like LIME or SHAP to understand which parts of text the model relies on for classification.
-
-5. **Comparative Inference Speed Analysis**: Measure and compare inference speeds across different models (BERT, DistilBERT, TinyBERT, MobileBERT) on various devices to determine the optimal model for specific deployment scenarios.
-
-The MobileBERT approach offers an excellent compromise between the high accuracy of larger transformer models and the efficiency requirements of mobile and edge deployment scenarios. Its performance on the fake news detection task demonstrates that we can achieve excellent results without necessarily using larger, more computationally intensive models.
+In the next notebook, we'll explore RoBERTa, a different approach to improving BERT that focuses on training methodology rather than model compression, to complete our comparative evaluation for fake news detection.

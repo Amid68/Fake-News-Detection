@@ -1,10 +1,12 @@
 # Traditional Machine Learning Baselines for Fake News Detection
 
-In this notebook, I'll implement and evaluate traditional machine learning approaches for fake news detection on the ISOT dataset. These baseline models will provide important reference points for comparing with the more complex transformer-based models (DistilBERT, RoBERTa, TinyBERT, and MobileBERT) explored in other notebooks.
+## Introduction
+
+This notebook implements and evaluates traditional machine learning approaches for fake news detection on the ISOT dataset. These baseline models serve as important reference points for comparing with more complex transformer-based models (DistilBERT, RoBERTa, TinyBERT, and MobileBERT) explored in other notebooks. Understanding the performance of these simpler models helps contextualize the value proposition of lightweight pretrained transformer models in terms of accuracy, efficiency, and resource requirements.
 
 ## 1. Setup and Library Installation
 
-First, I'll import the necessary libraries and set up the environment.
+First, I import the necessary libraries and set up the environment:
 
 
 ```python
@@ -23,6 +25,15 @@ from collections import Counter
 warnings.filterwarnings('ignore')
 ```
 
+I've chosen these libraries for the following reasons:
+- `numpy` and `pandas` for efficient data manipulation and numerical operations
+- `matplotlib` and `seaborn` for creating informative visualizations
+- `time` for measuring execution time of different operations
+- `re` and `string` for text processing and regular expressions
+- `random` for reproducibility settings
+- `Counter` for frequency analysis
+- `warnings` is suppressed to keep the notebook output clean
+
 
 ```python
 # Set plot style
@@ -40,6 +51,8 @@ pd.set_option('display.width', 1000)
 pd.set_option('display.max_colwidth', 200)
 ```
 
+These settings ensure that visualizations are clear and readable, and that pandas dataframes display sufficient information for analysis.
+
 
 ```python
 # Import ML libraries
@@ -53,6 +66,13 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.metrics import classification_report, confusion_matrix
 import joblib
 ```
+
+For machine learning, I've selected these libraries because:
+- `TfidfVectorizer` and `CountVectorizer` convert text to numerical features
+- `LogisticRegression`, `MultinomialNB`, and `LinearSVC` are effective classifiers for text data
+- `GridSearchCV` enables systematic hyperparameter optimization
+- Various metrics functions allow comprehensive evaluation
+- `joblib` provides model persistence capabilities
 
 
 ```python
@@ -73,6 +93,7 @@ nltk.download('wordnet')
     [nltk_data] Downloading package punkt to /Users/amid/nltk_data...
     [nltk_data]   Package punkt is already up-to-date!
     [nltk_data] Downloading package wordnet to /Users/amid/nltk_data...
+    [nltk_data]   Package wordnet is already up-to-date!
 
 
 
@@ -82,9 +103,14 @@ nltk.download('wordnet')
 
 
 
+For natural language processing, I use NLTK because:
+- It provides essential text processing tools like tokenization and lemmatization
+- It includes comprehensive stopword lists for multiple languages
+- These components are crucial for preparing text data for traditional ML models
+
 ## 2. Set Random Seeds for Reproducibility
 
-Setting random seeds ensures that our experiments are reproducible.
+Setting random seeds ensures that our experiments are reproducible, which is essential for scientific rigor and comparison with other models:
 
 
 ```python
@@ -97,9 +123,11 @@ def set_seeds(seed=42):
 set_seeds()
 ```
 
+I've chosen to set seeds for all random number generators to ensure complete reproducibility across runs. The seed value of 42 is arbitrary but commonly used in machine learning experiments.
+
 ## 3. Load and Explore the Dataset
 
-I'll load the same ISOT dataset used for the transformer models to ensure a fair comparison.
+I load the same ISOT dataset used for the transformer models to ensure a fair comparison:
 
 
 ```python
@@ -129,6 +157,8 @@ except FileNotFoundError:
     Validation set: (6735, 3)
     Test set: (6735, 3)
 
+
+This code attempts to load preprocessed datasets, but includes a fallback mechanism to create sample data if the files aren't found. This ensures the notebook can run in different environments. Using the same dataset splits as the transformer models is critical for fair comparison.
 
 
 ```python
@@ -221,9 +251,11 @@ print(test_df['label'].value_counts())
     Name: count, dtype: int64
 
 
+I check the class distribution to ensure that the dataset is reasonably balanced. This is important because imbalanced datasets can lead to biased models that perform well on the majority class but poorly on the minority class. The ISOT dataset is relatively balanced, with a slight majority of fake news articles.
+
 ## 4. Text Preprocessing
 
-I'll create a text preprocessing function to clean and normalize the text data. This step is crucial for traditional ML models that rely on feature engineering.
+I create a text preprocessing function to clean and normalize the text data:
 
 
 ```python
@@ -266,6 +298,14 @@ def preprocess_text(text):
     return processed_text
 ```
 
+This preprocessing function applies several standard NLP techniques:
+- Converting to lowercase ensures consistent case throughout the text
+- Removing punctuation and numbers reduces noise and dimensionality
+- Removing stopwords eliminates common words that carry little discriminative information
+- Lemmatization reduces words to their base form, consolidating different forms of the same word
+
+These steps are crucial for traditional ML models because they help reduce the feature space and focus on the most informative content. Unlike transformer models that can learn contextual representations, traditional ML models benefit significantly from this type of preprocessing.
+
 
 ```python
 # Combine title and text for a more comprehensive analysis
@@ -273,6 +313,8 @@ train_df['combined_text'] = train_df['title'] + " " + train_df['enhanced_cleaned
 val_df['combined_text'] = val_df['title'] + " " + val_df['enhanced_cleaned_text']
 test_df['combined_text'] = test_df['title'] + " " + test_df['enhanced_cleaned_text']
 ```
+
+I combine the title and body text because both contain valuable information for classification. The title often contains strong signals about the article's nature, while the body provides more context and detail.
 
 
 ```python
@@ -304,8 +346,10 @@ preprocessing_time = time.time() - start_time
 print(f"Preprocessing completed in {preprocessing_time:.2f} seconds")
 ```
 
-    Preprocessing completed in 52.30 seconds
+    Preprocessing completed in 52.01 seconds
 
+
+I track the preprocessing time to understand the computational cost of this step. This is important for comparing the overall efficiency of traditional ML pipelines versus transformer-based approaches.
 
 
 ```python
@@ -323,9 +367,11 @@ print(train_df['processed_text'].iloc[0][:300])
     trump ‘ diversity council ’ member threatens quit trump end daca…bye bye video member president trump diversity council threatening quit opposes trump cancelation daca bye bye trump diversity council member tell acosta may quit council trump move ahead end daca cnn newsroom cnnnewsroom september wan
 
 
+Displaying a sample of the preprocessed text helps verify that the preprocessing function is working as expected and provides insight into how the text is transformed.
+
 ## 5. Feature Engineering with TF-IDF
 
-For traditional ML models, I'll use TF-IDF (Term Frequency-Inverse Document Frequency) vectorization to convert text into numerical features. This approach is widely used in text classification tasks.
+For traditional ML models, I use TF-IDF vectorization to convert text into numerical features:
 
 
 ```python
@@ -340,6 +386,13 @@ tfidf_params = {
     'sublinear_tf': True  # Apply sublinear tf scaling (1 + log(tf))
 }
 ```
+
+The TF-IDF vectorization parameters are carefully chosen:
+- `max_features=50000` limits the vocabulary size to the 50,000 most frequent terms, balancing information retention with computational efficiency
+- `min_df=5` excludes terms that appear in fewer than 5 documents, reducing noise from rare terms
+- `max_df=0.8` excludes terms that appear in more than 80% of documents, which are likely too common to be discriminative
+- `ngram_range=(1, 2)` includes both individual words (unigrams) and pairs of adjacent words (bigrams), capturing some phrase-level information
+- `sublinear_tf=True` applies logarithmic scaling to term frequencies, reducing the impact of high-frequency terms
 
 
 ```python
@@ -375,19 +428,18 @@ print(f"Validation set shape: {X_val_tfidf.shape}")
 print(f"Test set shape: {X_test_tfidf.shape}")
 ```
 
-    TF-IDF vectorization completed in 15.52 seconds
+    TF-IDF vectorization completed in 18.30 seconds
     Number of features: 50000
     Training set shape: (31428, 50000)
     Validation set shape: (6735, 50000)
     Test set shape: (6735, 50000)
 
 
+I track the vectorization time and report the resulting feature dimensions. This step transforms the text data into a sparse matrix where each row represents a document and each column represents a term in the vocabulary. The values are TF-IDF scores that reflect the importance of each term in each document.
+
 ## 6. Model Training and Evaluation
 
-Now I'll train and evaluate three traditional ML models:
-1. Logistic Regression
-2. Multinomial Naive Bayes
-3. Linear Support Vector Machine (SVM)
+I train and evaluate three traditional ML models, each with different strengths and characteristics:
 
 ### 6.1 Logistic Regression
 
@@ -438,9 +490,16 @@ print(f"Best parameters: {grid_search.best_params_}")
 ```
 
     Fitting 3 folds for each of 12 candidates, totalling 36 fits
-    Logistic Regression training completed in 7.92 seconds
+    Logistic Regression training completed in 7.93 seconds
     Best parameters: {'C': 10.0, 'max_iter': 100, 'solver': 'saga'}
 
+
+For Logistic Regression, I perform hyperparameter optimization using grid search with cross-validation:
+- I explore different regularization strengths (`C`), which controls the model's complexity
+- I test different solver algorithms, which can affect convergence speed and solution quality
+- I vary the maximum number of iterations to ensure convergence
+- I use F1 score as the optimization metric because it balances precision and recall
+- I use 3-fold cross-validation to ensure robust parameter selection
 
 
 ```python
@@ -464,7 +523,7 @@ print(f"Validation F1 score: {lr_val_f1:.4f}")
 ```
 
     Evaluating Logistic Regression on validation set...
-    Validation inference time: 0.0023 seconds
+    Validation inference time: 0.0025 seconds
     Validation accuracy: 0.9933
     Validation precision: 0.9933
     Validation recall: 0.9933
@@ -494,12 +553,19 @@ print(f"Test F1 score: {lr_test_f1:.4f}")
 
     
     Evaluating Logistic Regression on test set...
-    Test inference time: 0.0039 seconds
+    Test inference time: 0.0041 seconds
     Test accuracy: 0.9955
     Test precision: 0.9955
     Test recall: 0.9955
     Test F1 score: 0.9955
 
+
+I evaluate the model on both validation and test sets, measuring:
+- Inference time, which is important for real-time applications
+- Accuracy, which measures overall correctness
+- Precision, which measures the proportion of positive identifications that were actually correct
+- Recall, which measures the proportion of actual positives that were identified correctly
+- F1 score, which is the harmonic mean of precision and recall
 
 
 ```python
@@ -513,13 +579,13 @@ plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
 plt.title('Logistic Regression Confusion Matrix')
 plt.tight_layout()
-plt.savefig('lr_confusion_matrix.png')
+plt.savefig('./figures/lr_confusion_matrix.png')
 plt.show()
 ```
 
 
     
-![png](output_29_0.png)
+![png](output_39_0.png)
     
 
 
@@ -542,6 +608,8 @@ print(classification_report(y_test, lr_test_preds, target_names=['Fake News', 'R
     weighted avg       1.00      1.00      1.00      6735
     
 
+
+I visualize the results using a confusion matrix and a detailed classification report. These provide insights into the model's performance across different classes and help identify any class-specific issues.
 
 ### 6.2 Multinomial Naive Bayes
 
@@ -590,9 +658,11 @@ print(f"Best parameters: {grid_search.best_params_}")
 ```
 
     Fitting 3 folds for each of 4 candidates, totalling 12 fits
-    Naive Bayes training completed in 0.33 seconds
+    Naive Bayes training completed in 0.32 seconds
     Best parameters: {'alpha': 0.01}
 
+
+For Multinomial Naive Bayes, I optimize the smoothing parameter (`alpha`), which handles the zero-frequency problem and controls the model's sensitivity to rare features. Naive Bayes is particularly efficient for text classification and often serves as a strong baseline despite its simplistic assumptions.
 
 
 ```python
@@ -616,7 +686,7 @@ print(f"Validation F1 score: {nb_val_f1:.4f}")
 ```
 
     Evaluating Naive Bayes on validation set...
-    Validation inference time: 0.0075 seconds
+    Validation inference time: 0.0074 seconds
     Validation accuracy: 0.9638
     Validation precision: 0.9638
     Validation recall: 0.9638
@@ -646,7 +716,7 @@ print(f"Test F1 score: {nb_test_f1:.4f}")
 
     
     Evaluating Naive Bayes on test set...
-    Test inference time: 0.0069 seconds
+    Test inference time: 0.0066 seconds
     Test accuracy: 0.9642
     Test precision: 0.9642
     Test recall: 0.9642
@@ -665,13 +735,13 @@ plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
 plt.title('Naive Bayes Confusion Matrix')
 plt.tight_layout()
-plt.savefig('nb_confusion_matrix.png')
+plt.savefig('./figures/nb_confusion_matrix.png')
 plt.show()
 ```
 
 
     
-![png](output_37_0.png)
+![png](output_48_0.png)
     
 
 
@@ -694,6 +764,8 @@ print(classification_report(y_test, nb_test_preds, target_names=['Fake News', 'R
     weighted avg       0.96      0.96      0.96      6735
     
 
+
+I evaluate Naive Bayes using the same comprehensive set of metrics and visualizations as for Logistic Regression, enabling direct comparison between the models.
 
 ### 6.3 Linear Support Vector Machine (SVM)
 
@@ -750,9 +822,16 @@ print(f"Best parameters: {grid_search.best_params_}")
       warnings.warn(
 
 
-    Linear SVM training completed in 3.73 seconds
+    Linear SVM training completed in 3.70 seconds
     Best parameters: {'C': 10.0, 'loss': 'squared_hinge', 'max_iter': 1000}
 
+
+For Linear SVM, I optimize:
+- The regularization parameter (`C`), which controls the trade-off between achieving a low training error and a low testing error
+- The loss function, which determines how the model penalizes misclassifications
+- I set a high maximum iteration count to ensure convergence
+
+SVMs are particularly effective for text classification because they work well in high-dimensional spaces and can find optimal decision boundaries when classes are linearly separable.
 
 
 ```python
@@ -776,7 +855,7 @@ print(f"Validation F1 score: {svm_val_f1:.4f}")
 ```
 
     Evaluating Linear SVM on validation set...
-    Validation inference time: 0.0037 seconds
+    Validation inference time: 0.0022 seconds
     Validation accuracy: 0.9954
     Validation precision: 0.9954
     Validation recall: 0.9954
@@ -806,7 +885,7 @@ print(f"Test F1 score: {svm_test_f1:.4f}")
 
     
     Evaluating Linear SVM on test set...
-    Test inference time: 0.0021 seconds
+    Test inference time: 0.0023 seconds
     Test accuracy: 0.9976
     Test precision: 0.9976
     Test recall: 0.9976
@@ -825,13 +904,13 @@ plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
 plt.title('Linear SVM Confusion Matrix')
 plt.tight_layout()
-plt.savefig('svm_confusion_matrix.png')
+plt.savefig('./figures/svm_confusion_matrix.png')
 plt.show()
 ```
 
 
     
-![png](output_45_0.png)
+![png](output_57_0.png)
     
 
 
@@ -855,223 +934,15 @@ print(classification_report(y_test, svm_test_preds, target_names=['Fake News', '
     
 
 
-## 7. Feature Importance Analysis
+I evaluate the SVM model using the same comprehensive set of metrics and visualizations as for the other models.
 
-For the Logistic Regression model, I'll analyze the most important features (words or phrases) that influence the classification decision. This provides insights into what textual patterns the model is using to distinguish between fake and real news.
+## 7. Model Comparison
 
-
-```python
-# Get feature names from the TF-IDF vectorizer
-feature_names = np.array(tfidf_vectorizer.get_feature_names_out())
-```
+After training and evaluating all three models, I compare their performance:
 
 
 ```python
-# For Logistic Regression, get the coefficients
-if hasattr(lr_best, 'coef_'):
-    # Get the coefficients for the positive class (real news)
-    coef = lr_best.coef_[0]
-    
-    # Get the top positive and negative coefficients
-    top_positive_idx = np.argsort(coef)[-20:]  # Top 20 features for real news
-    top_negative_idx = np.argsort(coef)[:20]   # Top 20 features for fake news
-    
-    # Get the corresponding feature names
-    top_positive_features = feature_names[top_positive_idx]
-    top_negative_features = feature_names[top_negative_idx]
-```
-
-
-```python
-    # Create a DataFrame for visualization
-    top_features_df = pd.DataFrame({
-        'Feature': np.concatenate([top_positive_features, top_negative_features]),
-        'Coefficient': np.concatenate([coef[top_positive_idx], coef[top_negative_idx]]),
-        'Class': np.concatenate([['Real News']*20, ['Fake News']*20])
-    })
-    
-    # Plot the top features
-    plt.figure(figsize=(12, 10))
-    sns.barplot(x='Coefficient', y='Feature', hue='Class', data=top_features_df)
-    plt.title('Top Features for Fake News Detection (Logistic Regression)')
-    plt.tight_layout()
-    plt.savefig('lr_feature_importance.png')
-    plt.show()
-```
-
-
-    
-![png](output_50_0.png)
-    
-
-
-
-```python
-    print("Top features for Real News:")
-    for feature, coef_val in zip(top_positive_features, coef[top_positive_idx]):
-        print(f"{feature}: {coef_val:.4f}")
-    
-    print("\nTop features for Fake News:")
-    for feature, coef_val in zip(top_negative_features, coef[top_negative_idx]):
-        print(f"{feature}: {coef_val:.4f}")
-```
-
-    Top features for Real News:
-    news conference: 5.4384
-    said thursday: 5.6320
-    statement: 5.9453
-    republican: 6.0197
-    president barack: 6.2502
-    said statement: 6.4976
-    representative: 6.6466
-    minister: 6.7387
-    nov: 7.2629
-    washington president: 7.6511
-    london: 7.6564
-    monday: 7.8649
-    friday: 8.6859
-    thursday: 9.8002
-    tuesday: 9.8365
-    president donald: 11.1028
-    wednesday: 11.2329
-    washington: 15.3845
-    reuters: 21.6969
-    said: 27.3420
-    
-    Top features for Fake News:
-    via: -21.4856
-    video: -14.6057
-    read: -13.7080
-    president trump: -11.7500
-    gop: -9.6207
-    image: -9.4914
-    obama: -9.4677
-    breaking: -9.1222
-    mr: -7.8632
-    america: -7.7907
-    watch: -7.7871
-    featured image: -7.4531
-    sen: -7.4363
-    featured: -7.2049
-    hillary: -7.1159
-    american: -6.9037
-    even: -6.7143
-    president obama: -6.6839
-    rep: -6.6325
-    image via: -6.5902
-
-
-## 8. Analyze Misclassified Examples
-
-Let's examine some of the examples that were misclassified by the best-performing model (Linear SVM) to understand potential limitations.
-
-
-```python
-# Find misclassified examples from the SVM model
-misclassified_indices = np.where(svm_test_preds != y_test)[0]
-print(f"Number of misclassified examples: {len(misclassified_indices)}")
-```
-
-    Number of misclassified examples: 16
-
-
-
-```python
-# Display a sample of misclassified examples
-if len(misclassified_indices) > 0:
-    # Get a sample of misclassified examples (up to 5)
-    sample_size = min(5, len(misclassified_indices))
-    sample_indices = misclassified_indices[:sample_size]
-    
-    # Create a DataFrame for display
-    misclassified_df = pd.DataFrame({
-        'Title': test_df.iloc[sample_indices]['title'].values,
-        'Text Excerpt': [text[:200] + '...' for text in test_df.iloc[sample_indices]['enhanced_cleaned_text'].values],
-        'True Label': ['Real' if label == 1 else 'Fake' for label in y_test[sample_indices]],
-        'Predicted Label': ['Real' if label == 1 else 'Fake' for label in svm_test_preds[sample_indices]]
-    })
-    
-    print("\nSample of misclassified examples:")
-    display(misclassified_df)
-```
-
-    
-    Sample of misclassified examples:
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Title</th>
-      <th>Text Excerpt</th>
-      <th>True Label</th>
-      <th>Predicted Label</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>U.S. State Department appoints Fox News anchor as spokeswoman</td>
-      <td>WASHINGTON - Former Fox News anchor and correspondent Heather Nauert will be the new U.S. State Department spokeswoman, the State Department said in a statement on Monday. Nauert was most recently...</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>BREAKING: ELECTRONICS BANNED on Some U.S. Flights From Middle East…List of 9 Airlines and Airports Affected</td>
-      <td>COULD IT BE THAT EXPERT BOMB MAKER Ibrahim al-Asiri is trying to use an electronic device to take down a jet?Ibrahim al-Asiri has a long track record of bombing including trying to blow up a Detro...</td>
-      <td>Fake</td>
-      <td>Real</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>LIVE FEED: HEARING FOR SENATOR SESSIONS To Include Radical Corey Booker Speaking Against Sessions…Unprecedented!</td>
-      <td>Member Statements Senator Chuck Grassley R (IA) Witnesses Introducers The Honorable Richard Shelby United States Senator State of AlabamaThe Honorable Susan Collins United States Senator State of ...</td>
-      <td>Fake</td>
-      <td>Real</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>Obama trolls Trump over 'mean tweet' on late night TV</td>
-      <td>(This October 24 story has been refiled to say “go” instead of “do” in second paragraph) By Roberta Rampton LOS ANGELES - President Barack Obama on Monday trolled Republican presidential candidate...</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>THE U.S. IMPORTS MORE AFRICAN REFUGEES AS PLAGUE SPREADS THERE: Caused By Tradition Of Dancing With Corpses [Video]</td>
-      <td>One of the fastest growing groups of refugees coming to the U.S. are coming from Africa According to the Center for immigration studies:The sending countries with the largest percentage increases ...</td>
-      <td>Fake</td>
-      <td>Real</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
-## 9. Model Comparison and Resource Usage
-
-Let's compare the performance and resource usage of all three traditional ML models:
-
-
-```python
-# Create a comparison DataFrame
+# Create a comparison table
 models = ['Logistic Regression', 'Naive Bayes', 'Linear SVM']
 accuracy = [lr_test_accuracy, nb_test_accuracy, svm_test_accuracy]
 f1_scores = [lr_test_f1, nb_test_f1, svm_test_f1]
@@ -1090,11 +961,20 @@ comparison_df = pd.DataFrame({
     'Inference Time (s)': inference_times
 })
 
-print("Model Performance and Resource Usage Comparison:")
-display(comparison_df)
+# Format the numeric columns
+for col in comparison_df.columns[1:]:
+    if 'Time' in col:
+        comparison_df[col] = comparison_df[col].round(2)
+    else:
+        comparison_df[col] = comparison_df[col].round(4)
+
+print("Model Comparison:")
+comparison_df
 ```
 
-    Model Performance and Resource Usage Comparison:
+    Model Comparison:
+
+
 
 
 
@@ -1129,32 +1009,32 @@ display(comparison_df)
     <tr>
       <th>0</th>
       <td>Logistic Regression</td>
-      <td>0.995546</td>
-      <td>0.995546</td>
-      <td>0.995548</td>
-      <td>0.995546</td>
-      <td>7.924396</td>
-      <td>0.003910</td>
+      <td>0.9955</td>
+      <td>0.9955</td>
+      <td>0.9955</td>
+      <td>0.9955</td>
+      <td>7.93</td>
+      <td>0.00</td>
     </tr>
     <tr>
       <th>1</th>
       <td>Naive Bayes</td>
-      <td>0.964217</td>
-      <td>0.964212</td>
-      <td>0.964222</td>
-      <td>0.964217</td>
-      <td>0.325948</td>
-      <td>0.006933</td>
+      <td>0.9642</td>
+      <td>0.9642</td>
+      <td>0.9642</td>
+      <td>0.9642</td>
+      <td>0.32</td>
+      <td>0.01</td>
     </tr>
     <tr>
       <th>2</th>
       <td>Linear SVM</td>
-      <td>0.997624</td>
-      <td>0.997624</td>
-      <td>0.997625</td>
-      <td>0.997624</td>
-      <td>3.725160</td>
-      <td>0.002089</td>
+      <td>0.9976</td>
+      <td>0.9976</td>
+      <td>0.9976</td>
+      <td>0.9976</td>
+      <td>3.70</td>
+      <td>0.00</td>
     </tr>
   </tbody>
 </table>
@@ -1162,383 +1042,299 @@ display(comparison_df)
 
 
 
+
 ```python
-# Plot performance metrics
+# Visualize model performance comparison
 plt.figure(figsize=(12, 6))
-metrics = ['Accuracy', 'F1 Score', 'Precision', 'Recall']
 x = np.arange(len(models))
 width = 0.2
-multiplier = 0
 
-for metric in metrics:
-    offset = width * multiplier
-    plt.bar(x + offset, comparison_df[metric], width, label=metric)
-    multiplier += 1
+plt.bar(x - width, accuracy, width, label='Accuracy')
+plt.bar(x, f1_scores, width, label='F1 Score')
+plt.bar(x + width, precision, width, label='Precision')
 
 plt.xlabel('Model')
 plt.ylabel('Score')
-plt.title('Performance Metrics Comparison')
-plt.xticks(x + width, models)
-plt.legend(loc='lower right')
-plt.ylim(0.95, 1.0)  # Adjust y-axis to better show differences
+plt.title('Model Performance Comparison')
+plt.xticks(x, models)
+plt.ylim(0.9, 1.0)  # Adjust as needed based on your results
+plt.legend()
 plt.tight_layout()
-plt.savefig('traditional_models_performance.png')
+plt.savefig('./figures/model_performance_comparison.png')
 plt.show()
 ```
 
 
     
-![png](output_57_0.png)
+![png](output_61_0.png)
     
 
 
 
 ```python
-# Plot training and inference times (log scale)
+# Visualize training and inference times (log scale)
 plt.figure(figsize=(12, 6))
-plt.bar(models, comparison_df['Training Time (s)'], label='Training Time (s)')
-plt.bar(models, comparison_df['Inference Time (s)'], label='Inference Time (s)', alpha=0.5)
+x = np.arange(len(models))
+width = 0.35
+
+plt.bar(x - width/2, training_times, width, label='Training Time (s)')
+plt.bar(x + width/2, inference_times, width, label='Inference Time (s)')
+
 plt.xlabel('Model')
 plt.ylabel('Time (seconds, log scale)')
-plt.title('Training and Inference Times')
-plt.yscale('log')  # Use log scale to show both training and inference times
+plt.title('Model Efficiency Comparison')
+plt.xticks(x, models)
+plt.yscale('log')  # Use log scale for better visualization
 plt.legend()
 plt.tight_layout()
-plt.savefig('traditional_models_time.png')
+plt.savefig('./figures/model_efficiency_comparison.png')
 plt.show()
 ```
 
 
     
-![png](output_58_0.png)
+![png](output_62_0.png)
     
 
 
-## 10. Save the Best Model
+I create both tabular and visual comparisons of the models' performance and efficiency. This helps identify the best model for different criteria:
+- Performance metrics (accuracy, F1 score, precision, recall)
+- Computational efficiency (training time, inference time)
 
-Let's save the best-performing model (Linear SVM) for future use:
+The log scale for time visualization is particularly useful because training and inference times can differ by orders of magnitude.
 
+## 8. Feature Importance Analysis
 
-```python
-# Save the best model (Linear SVM)
-best_model = svm_best
-joblib.dump(best_model, 'linear_svm_fake_news_detector.joblib')
-
-# Save the TF-IDF vectorizer
-joblib.dump(tfidf_vectorizer, 'tfidf_vectorizer.joblib')
-
-print("Best model and vectorizer saved successfully.")
-```
-
-    Best model and vectorizer saved successfully.
-
-
-## 11. Comparison with Transformer Models
-
-Now, let's compare our traditional ML models with the transformer models from previous notebooks:
+To understand what features (words/phrases) are most influential in the classification decision, I analyze the coefficients of the Logistic Regression model:
 
 
 ```python
-# Create a comprehensive comparison table
-all_models = [
-    'Logistic Regression', 
-    'Naive Bayes', 
-    'Linear SVM', 
-    'DistilBERT', 
-    'TinyBERT', 
-    'RoBERTa', 
-    'MobileBERT'
-]
+# Get feature names
+feature_names = tfidf_vectorizer.get_feature_names_out()
 
-# Performance metrics
-all_accuracy = [
-    lr_test_accuracy, 
-    nb_test_accuracy, 
-    svm_test_accuracy,
-    0.9996,  # DistilBERT
-    0.9991,  # TinyBERT
-    1.0000,  # RoBERTa
-    0.9996   # MobileBERT
-]
-
-all_f1 = [
-    lr_test_f1, 
-    nb_test_f1, 
-    svm_test_f1,
-    0.9996,  # DistilBERT
-    0.9991,  # TinyBERT
-    1.0000,  # RoBERTa
-    0.9996   # MobileBERT
-]
+# For Logistic Regression, analyze coefficients
+if hasattr(lr_best, 'coef_'):
+    # Get coefficients
+    coefficients = lr_best.coef_[0]
+    
+    # Create a DataFrame of features and their coefficients
+    coef_df = pd.DataFrame({
+        'Feature': feature_names,
+        'Coefficient': coefficients
+    })
+    
+    # Sort by absolute coefficient value
+    coef_df['Abs_Coefficient'] = coef_df['Coefficient'].abs()
+    coef_df = coef_df.sort_values('Abs_Coefficient', ascending=False)
+    
+    # Display top positive and negative coefficients
+    print("\nTop 20 features associated with Real News:")
+    print(coef_df[coef_df['Coefficient'] > 0].head(20))
+    
+    print("\nTop 20 features associated with Fake News:")
+    print(coef_df[coef_df['Coefficient'] < 0].head(20))
+    
+    # Visualize top features
+    plt.figure(figsize=(12, 8))
+    
+    # Top positive coefficients (Real News)
+    plt.subplot(2, 1, 1)
+    top_positive = coef_df[coef_df['Coefficient'] > 0].head(15)
+    sns.barplot(x='Coefficient', y='Feature', data=top_positive)
+    plt.title('Top Features Associated with Real News')
+    plt.tight_layout()
+    
+    # Top negative coefficients (Fake News)
+    plt.subplot(2, 1, 2)
+    top_negative = coef_df[coef_df['Coefficient'] < 0].head(15)
+    sns.barplot(x='Coefficient', y='Feature', data=top_negative)
+    plt.title('Top Features Associated with Fake News')
+    
+    plt.tight_layout()
+    plt.savefig('./figures/feature_importance.png')
+    plt.show()
 ```
 
+    
+    Top 20 features associated with Real News:
+                        Feature  Coefficient  Abs_Coefficient
+    36851                  said    27.342025        27.342025
+    35770               reuters    21.696906        21.696906
+    47749            washington    15.384481        15.384481
+    48045             wednesday    11.232854        11.232854
+    32519      president donald    11.102758        11.102758
+    45645               tuesday     9.836507         9.836507
+    43657              thursday     9.800203         9.800203
+    16050                friday     8.685948         8.685948
+    26569                monday     7.864895         7.864895
+    23973                london     7.656416         7.656416
+    47791  washington president     7.651080         7.651080
+    28419                   nov     7.262888         7.262888
+    26255              minister     6.738686         6.738686
+    35224        representative     6.646595         6.646595
+    37496        said statement     6.497556         6.497556
+    32495      president barack     6.250184         6.250184
+    35272            republican     6.019708         6.019708
+    41326             statement     5.945255         5.945255
+    37539         said thursday     5.631968         5.631968
+    27981       news conference     5.438432         5.438432
+    
+    Top 20 features associated with Fake News:
+                   Feature  Coefficient  Abs_Coefficient
+    46800              via   -21.485561        21.485561
+    46910            video   -14.605724        14.605724
+    34160             read   -13.707958        13.707958
+    32645  president trump   -11.749985        11.749985
+    17142              gop    -9.620676         9.620676
+    19605            image    -9.491397         9.491397
+    28592            obama    -9.467722         9.467722
+    4861          breaking    -9.122179         9.122179
+    26904               mr    -7.863174         7.863174
+    1676           america    -7.790686         7.790686
+    47832            watch    -7.787074         7.787074
+    14623   featured image    -7.453052         7.453052
+    38682              sen    -7.436308         7.436308
+    14622         featured    -7.204872         7.204872
+    18753          hillary    -7.115912         7.115912
+    1744          american    -6.903660         6.903660
+    13630             even    -6.714348         6.714348
+    32594  president obama    -6.683862         6.683862
+    35020              rep    -6.632463         6.632463
+    19625        image via    -6.590187         6.590187
 
-```python
-# Training times (minutes)
-all_training_times = [
-    lr_training_time / 60,  # Convert to minutes
-    nb_training_time / 60,
-    svm_training_time / 60,
-    48.69,  # DistilBERT
-    8.99,   # TinyBERT
-    62.35,  # RoBERTa
-    39.18   # MobileBERT
-]
-
-# Inference times (ms per sample)
-all_inference_times = [
-    lr_test_time / len(y_test) * 1000,  # Convert to ms per sample
-    nb_test_time / len(y_test) * 1000,
-    svm_test_time / len(y_test) * 1000,
-    61.76,   # DistilBERT
-    17.08,   # TinyBERT
-    118.37,  # RoBERTa
-    113.50   # MobileBERT
-]
-
-# Model sizes (parameters)
-all_model_sizes = [
-    "~50K",    # Logistic Regression (depends on features)
-    "~50K",    # Naive Bayes (depends on features)
-    "~50K",    # Linear SVM (depends on features)
-    "67M",     # DistilBERT
-    "15M",     # TinyBERT
-    "125M",    # RoBERTa
-    "25M"      # MobileBERT
-]
-```
-
-
-```python
-# Create the comparison DataFrame
-all_comparison_df = pd.DataFrame({
-    'Model': all_models,
-    'Accuracy': all_accuracy,
-    'F1 Score': all_f1,
-    'Training Time (min)': all_training_times,
-    'Inference Time (ms/sample)': all_inference_times,
-    'Model Size': all_model_sizes
-})
-
-# Add model type column
-model_types = ['Traditional ML'] * 3 + ['Transformer'] * 4
-all_comparison_df['Model Type'] = model_types
-
-print("Comprehensive Model Comparison:")
-display(all_comparison_df)
-```
-
-    Comprehensive Model Comparison:
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Model</th>
-      <th>Accuracy</th>
-      <th>F1 Score</th>
-      <th>Training Time (min)</th>
-      <th>Inference Time (ms/sample)</th>
-      <th>Model Size</th>
-      <th>Model Type</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>Logistic Regression</td>
-      <td>0.995546</td>
-      <td>0.995546</td>
-      <td>0.132073</td>
-      <td>0.000581</td>
-      <td>~50K</td>
-      <td>Traditional ML</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>Naive Bayes</td>
-      <td>0.964217</td>
-      <td>0.964212</td>
-      <td>0.005432</td>
-      <td>0.001029</td>
-      <td>~50K</td>
-      <td>Traditional ML</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>Linear SVM</td>
-      <td>0.997624</td>
-      <td>0.997624</td>
-      <td>0.062086</td>
-      <td>0.000310</td>
-      <td>~50K</td>
-      <td>Traditional ML</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>DistilBERT</td>
-      <td>0.999600</td>
-      <td>0.999600</td>
-      <td>48.690000</td>
-      <td>61.760000</td>
-      <td>67M</td>
-      <td>Transformer</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>TinyBERT</td>
-      <td>0.999100</td>
-      <td>0.999100</td>
-      <td>8.990000</td>
-      <td>17.080000</td>
-      <td>15M</td>
-      <td>Transformer</td>
-    </tr>
-    <tr>
-      <th>5</th>
-      <td>RoBERTa</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>62.350000</td>
-      <td>118.370000</td>
-      <td>125M</td>
-      <td>Transformer</td>
-    </tr>
-    <tr>
-      <th>6</th>
-      <td>MobileBERT</td>
-      <td>0.999600</td>
-      <td>0.999600</td>
-      <td>39.180000</td>
-      <td>113.500000</td>
-      <td>25M</td>
-      <td>Transformer</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
-
-```python
-# Plot performance comparison
-plt.figure(figsize=(14, 6))
-bar_width = 0.35
-index = np.arange(len(all_models))
-
-plt.bar(index, all_comparison_df['Accuracy'], bar_width, label='Accuracy')
-plt.bar(index + bar_width, all_comparison_df['F1 Score'], bar_width, label='F1 Score')
-
-plt.xlabel('Model')
-plt.ylabel('Score')
-plt.title('Performance Comparison: Traditional ML vs. Transformer Models')
-plt.xticks(index + bar_width/2, all_models, rotation=45, ha='right')
-plt.legend()
-plt.tight_layout()
-plt.savefig('all_models_performance.png')
-plt.show()
-```
 
 
     
-![png](output_65_0.png)
+![png](output_64_1.png)
     
 
+
+This feature importance analysis provides valuable insights into what linguistic patterns the model has learned to associate with real versus fake news. This can help:
+- Understand the model's decision-making process
+- Identify potential biases in the dataset
+- Compare with the patterns that transformer models might learn
+
+## 9. Error Analysis
+
+To understand where the models struggle, I analyze the misclassified examples:
 
 
 ```python
-# Plot training and inference times
-fig, ax1 = plt.subplots(figsize=(14, 6))
+# Analyze misclassifications for the best model (SVM)
+misclassified_indices = np.where(svm_test_preds != y_test)[0]
+print(f"\nNumber of misclassified examples by SVM: {len(misclassified_indices)} out of {len(y_test)} ({len(misclassified_indices)/len(y_test)*100:.2f}%)")
 
-color = 'tab:blue'
-ax1.set_xlabel('Model')
-ax1.set_ylabel('Training Time (min)', color=color)
-ax1.bar(index, all_comparison_df['Training Time (min)'], bar_width, color=color, label='Training Time')
-ax1.tick_params(axis='y', labelcolor=color)
-
-ax2 = ax1.twinx()
-color = 'tab:red'
-ax2.set_ylabel('Inference Time (ms/sample)', color=color)
-ax2.bar(index + bar_width, all_comparison_df['Inference Time (ms/sample)'], bar_width, color=color, label='Inference Time')
-ax2.tick_params(axis='y', labelcolor=color)
-
-plt.title('Resource Usage Comparison: Traditional ML vs. Transformer Models')
-plt.xticks(index + bar_width/2, all_models, rotation=45, ha='right')
-
-# Add legend
-lines1, labels1 = ax1.get_legend_handles_labels()
-lines2, labels2 = ax2.get_legend_handles_labels()
-ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
-
-plt.tight_layout()
-plt.savefig('all_models_resource_usage.png')
-plt.show()
+if len(misclassified_indices) > 0:
+    # Display a few misclassified examples
+    print("\nSample of misclassified examples:")
+    for i, idx in enumerate(misclassified_indices[:5]):  # Show first 5 misclassifications
+        true_label = "Real News" if y_test.iloc[idx] == 1 else "Fake News"
+        pred_label = "Real News" if svm_test_preds[idx] == 1 else "Fake News"
+        
+        print(f"\nExample {i+1}:")
+        print(f"True label: {true_label}, Predicted label: {pred_label}")
+        print(f"Title: {test_df['title'].iloc[idx]}")
+        print(f"Text excerpt: {test_df['enhanced_cleaned_text'].iloc[idx][:200]}...")
 ```
 
+    
+    Number of misclassified examples by SVM: 16 out of 6735 (0.24%)
+    
+    Sample of misclassified examples:
+    
+    Example 1:
+    True label: Real News, Predicted label: Fake News
+    Title: U.S. State Department appoints Fox News anchor as spokeswoman
+    Text excerpt: WASHINGTON - Former Fox News anchor and correspondent Heather Nauert will be the new U.S. State Department spokeswoman, the State Department said in a statement on Monday. Nauert was most recently an ...
+    
+    Example 2:
+    True label: Fake News, Predicted label: Real News
+    Title: BREAKING: ELECTRONICS BANNED on Some U.S. Flights From Middle East…List of 9 Airlines and Airports Affected
+    Text excerpt: COULD IT BE THAT EXPERT BOMB MAKER Ibrahim al-Asiri is trying to use an electronic device to take down a jet?Ibrahim al-Asiri has a long track record of bombing including trying to blow up a Detroit-b...
+    
+    Example 3:
+    True label: Fake News, Predicted label: Real News
+    Title: LIVE FEED: HEARING FOR SENATOR SESSIONS To Include Radical Corey Booker Speaking Against Sessions…Unprecedented!
+    Text excerpt: Member Statements Senator Chuck Grassley R (IA) Witnesses Introducers The Honorable Richard Shelby United States Senator State of AlabamaThe Honorable Susan Collins United States Senator State of Main...
+    
+    Example 4:
+    True label: Real News, Predicted label: Fake News
+    Title: Obama trolls Trump over 'mean tweet' on late night TV
+    Text excerpt: (This October 24 story has been refiled to say “go” instead of “do” in second paragraph) By Roberta Rampton LOS ANGELES - President Barack Obama on Monday trolled Republican presidential candidate Don...
+    
+    Example 5:
+    True label: Fake News, Predicted label: Real News
+    Title: THE U.S. IMPORTS MORE AFRICAN REFUGEES AS PLAGUE SPREADS THERE: Caused By Tradition Of Dancing With Corpses [Video]
+    Text excerpt: One of the fastest growing groups of refugees coming to the U.S. are coming from Africa According to the Center for immigration studies:The sending countries with the largest percentage increases in t...
+
+
+This error analysis helps identify patterns in misclassifications, which can inform future improvements to the model or preprocessing steps.
+
+## 10. Save Models for Future Use
+
+To enable future use and comparison, I save the best-performing models:
+
+
+```python
+# Save the best models and vectorizer
+print("\nSaving models and vectorizer...")
+os.makedirs('models', exist_ok=True)
+
+joblib.dump(lr_best, '../ml_models/logistic_regression_model.joblib')
+joblib.dump(nb_best, '../ml_models/naive_bayes_model.joblib')
+joblib.dump(svm_best, '../ml_models/linear_svm_model.joblib')
+joblib.dump(tfidf_vectorizer, '../ml_models/tfidf_vectorizer.joblib')
+
+print("Models and vectorizer saved successfully.")
+```
 
     
-![png](output_66_0.png)
+    Saving models and vectorizer...
+    Models and vectorizer saved successfully.
+
+
+Saving the models allows for:
+- Easy deployment in production environments
+- Consistent evaluation against new data
+- Direct comparison with transformer models in future analyses
+
+## 11. Conclusion and Implications for Transformer Models
+
+
+```python
+print("\n=== Conclusion ===")
+print("The traditional machine learning baselines demonstrate excellent performance on the ISOT fake news dataset:")
+print(f"- Best model (Linear SVM): {svm_test_accuracy:.4f} accuracy, {svm_test_f1:.4f} F1 score")
+print(f"- Training time: {svm_training_time:.2f} seconds")
+print(f"- Inference time: {svm_test_time:.4f} seconds per test set")
+print("\nThese results provide a strong benchmark for comparing with transformer-based approaches.")
+print("For transformer models to demonstrate value, they should either:")
+print("1. Show improved performance on the small percentage of examples that traditional ML models misclassify")
+print("2. Demonstrate better generalization to out-of-distribution examples")
+print("3. Provide additional insights through their attention mechanisms")
+print("4. Maintain comparable performance with less feature engineering")
+```
+
     
+    === Conclusion ===
+    The traditional machine learning baselines demonstrate excellent performance on the ISOT fake news dataset:
+    - Best model (Linear SVM): 0.9976 accuracy, 0.9976 F1 score
+    - Training time: 3.70 seconds
+    - Inference time: 0.0023 seconds per test set
+    
+    These results provide a strong benchmark for comparing with transformer-based approaches.
+    For transformer models to demonstrate value, they should either:
+    1. Show improved performance on the small percentage of examples that traditional ML models misclassify
+    2. Demonstrate better generalization to out-of-distribution examples
+    3. Provide additional insights through their attention mechanisms
+    4. Maintain comparable performance with less feature engineering
 
 
-## 12. Conclusion and Discussion
+This conclusion summarizes the key findings and sets expectations for the transformer models. The traditional ML baselines achieve remarkably high performance with minimal computational resources, which raises the bar for what would constitute a meaningful improvement from more complex models.
 
-In this notebook, I've implemented and evaluated three traditional machine learning approaches for fake news detection on the ISOT dataset:
+The implications for transformer models are significant:
+1. They need to demonstrate value beyond just classification accuracy
+2. Their higher computational cost needs to be justified by other benefits
+3. They might be more valuable in scenarios with less feature engineering or more complex linguistic patterns
 
-1. **Logistic Regression**: Achieved 98.99% accuracy and F1 score, with relatively fast training and inference times.
-2. **Naive Bayes**: Achieved 96.61% accuracy and F1 score, with the fastest training time but slightly lower performance.
-3. **Linear SVM**: Achieved 99.09% accuracy and F1 score, making it the best-performing traditional model.
-
-### Key Findings:
-
-1. **Performance Comparison**: 
-   - Traditional ML models achieve impressive performance (96-99% accuracy), but transformer models still outperform them slightly (99.9-100% accuracy).
-   - The performance gap is relatively small, suggesting that for many applications, traditional models might be sufficient.
-
-2. **Resource Efficiency**:
-   - Traditional ML models are significantly more efficient in terms of:
-     - Training time: 10-300x faster than transformer models
-     - Inference time: 1000-30000x faster per sample
-     - Model size: ~50K parameters vs. 15M-125M parameters
-
-3. **Feature Importance**:
-   - The analysis of important features reveals interesting patterns:
-     - Real news is strongly associated with terms like "reuters", "said", "percent", and days of the week
-     - Fake news is associated with political terms like "hillary", "obama", "trump", and emotional/sensational terms like "fake", "liberal", "conservative"
-
-4. **Error Analysis**:
-   - Misclassified examples reveal potential biases in the model, particularly around political content
-   - Many real news articles about Trump administration policies were misclassified as fake news
-
-### Practical Implications:
-
-1. **Model Selection Trade-offs**:
-   - For applications requiring maximum accuracy: Transformer models (especially RoBERTa)
-   - For applications with resource constraints: Traditional ML models (especially Linear SVM)
-   - For balanced performance and efficiency: TinyBERT offers a good compromise
-
-2. **Deployment Considerations**:
-   - Traditional ML models are much more suitable for edge devices or applications with strict latency requirements
-   - The TF-IDF + SVM approach could be deployed on mobile devices or low-power servers
-
-3. **Bias Mitigation**:
-   - The feature importance analysis and error analysis highlight potential biases that should be addressed before deployment
-   - More diverse training data or domain adaptation techniques might help reduce these biases
-
-This comprehensive evaluation demonstrates that while transformer models achieve slightly higher accuracy, traditional ML approaches remain competitive and offer significant advantages in terms of computational efficiency and resource requirements. The choice between these approaches should be guided by the specific requirements and constraints of the application.
+This baseline establishes the foundation for our comparative evaluation of lightweight pretrained transformer models for fake news detection.

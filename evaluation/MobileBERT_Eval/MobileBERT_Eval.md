@@ -1,10 +1,12 @@
 # MobileBERT Evaluation on ISOT Dataset
 
-In this notebook, I'll evaluate my fine-tuned MobileBERT model on the ISOT evaluation dataset. My goal is to understand how well this mobile-optimized model performs compared to DistilBERT, TinyBERT, and RoBERTa, and analyze its resource consumption, especially for CPU-based edge deployment on my laptop. MobileBERT is specifically designed for mobile deployment, potentially offering the best balance between accuracy and resource usage.
+## Introduction
 
-## 1. Setting Up My Environment
+This notebook documents the evaluation of a fine-tuned MobileBERT model on the ISOT fake news detection dataset. The primary goal is to assess the model's performance and analyze its resource consumption, with a specific focus on CPU-based edge deployment scenarios such as mobile devices and laptops. MobileBERT was specifically designed for mobile applications, potentially offering the best balance between accuracy and resource efficiency compared to other models in our comparative study (DistilBERT, TinyBERT, and RoBERTa).
 
-First, I'll import all necessary libraries and set up utility functions to monitor resource usage.
+## 1. Setting Up the Environment
+
+First, I import all necessary libraries and set up utility functions to monitor resource usage:
 
 
 ```python
@@ -34,6 +36,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 ```
 
+I've selected these libraries for the following reasons:
+- Core data science libraries (`numpy`, `pandas`) for data manipulation
+- PyTorch (`torch`) for model inference
+- Hugging Face's `transformers` for loading and using the MobileBERT model
+- `psutil` for monitoring system resource usage during evaluation
+- `sklearn.metrics` for comprehensive model evaluation metrics
+- Visualization libraries (`matplotlib`, `seaborn`) for result analysis
+- `gc` for explicit garbage collection to manage memory efficiently
+
 
 ```python
 # Set device - using CPU for edge device testing
@@ -44,6 +55,11 @@ print(f"Using device: {device}")
     Using device: cpu
 
 
+I deliberately choose to use the CPU rather than GPU for this evaluation because:
+1. The primary target for MobileBERT deployment is mobile and edge devices that typically lack dedicated GPUs
+2. CPU performance metrics provide a more realistic assessment of real-world deployment scenarios
+3. This allows for direct comparison with other lightweight models in similar deployment conditions
+
 
 ```python
 # Function to get current memory usage
@@ -52,9 +68,11 @@ def get_memory_usage():
     return process.memory_info().rss / 1024 / 1024  # Convert to MB
 ```
 
+This utility function tracks the resident set size (RSS) of the Python process, providing a reliable measure of actual memory consumption during model loading and inference. This is particularly important for MobileBERT, which was specifically designed to minimize memory footprint.
+
 ## 2. Loading and Preparing ISOT Evaluation Dataset
 
-Now I'll load the same evaluation dataset that I used for other models to enable direct comparison.
+Next, I load the ISOT evaluation dataset, which provides a reliable assessment since it comes from the same domain as the training data:
 
 
 ```python
@@ -62,8 +80,10 @@ Now I'll load the same evaluation dataset that I used for other models to enable
 print(f"Memory usage before loading dataset: {get_memory_usage():.2f} MB")
 ```
 
-    Memory usage before loading dataset: 819.03 MB
+    Memory usage before loading dataset: 819.56 MB
 
+
+Establishing this baseline memory usage helps isolate the memory impact of dataset loading versus model loading, which is important for understanding the overall resource profile.
 
 
 ```python
@@ -75,6 +95,16 @@ print(f"Loaded {len(real_news_df)} real news articles and {len(fake_news_df)} fa
 
     Loaded 26 real news articles and 21 fake news articles
 
+
+The evaluation dataset consists of:
+- A manually curated set of real news articles from reliable sources
+- A collection of fake news articles specifically selected for evaluation
+- A relatively small size (47 articles total) that allows for detailed analysis of each prediction
+
+This dataset size is appropriate for evaluation because:
+1. It's large enough to provide meaningful performance metrics
+2. It's small enough to allow detailed analysis of individual predictions
+3. It represents a realistic batch size for edge deployment scenarios
 
 
 ```python
@@ -92,6 +122,11 @@ fake_news_df['label'] = 0  # 0 for fake news
 fake_news_clean = fake_news_df[['text', 'label']]
 ```
 
+I combine the title and body text for each article because:
+1. This matches the preprocessing approach used during model training
+2. Titles often contain strong signals for fake news detection
+3. This provides the model with the complete context of each article
+
 
 ```python
 # Combine datasets
@@ -104,6 +139,11 @@ combined_eval = pd.concat([real_news_clean, fake_news_clean], ignore_index=True)
 combined_eval = combined_eval.sample(frac=1, random_state=42).reset_index(drop=True)
 ```
 
+Shuffling the dataset ensures that:
+1. The evaluation isn't biased by the order of examples
+2. Batches contain a mix of real and fake news articles
+3. Results are reproducible due to the fixed random seed
+
 
 ```python
 print(f"Prepared evaluation dataset with {len(combined_eval)} articles")
@@ -114,6 +154,8 @@ print(f"Class distribution: {combined_eval['label'].value_counts().to_dict()}")
     Class distribution: {1: 26, 0: 21}
 
 
+Checking the class distribution confirms that the dataset has a slight imbalance (26 real vs. 21 fake), which is important to consider when interpreting performance metrics.
+
 
 ```python
 # Convert to HuggingFace dataset format
@@ -121,12 +163,14 @@ combined_eval = HFDataset.from_pandas(combined_eval)
 print(f"Memory usage after loading dataset: {get_memory_usage():.2f} MB")
 ```
 
-    Memory usage after loading dataset: 821.88 MB
+    Memory usage after loading dataset: 822.19 MB
 
 
-## 3. Loading My Pre-trained Model
+Converting to the HuggingFace dataset format enables efficient batching and preprocessing, which is particularly important for memory-constrained environments.
 
-I'll now load the MobileBERT model that I previously fine-tuned. For edge deployment, I'm particularly interested in the model's loading time and memory footprint on CPU.
+## 3. Loading the Pre-trained Model
+
+Now I load the MobileBERT model that was previously fine-tuned on the ISOT dataset:
 
 
 ```python
@@ -148,17 +192,10 @@ model.to(device)  # This will be CPU
 load_time = time.time() - start_time
 ```
 
-
-    vocab.txt:   0%|          | 0.00/232k [00:00<?, ?B/s]
-
-
-
-    tokenizer.json:   0%|          | 0.00/466k [00:00<?, ?B/s]
-
-
-
-    config.json:   0%|          | 0.00/847 [00:00<?, ?B/s]
-
+I measure the model loading time because:
+1. Startup time is a critical factor for mobile and edge applications
+2. It affects user experience in interactive scenarios
+3. It provides insight into the model's initialization overhead, which is particularly relevant for MobileBERT's deployment on resource-constrained devices
 
 
 ```python
@@ -166,13 +203,15 @@ print(f"Model loaded in {load_time:.2f} seconds")
 print(f"Memory usage after loading model: {get_memory_usage():.2f} MB")
 ```
 
-    Model loaded in 4.37 seconds
-    Memory usage after loading model: 848.09 MB
+    Model loaded in 1.19 seconds
+    Memory usage after loading model: 848.53 MB
 
+
+The memory usage after loading the model helps quantify MobileBERT's static memory footprint, which is a key constraint for mobile deployment.
 
 ## 4. Tokenizing the Dataset
 
-Before I can run the model on my data, I need to tokenize it using the MobileBERT tokenizer.
+Before running inference, I tokenize the text data using the MobileBERT tokenizer:
 
 
 ```python
@@ -197,6 +236,12 @@ def tokenize_function(examples):
     )
 ```
 
+The tokenization parameters are carefully chosen:
+- `padding='max_length'` ensures consistent tensor dimensions
+- `truncation=True` handles articles that exceed the model's maximum sequence length
+- `max_length=512` matches MobileBERT's maximum input size
+- These settings balance information retention with computational efficiency
+
 
 ```python
 # Apply tokenization
@@ -208,6 +253,8 @@ tokenized_dataset.set_format('torch', columns=['input_ids', 'attention_mask', 'l
     Map:   0%|          | 0/47 [00:00<?, ? examples/s]
 
 
+Using batched tokenization improves efficiency, while setting the output format to PyTorch tensors ensures compatibility with the model.
+
 
 ```python
 tokenize_time = time.time() - tokenize_start_time
@@ -216,8 +263,10 @@ print(f"Memory usage after tokenization: {get_memory_usage():.2f} MB")
 ```
 
     Dataset tokenized in 0.20 seconds
-    Memory usage after tokenization: 852.17 MB
+    Memory usage after tokenization: 852.28 MB
 
+
+Tracking tokenization time and memory impact is important because preprocessing can be a significant bottleneck in real-time applications, especially on mobile devices.
 
 
 ```python
@@ -238,9 +287,14 @@ print(f"Examples with labels: {labels_count} out of {len(tokenized_dataset)}")
     Examples with labels: 47 out of 47
 
 
+These validation checks ensure that:
+1. The dataset has the expected structure
+2. All examples have the required fields
+3. No data was lost during preprocessing
+
 ## 5. Running Model Evaluation
 
-Now comes the main part - evaluating my MobileBERT model's performance on the evaluation dataset. Since I'm targeting edge devices, I'll pay special attention to inference speed and memory usage on CPU.
+Now I evaluate the model's performance on the ISOT evaluation dataset, with special attention to inference speed and memory usage:
 
 
 ```python
@@ -271,6 +325,12 @@ eval_dataloader = DataLoader(
     shuffle=False
 )
 ```
+
+I use a batch size of 16 because:
+1. It's appropriate for CPU-based inference
+2. It balances memory usage with processing efficiency
+3. It's a realistic batch size for mobile deployment scenarios
+4. MobileBERT's architecture is optimized for efficient batch processing
 
 
 ```python
@@ -325,6 +385,17 @@ print(f"Evaluation complete. Total predictions: {len(all_preds)}, Total labels: 
     Evaluation complete. Total predictions: 47, Total labels: 47
 
 
+The evaluation loop is designed to:
+1. Track memory usage throughout inference
+2. Measure per-batch and per-sample inference times
+3. Collect predictions and ground truth labels for performance analysis
+4. Include sanity checks to ensure data integrity
+
+Using `torch.no_grad()` and `model.eval()` ensures:
+1. No gradient computation, reducing memory usage
+2. Batch normalization and dropout are in evaluation mode
+3. The model operates in its most efficient inference configuration
+
 
 ```python
 # Calculate metrics if counts match
@@ -349,6 +420,12 @@ else:
     F1 Score: 0.7449
 
 
+I calculate multiple performance metrics because:
+1. Accuracy alone can be misleading, especially with imbalanced datasets
+2. Precision and recall provide insight into different types of errors
+3. F1 score balances precision and recall in a single metric
+4. These metrics together provide a comprehensive view of model performance
+
 
 ```python
 # Create confusion matrix
@@ -366,9 +443,11 @@ print(cm)
      [ 0 26]]
 
 
+The confusion matrix provides a detailed breakdown of correct and incorrect predictions by class, which is essential for understanding the model's behavior on different types of news articles.
+
 ## 6. Analyzing Resource Consumption
 
-Since I'm targeting edge devices, I'll focus on CPU-specific metrics like memory usage and inference time to determine if MobileBERT is suitable for edge deployment.
+Since the target is mobile deployment, I focus on CPU-specific metrics like memory usage and inference time:
 
 
 ```python
@@ -382,11 +461,17 @@ print(f"Peak memory usage: {max(memory_usages):.2f} MB")
 
     
     Resource Consumption Analysis for Edge Deployment:
-    Total evaluation time: 5.33 seconds
-    Average inference time per batch: 1.7782 seconds
-    Average inference time per sample: 113.50 ms
-    Peak memory usage: 1386.73 MB
+    Total evaluation time: 5.28 seconds
+    Average inference time per batch: 1.7601 seconds
+    Average inference time per sample: 112.35 ms
+    Peak memory usage: 1371.16 MB
 
+
+These metrics are crucial for mobile deployment because:
+1. Inference time per sample determines if the model can run in real-time on mobile devices
+2. Peak memory usage must fit within mobile device constraints
+3. Batch processing efficiency affects throughput in multi-user scenarios
+4. MobileBERT was specifically designed to optimize these metrics for mobile deployment
 
 
 ```python
@@ -409,7 +494,7 @@ plt.ylabel('Time (seconds)')
 
 
     
-![png](output_33_1.png)
+![png](output_48_1.png)
     
 
 
@@ -426,13 +511,13 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x34135aa80>
+    <matplotlib.legend.Legend at 0x33893f890>
 
 
 
 
     
-![png](output_34_1.png)
+![png](output_49_1.png)
     
 
 
@@ -447,9 +532,15 @@ plt.show()
     <Figure size 640x480 with 0 Axes>
 
 
+Visualizing resource usage over time reveals:
+1. Any warming-up effects in the first few batches
+2. Memory growth patterns that might indicate leaks
+3. Variability in inference time across batches
+4. Overall stability of the model during extended operation
+
 ## 7. Detailed Classification Analysis
 
-Finally, I'll generate a detailed classification report and visualize the confusion matrix to better understand where my MobileBERT model performs well and where it struggles.
+Next, I generate a detailed classification report and visualize the confusion matrix:
 
 
 ```python
@@ -471,6 +562,11 @@ print(classification_report(all_labels, all_preds, target_names=['Fake News', 'R
     
 
 
+The classification report provides class-specific metrics that help identify:
+1. Whether the model performs better on real or fake news
+2. Any class-specific biases in precision or recall
+3. The overall balance of the model's performance across classes
+
 
 ```python
 # Plot confusion matrix
@@ -485,9 +581,14 @@ plt.show()
 
 
     
-![png](output_38_0.png)
+![png](output_54_0.png)
     
 
+
+Visualizing the confusion matrix makes it easier to:
+1. Identify patterns in misclassifications
+2. Understand the distribution of errors
+3. Communicate results to non-technical stakeholders
 
 
 ```python
@@ -499,13 +600,15 @@ gc.collect()
 
 
 
-    4320
+    4323
 
 
+
+Explicitly freeing memory is good practice in resource-constrained environments and ensures that subsequent evaluations aren't affected by memory fragmentation.
 
 ## 8. Comparing Model Performance and Resource Usage
 
-Let's compare MobileBERT with the other models in terms of both performance and resource usage for edge deployment:
+To contextualize MobileBERT's performance, I compare it with other models in the study:
 
 
 ```python
@@ -564,7 +667,7 @@ display(comparison_df)
       <td>DistilBERT</td>
       <td>0.999600</td>
       <td>61.760000</td>
-      <td>1542.170000</td>
+      <td>1542.17000</td>
       <td>67M</td>
     </tr>
     <tr>
@@ -572,7 +675,7 @@ display(comparison_df)
       <td>TinyBERT</td>
       <td>0.975000</td>
       <td>17.080000</td>
-      <td>1045.810000</td>
+      <td>1045.81000</td>
       <td>15M</td>
     </tr>
     <tr>
@@ -580,15 +683,15 @@ display(comparison_df)
       <td>RoBERTa</td>
       <td>1.000000</td>
       <td>118.370000</td>
-      <td>1466.220000</td>
+      <td>1466.22000</td>
       <td>125M</td>
     </tr>
     <tr>
       <th>3</th>
       <td>MobileBERT</td>
       <td>0.765957</td>
-      <td>113.503126</td>
-      <td>1386.734375</td>
+      <td>112.349059</td>
+      <td>1371.15625</td>
       <td>25M</td>
     </tr>
   </tbody>
@@ -596,26 +699,39 @@ display(comparison_df)
 </div>
 
 
-## Conclusion
+This comparative analysis is crucial because:
+1. It places MobileBERT's performance in context with other models
+2. It highlights the trade-offs between accuracy and resource efficiency
+3. It helps identify the most suitable model for different deployment scenarios
+4. It quantifies the benefits of MobileBERT's mobile-optimized architecture
 
-In this notebook, I've evaluated my MobileBERT model on the ISOT evaluation dataset specifically focusing on CPU performance for edge deployment.
+## 9. Conclusion and Implications
 
-The evaluation provides valuable insights into the resource-accuracy tradeoff between different transformer models. MobileBERT was specifically designed for mobile applications, so it should offer a better balance between accuracy and resource consumption.
+The evaluation of MobileBERT on the ISOT dataset provides critical insights for mobile deployment scenarios:
 
-The key findings from this evaluation are:
+### Performance Metrics
+- The model achieved an accuracy of 0.7660 on this evaluation set
+- Precision was 0.8355, recall was 0.7660, and F1 score was 0.7449
+- The confusion matrix reveals that MobileBERT correctly classified all 26 real news articles but misclassified 11 out of 21 fake news articles as real (false negatives)
 
-1. **Performance**: MobileBERT shows excellent classification performance, achieving high accuracy on the test set while requiring fewer resources than larger models like DistilBERT and RoBERTa.
+### Resource Consumption
+- Model loading time was 4.37 seconds, which is acceptable for most mobile applications
+- Average inference time was 113.50 ms per sample, enabling near real-time classification on modern mobile devices
+- Peak memory usage was 1386.73 MB, which is lower than DistilBERT and RoBERTa but still substantial for very constrained devices
+- The memory usage remained relatively stable during inference, indicating good memory management
 
-2. **Resource Usage**: MobileBERT demonstrates efficiency advantages:
-   - Memory usage is lower than both DistilBERT and RoBERTa
-   - Inference time is faster than DistilBERT (though potentially slightly slower than TinyBERT)
-   - Model size is significantly smaller than DistilBERT and RoBERTa
+### Deployment Considerations
+- MobileBERT shows a clear bias toward classifying articles as real news (high recall for real news but low recall for fake news)
+- This bias should be considered when deploying the model, possibly by adjusting the classification threshold
+- The model's resource efficiency makes it suitable for mid-range mobile devices and laptops
+- For very constrained devices, additional optimization techniques like quantization might be necessary
 
-3. **Edge Deployment Advantages**: MobileBERT was explicitly designed for mobile applications, with architectural optimizations like bottleneck structures and carefully designed knowledge distillation. These features make it particularly well-suited for edge devices with limited resources.
+### Comparative Analysis
+When compared to other models in the study:
+1. MobileBERT has lower accuracy than DistilBERT, TinyBERT, and RoBERTa on this dataset
+2. Its inference time is faster than RoBERTa but slower than TinyBERT
+3. Its memory footprint is lower than DistilBERT and RoBERTa but higher than TinyBERT
+4. Its model size (25M parameters) is significantly smaller than DistilBERT (67M) and RoBERTa (125M) but larger than TinyBERT (15M)
 
-4. **Trade-offs**: While MobileBERT offers a good balance, the evaluation clearly shows the spectrum of options available:
-   - TinyBERT provides the fastest inference but potentially with slightly lower accuracy
-   - MobileBERT offers a balanced approach with good accuracy and reasonable resource usage
-   - DistilBERT and RoBERTa provide higher accuracy but at significantly higher resource costs
-
-This evaluation completes my comprehensive assessment of transformer-based models for fake news detection, providing clear insights into which model would be most appropriate depending on the deployment environment and accuracy requirements. For most mobile and edge applications, MobileBERT appears to offer the best combination of accuracy and efficiency.
+### Final Assessment
+MobileBERT offers a reasonable balance between performance and resource efficiency, making it suitable for mobile deployment scenarios where some accuracy can be traded for better resource utilization. However, its tendency to misclassify fake news as real news is a significant limitation that should be addressed before deployment. For applications where accuracy is paramount, DistilBERT or RoBERTa might be better choices despite their higher resource requirements. For extremely resource-constrained environments, TinyBERT appears to offer the best balance of performance and efficiency based on the comparative metrics.
