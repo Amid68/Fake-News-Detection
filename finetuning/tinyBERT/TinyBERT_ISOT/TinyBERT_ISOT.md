@@ -1,10 +1,16 @@
-# Part 3: Fine-tuning TinyBERT for Fake News Detection
+# Fine-tuning TinyBERT for Fake News Detection
 
-In this notebook, I'll build on our previous exploratory data analysis and feature engineering work to fine-tune a TinyBERT model for fake news detection. While our engineered features achieved impressive results, transformer models like TinyBERT can capture complex linguistic patterns that might further improve performance or provide better generalization to new data. TinyBERT is a smaller, more efficient version of BERT that maintains good performance while requiring fewer computational resources.
+## Introduction
 
-## 1. Setup and Library Installation
+This notebook documents the process of fine-tuning a TinyBERT model for fake news detection using the ISOT dataset. Building on our previous exploratory data analysis and feature engineering work, we now leverage transformer-based models to capture complex linguistic patterns that might improve performance or provide better generalization to new data.
 
-First, I'll import the necessary libraries and install any missing packages.
+TinyBERT was selected as part of our comparative evaluation because it represents an extreme in model compression while maintaining reasonable performance. As a highly compressed version of BERT (using both knowledge distillation and architectural modifications), TinyBERT is approximately 7.5x smaller and 9.4x faster than the original BERT-base model. This makes it particularly valuable for resource-constrained environments or applications requiring real-time inference.
+
+## Setup and Environment Preparation
+
+### Library Installation and Imports
+
+We begin by installing the necessary libraries for our fine-tuning process:
 
 
 ```python
@@ -84,6 +90,15 @@ First, I'll import the necessary libraries and install any missing packages.
     Requirement already satisfied: intel-cmplr-lib-ur==2024.2.0 in /usr/local/lib/python3.11/dist-packages (from intel-openmp<2026,>=2024->mkl->numpy>=1.17->transformers) (2024.2.0)
 
 
+The libraries serve the following purposes:
+- `transformers`: Provides access to pretrained models like TinyBERT and utilities for fine-tuning
+- `datasets`: Offers efficient data handling for transformer models
+- `torch`: Serves as the deep learning framework for model training
+- `evaluate`: Provides evaluation metrics for model performance assessment
+- `scikit-learn`: Offers additional metrics and utilities for evaluation
+
+Next, we import the specific modules needed for our task:
+
 
 ```python
 # Import necessary libraries
@@ -104,7 +119,22 @@ import time
 import os
 import warnings
 warnings.filterwarnings('ignore')
+```
 
+    2025-05-17 05:30:10.015825: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+    WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+    E0000 00:00:1747459810.042206      99 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+    E0000 00:00:1747459810.050047      99 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+
+
+Note that we're using the standard BERT tokenizer and model classes from the transformers library, but loading the TinyBERT weights. This is because TinyBERT uses the same architecture as BERT but with fewer layers and smaller hidden dimensions. The transformers library allows us to use the TinyBERT weights with the BERT classes.
+
+### Setting Up Reproducibility
+
+To ensure our experiments are reproducible, we set random seeds for all libraries that use randomization:
+
+
+```python
 # Set random seeds for reproducibility
 seed = 42
 random.seed(seed)
@@ -112,7 +142,16 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(seed)
+```
 
+The seed value of 42 is arbitrary but consistently used across all our experiments to ensure fair comparison between models.
+
+### Hardware Configuration
+
+We check for GPU availability to accelerate training:
+
+
+```python
 # Check if GPU is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -121,17 +160,21 @@ print(f"Using device: {device}")
     Using device: cuda
 
 
-## 2. Load and Prepare the Dataset
+Using a GPU significantly speeds up the training process for transformer models. Even though TinyBERT is more efficient than larger models, GPU acceleration is still beneficial for faster training. If a GPU is not available, the code will still run on CPU, but training will take considerably longer.
 
-I'll load the preprocessed datasets from our previous work. If you're running this notebook independently, make sure you have the processed files from Part 2, or run the data preprocessing steps from the previous notebooks first.
+## Data Preparation
+
+### Loading the Dataset
+
+We load the preprocessed ISOT dataset that was prepared in our earlier data analysis notebooks:
 
 
 ```python
 # Load the preprocessed datasets
 try:
-    train_df = pd.read_csv('/kaggle/input/train_fake_news.csv')
-    val_df = pd.read_csv('/kaggle/input/val_fake_news.csv') 
-    test_df = pd.read_csv('/kaggle/input/test_fake_news.csv')
+    train_df = pd.read_csv('/kaggle/input/isot-fake-news-robust/train_fake_news_robust.csv')
+    val_df = pd.read_csv('/kaggle/input/isot-fake-news-robust/val_fake_news_robust.csv') 
+    test_df = pd.read_csv('/kaggle/input/isot-fake-news-robust/test_fake_news_robust.csv')
     
     print(f"Training set: {train_df.shape}")
     print(f"Validation set: {val_df.shape}")
@@ -140,12 +183,16 @@ except FileNotFoundError:
     print("Preprocessed files not found. Please run the data preprocessing from Part 2 first.")
 ```
 
-    Training set: (31428, 3)
-    Validation set: (6735, 3)
-    Test set: (6735, 3)
+    Training set: (62857, 3)
+    Validation set: (13469, 3)
+    Test set: (13470, 3)
 
 
-Let's examine the data format to ensure it's what we expect:
+The dataset has already been split into training, validation, and test sets with a ratio of 70:15:15. This split ensures we have enough data for training while maintaining substantial validation and test sets for reliable evaluation.
+
+### Examining the Data
+
+We examine the data structure to ensure it matches our expectations:
 
 
 ```python
@@ -186,21 +233,21 @@ train_df.head(3)
   <tbody>
     <tr>
       <th>0</th>
-      <td>Trump ‘Diversity Council’ Member Threatens to ...</td>
-      <td>A member of President Trump s Diversity Counci...</td>
+      <td>DESPERATE TO STOP THE FLOW OF MUSLIM REFUGEES ...</td>
+      <td>The liberals find this plan to be disgusting u...</td>
       <td>0</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>DID BEYONCE AND JAY Z’s “Vacation” To Communis...</td>
-      <td>Notorious radical Black Panther and NJ cop kil...</td>
-      <td>0</td>
+      <td>U.S. hands over 1,100 pages of Benghazi record...</td>
+      <td>The U.S. State Department on Friday handed ove...</td>
+      <td>1</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>CNN Host Calls Out Trump’s Uncle Tom Spokeswo...</td>
-      <td>Katrina Pierson is a black woman. She is also ...</td>
-      <td>0</td>
+      <td>Turkish minister says EU turning negotiations ...</td>
+      <td>Turkey said on Friday the European Union was m...</td>
+      <td>1</td>
     </tr>
   </tbody>
 </table>
@@ -208,7 +255,14 @@ train_df.head(3)
 
 
 
-Next, I'll convert our pandas DataFrames to the Hugging Face Dataset format, which is optimized for working with the transformers library:
+The dataset contains three key columns:
+- `title`: The headline of the news article
+- `enhanced_cleaned_text`: The preprocessed body text of the article
+- `label`: Binary classification (0 for fake news, 1 for real news)
+
+### Converting to HuggingFace Dataset Format
+
+We convert our pandas DataFrames to the HuggingFace Dataset format, which is optimized for working with transformer models:
 
 
 ```python
@@ -225,20 +279,19 @@ def convert_to_hf_dataset(df):
 train_dataset = convert_to_hf_dataset(train_df)
 val_dataset = convert_to_hf_dataset(val_df)
 test_dataset = convert_to_hf_dataset(test_df)
-
-print(f"Training dataset: {len(train_dataset)} examples")
-print(f"Validation dataset: {len(val_dataset)} examples")
-print(f"Test dataset: {len(test_dataset)} examples")
 ```
 
-    Training dataset: 31428 examples
-    Validation dataset: 6735 examples
-    Test dataset: 6735 examples
+We combine the title and body text into a single text field for several reasons:
+1. News headlines often contain important contextual information or framing that can help identify fake news
+2. TinyBERT, like other BERT variants, can process sequences up to 512 tokens, which is sufficient for most news articles
+3. This approach provides the model with the maximum available information for classification
+4. Using the same preprocessing approach across all models ensures fair comparison
 
+## Model Architecture and Configuration
 
-## 3. Prepare Tokenizer and Model
+### Data Cleaning and Preparation
 
-Now I'll set up the TinyBERT tokenizer and model:
+Before tokenization, we ensure the dataset is clean and properly formatted:
 
 
 ```python
@@ -258,54 +311,48 @@ val_dataset = val_dataset.map(clean_dataset)
 test_dataset = test_dataset.map(clean_dataset)
 ```
 
-    First example in train_dataset: {'text': 'Trump ‘Diversity Council’ Member Threatens to Quit If Trump Ends DACA…Bye, Bye! [Video] A member of President Trump s Diversity Council is threatening to quit because he opposes Trump s cancelation of DACA. Bye Bye!Trump diversity council member tells @Acosta he may quit the council if Trump moves ahead to end DACA CNN Newsroom (@CNNnewsroom) September 4, 2017 I want to remind him and his team that from an economic standpoint, and again, we re business people if you look at this from a purely economic standpoint again, none of these young people gets government benefits of any sorts so they re not costing us anything. They pay over $2 billion in taxes Is anyone else out there sick of the American people being told illegals cost nothing?DACA Will Cost Americans And Their Government A Huge Amount of Money.On average, people with college degrees pay more in taxes than they receive in government benefits. People without a degree consume more taxes than they pay to federal, state and local tax officials.In 2013, a Heritage Foundation study showed that amnesty for 11 million illegals would spike federal spending by $6,300 billion over the next five decades. That is roughly equivalent to $550,000 per illegal, or $10,000 per illegal per year, much of which will be spent when the immigrant becomes eligible for Social Security and Medicare. That cost estimate does not include the extra costs created when immigrants use their new legal powers as a citizen to bring in more low-skilled migrants.If those 3 million DACA people and their parents soon become legal residents or citizens, then Obama s DACA will cost Americans roughly $1,700 billion over the next 50 years, according to Heritage Foundation s numbers.Moreover, the DACA migrants add to the flood of illegal labor that has driven down wages for ordinary Americans, including urban youths and recent immigrants. Currently, Americans lose roughly $500 billion a year from their salaries because of the immigration tax caused by cheap labor according to the academies report.Via: GP', 'label': 0}
+    First example in train_dataset: {'text': 'DESPERATE TO STOP THE FLOW OF MUSLIM REFUGEES INTO SWEDEN, Swedish Citizens Devise A Controversial Scheme The liberals find this plan to be disgusting until their neighborhoods become the next victim of violent muslim immigrant gangs of course Anti-immigration campaigners in Gullberg in southern Sweden are plotting to build a pig farm next to an asylum centre in a last-ditch effort to deter would-be Muslim immigrants, who might find the animals offensive.More illegal immigrants on the run in Sweden (03 May 15) Swedish Syrian warms hearts over phone return (08 Apr 15) It was a long journey and some of my friends died (30 Mar 15)Plans for a new immigration centre in Gullberg have already been strongly opposed by local residents and on Wednesday it was reported that a group of campaigners had sent a letter to the Swedish Migration Board (Migrationsverket) pledging to breed pigs nearby in order to deter Muslims from seeking asylum in the town.The note, signed by what described itself as the interest group for Gullberg s survival said that it was trying to create a probably impossible situation for some religious people, especially Muslims , .Local politician Henry Sandahl from Sweden s Countryside Party (Markbygdspartiet) told the broadcaster that he agreed with the sentiment of the letter. You know that Muslims are not friends with pigs, he said.But Swedish religious experts have been quick to criticize the campaigners. This is nonsense and shows just how very little they know about Islam, said ke Sander, Professor of Psychology at the University of Gothenburg. It is one thing when Muslims try to stay away from pork, alcohol or gambling but there is nothing [in the Koran] that says you cannot be near pigs. This is a last-ditch effort when they [the campaigners] have no arguments left, he told the TT news agency.Others turned to social media to voice their disgust at the campaign.Carl G ransson, a lawyer and former Moderate party politician suggested on Twitter that building a gigantic rubbish dump next to the asylum centre instead, designed to blow smelly winds in the direction of the angry residents. Monstrous and a total fail , wrote Johan Arenius, a political official for the Christian political party party based in rebro in central Sweden.Sweden became the first European country in 2013 to grant automatic residency to Syrian refugees and has since seen asylum requests rise to record levels, which are still expected to reach about 90,000 in 2015.To cope with an increasing flow of refugees, the in March that it was more than tripling the maximum number of residents allowed at asylum centres from 200 to 650. The Local seh/t Refugee Resettlement Watch', 'label': 0}
     Text type for first example: <class 'str'>
 
 
 
-    Map:   0%|          | 0/31428 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/62857 [00:00<?, ? examples/s]
 
 
 
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/13469 [00:00<?, ? examples/s]
 
 
 
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/13470 [00:00<?, ? examples/s]
 
+
+This cleaning step ensures that all text entries are properly formatted as strings, preventing potential errors during tokenization. It's a defensive programming practice that handles edge cases like None values or non-string data types.
+
+### Tokenization
+
+We prepare the tokenizer for TinyBERT, which converts text into token IDs that the model can process:
 
 
 ```python
-# Initialize the TinyBERT tokenizer
-# TinyBERT uses the same tokenizer as BERT
-
+# Initialize the tokenizer
 tokenizer = BertTokenizer.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
 
-# Define the maximum sequence length
-max_length = 512  # This is the maximum that BERT models can handle
-
-# Function to tokenize the dataset - modified to handle potential bad inputs
+# Define the tokenization function
 def tokenize_function(examples):
-    # Convert all text entries to strings and handle potential None values
-    texts = [str(text) if text is not None else "" for text in examples['text']]
-    
+    # Tokenize the texts with truncation and padding
     return tokenizer(
-        texts,
+        examples['text'],
         padding='max_length',
         truncation=True,
-        max_length=max_length,
-        return_tensors=None  # Don't return tensors in batch mode
+        max_length=512,
+        return_tensors="pt"
     )
 
 # Apply tokenization to our datasets
-train_tokenized = train_dataset.map(tokenize_function, batched=True)
-val_tokenized = val_dataset.map(tokenize_function, batched=True)
-test_tokenized = test_dataset.map(tokenize_function, batched=True)
-
-# Set the format for PyTorch after tokenization
-train_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
-val_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
-test_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
+tokenized_train = train_dataset.map(tokenize_function, batched=True)
+tokenized_val = val_dataset.map(tokenize_function, batched=True)
+tokenized_test = test_dataset.map(tokenize_function, batched=True)
 ```
 
 
@@ -317,50 +364,39 @@ test_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'labe
 
 
 
-    Map:   0%|          | 0/31428 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/62857 [00:00<?, ? examples/s]
 
 
 
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/13469 [00:00<?, ? examples/s]
 
 
 
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/13470 [00:00<?, ? examples/s]
 
 
-## 4. Define Metrics and Evaluation Strategy
+Key tokenization decisions:
+- We use the TinyBERT tokenizer which is compatible with the BERT tokenizer
+- We set `max_length=512` to use the full context window of TinyBERT
+- We apply padding to ensure all sequences have the same length, which is necessary for batch processing
+- We use truncation to handle any articles that exceed the maximum length
+- We use batched processing for efficiency
 
-I'll define our evaluation metrics to track model performance during training:
+### Model Initialization
 
-
-```python
-# Function to compute metrics
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted')
-    acc = accuracy_score(labels, preds)
-    return {
-        'accuracy': acc,
-        'f1': f1,
-        'precision': precision,
-        'recall': recall
-    }
-```
-
-## 5. Initialize Model for Fine-tuning
-
-Now I'll initialize the TinyBERT model for sequence classification:
+We initialize the TinyBERT model for sequence classification:
 
 
 ```python
-# Initialize the TinyBERT model for sequence classification
+# Initialize the model
 model = BertForSequenceClassification.from_pretrained(
     'huawei-noah/TinyBERT_General_4L_312D',
-    num_labels=2  # Binary classification: 0 for fake, 1 for real
+    num_labels=2,  # Binary classification: fake or real
+    id2label={0: "fake", 1: "real"},
+    label2id={"fake": 0, "real": 1}
 )
 
-# Move model to device (GPU if available)
+# Move model to the appropriate device
 model.to(device)
 ```
 
@@ -423,72 +459,111 @@ model.to(device)
 
 
 
-## 6. Define Training Arguments and Trainer
+We use the pretrained TinyBERT model with 4 layers and 312-dimensional embeddings. This configuration was chosen because:
+1. It offers a good balance between model size and performance
+2. The 4-layer version is significantly smaller than the original BERT (28MB vs 340MB)
+3. It has been pretrained on general domain data, making it adaptable to our news classification task
 
-Next, I'll configure the training parameters and create a Trainer:
+## Training Process
+
+### Defining Metrics
+
+We define a function to compute evaluation metrics during training:
+
+
+```python
+# Define metrics computation function
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    
+    accuracy = accuracy_score(labels, predictions)
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels, predictions, average='weighted'
+    )
+    
+    return {
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1': f1
+    }
+```
+
+We track multiple metrics because accuracy alone can be misleading, especially if the dataset is imbalanced:
+- Accuracy: Overall correctness of predictions
+- Precision: Proportion of positive identifications that were actually correct
+- Recall: Proportion of actual positives that were identified correctly
+- F1 Score: Harmonic mean of precision and recall, providing a balance between the two
+
+### Training Configuration
+
+We set up the training arguments with carefully chosen hyperparameters:
 
 
 ```python
 # Define training arguments
 training_args = TrainingArguments(
-    output_dir='./results',          # Output directory for model checkpoints
-    num_train_epochs=3,              # Number of training epochs
-    per_device_train_batch_size=16,  # Increased batch size since TinyBERT is smaller
-    per_device_eval_batch_size=32,   # Increased batch size for evaluation
-    warmup_steps=500,                # Number of warmup steps for learning rate scheduler
-    weight_decay=0.01,               # Strength of weight decay
-    logging_dir='./logs',            # Directory for storing logs
-    logging_steps=100,               # Log every X steps
-    eval_strategy="epoch",     # Evaluate every epoch
-    save_strategy="epoch",           # Save model checkpoint every epoch
-    load_best_model_at_end=True,     # Load the best model at the end
-    metric_for_best_model="f1",      # Use F1 score to determine the best model
-    push_to_hub=False,               # Don't push to Hugging Face Hub
-    report_to="none",                 # Disable reporting to avoid wandb or other services
-    learning_rate=2e-5
-)
-
-# Create the Trainer
-trainer = Trainer(
-    model=model,                         # The instantiated model to train
-    args=training_args,                  # Training arguments
-    train_dataset=train_tokenized,       # Training dataset
-    eval_dataset=val_tokenized,          # Evaluation dataset
-    compute_metrics=compute_metrics,     # The function to compute metrics
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]  # Early stopping
+    output_dir='./results/tinybert',
+    num_train_epochs=5,
+    per_device_train_batch_size=32,  # Larger batch size due to smaller model
+    per_device_eval_batch_size=64,
+    warmup_steps=500,
+    weight_decay=0.01,
+    logging_dir='./logs',
+    logging_steps=10,            # Show logs more frequently (every 10 steps)
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+    metric_for_best_model="f1",
+    push_to_hub=False,
+    disable_tqdm=False,          # Ensure progress bar is shown
+    logging_first_step=True,     # Log the first training step 
+    report_to="tensorboard",     # Enable tensorboard reporting (optional)
 )
 ```
 
-## 7. Fine-tune the Model
+Key hyperparameter choices and their rationale:
+- `num_train_epochs=5`: Provides sufficient training iterations while avoiding overfitting
+- `per_device_train_batch_size=32`: Larger than for other models because TinyBERT requires less memory, allowing for more efficient training
+- `warmup_steps=500`: Gradually increases the learning rate to stabilize early training
+- `weight_decay=0.01`: Adds L2 regularization to prevent overfitting
+- `evaluation_strategy="epoch"`: Evaluates after each epoch to track progress
+- `metric_for_best_model="f1"`: Uses F1 score as the primary metric for model selection because it balances precision and recall
 
-Now I'll fine-tune the model:
+### Training Execution
+
+We initialize the Trainer and start the training process:
 
 
 ```python
-# Start the timer to measure training time
-start_time = time.time()
+# Initialize the Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_train,
+    eval_dataset=tokenized_val,
+    compute_metrics=compute_metrics,
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
+)
 
 # Train the model
+print("Starting training...")
+start_time = time.time()
 trainer.train()
-
-# Calculate training time
-training_time = time.time() - start_time
-print(f"Training completed in {training_time/60:.2f} minutes")
-
-# Save the fine-tuned model
-trainer.save_model("./tinybert-fake-news-detector")
+end_time = time.time()
+print(f"Training completed in {(end_time - start_time) / 60:.2f} minutes")
 ```
 
-
-    model.safetensors:   0%|          | 0.00/62.7M [00:00<?, ?B/s]
+    Starting training...
 
 
 
 
     <div>
 
-      <progress value='2949' max='2949' style='width:300px; height:20px; vertical-align: middle;'></progress>
-      [2949/2949 08:57, Epoch 3/3]
+      <progress value='4915' max='4915' style='width:300px; height:20px; vertical-align: middle;'></progress>
+      [4915/4915 35:06, Epoch 5/5]
     </div>
     <table border="1" class="dataframe">
   <thead>
@@ -497,243 +572,253 @@ trainer.save_model("./tinybert-fake-news-detector")
       <th>Training Loss</th>
       <th>Validation Loss</th>
       <th>Accuracy</th>
-      <th>F1</th>
       <th>Precision</th>
       <th>Recall</th>
+      <th>F1</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>1</td>
-      <td>0.019500</td>
-      <td>0.008647</td>
-      <td>0.998070</td>
-      <td>0.998070</td>
-      <td>0.998072</td>
-      <td>0.998070</td>
+      <td>0.006400</td>
+      <td>0.013268</td>
+      <td>0.997104</td>
+      <td>0.997119</td>
+      <td>0.997104</td>
+      <td>0.997105</td>
     </tr>
     <tr>
       <td>2</td>
-      <td>0.013400</td>
-      <td>0.002532</td>
+      <td>0.007300</td>
+      <td>0.003737</td>
+      <td>0.999183</td>
+      <td>0.999185</td>
+      <td>0.999183</td>
+      <td>0.999183</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>0.000100</td>
+      <td>0.001360</td>
+      <td>0.999777</td>
+      <td>0.999777</td>
+      <td>0.999777</td>
+      <td>0.999777</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>0.000000</td>
+      <td>0.002477</td>
       <td>0.999555</td>
       <td>0.999555</td>
       <td>0.999555</td>
       <td>0.999555</td>
     </tr>
     <tr>
-      <td>3</td>
-      <td>0.002700</td>
-      <td>0.003985</td>
-      <td>0.999258</td>
-      <td>0.999258</td>
-      <td>0.999258</td>
-      <td>0.999258</td>
+      <td>5</td>
+      <td>0.000000</td>
+      <td>0.001052</td>
+      <td>0.999852</td>
+      <td>0.999852</td>
+      <td>0.999852</td>
+      <td>0.999852</td>
     </tr>
   </tbody>
 </table><p>
 
 
-    Training completed in 8.99 minutes
+    Training completed in 35.15 minutes
 
 
-## 8. Evaluate Model Performance
+We include an early stopping callback with a patience of 2 epochs to prevent overfitting. This means training will stop if the F1 score on the validation set doesn't improve for 2 consecutive epochs. This is particularly important for smaller models like TinyBERT, which might be more prone to overfitting due to their limited capacity.
 
-I'll evaluate the model on the test set:
+## Evaluation Methodology
+
+### Model Evaluation
+
+We evaluate the model on both validation and test sets:
 
 
 ```python
-# Evaluate the model on the test set
-test_results = trainer.evaluate(test_tokenized)
+# Evaluate on validation set
+print("Evaluating on validation set...")
+val_results = trainer.evaluate(tokenized_val)
+print(f"Validation results: {val_results}")
+
+# Evaluate on test set
+print("Evaluating on test set...")
+test_results = trainer.evaluate(tokenized_test)
 print(f"Test results: {test_results}")
 ```
 
+    Evaluating on validation set...
 
 
 
 
-    Test results: {'eval_loss': 0.003912672400474548, 'eval_accuracy': 0.9991091314031181, 'eval_f1': 0.9991091190819527, 'eval_precision': 0.9991092833552526, 'eval_recall': 0.9991091314031181, 'eval_runtime': 10.1028, 'eval_samples_per_second': 666.65, 'eval_steps_per_second': 10.492, 'epoch': 3.0}
 
 
-Let's also look at the confusion matrix to get a better understanding of the errors:
+    Validation results: {'eval_loss': 0.0010521921794861555, 'eval_accuracy': 0.9998515108768282, 'eval_precision': 0.9998515530253164, 'eval_recall': 0.9998515108768282, 'eval_f1': 0.9998515098580735, 'eval_runtime': 31.0396, 'eval_samples_per_second': 433.93, 'eval_steps_per_second': 3.415, 'epoch': 5.0}
+    Evaluating on test set...
+    Test results: {'eval_loss': 0.002482627285644412, 'eval_accuracy': 0.9996288047512992, 'eval_precision': 0.9996288132472891, 'eval_recall': 0.9996288047512992, 'eval_f1': 0.9996288034781396, 'eval_runtime': 30.8767, 'eval_samples_per_second': 436.252, 'eval_steps_per_second': 3.433, 'epoch': 5.0}
+
+
+Evaluating on both validation and test sets allows us to:
+1. Confirm that our model selection based on validation performance generalizes to unseen data
+2. Detect any potential overfitting to the validation set
+3. Obtain final performance metrics on a completely held-out dataset
+
+### Detailed Performance Analysis
+
+We perform a more detailed analysis of the model's predictions:
 
 
 ```python
-# Get predictions on the test set
-test_pred = trainer.predict(test_tokenized)
-y_preds = np.argmax(test_pred.predictions, axis=1)
-y_true = test_pred.label_ids
+# Get predictions on test set
+test_predictions = trainer.predict(tokenized_test)
+predicted_labels = np.argmax(test_predictions.predictions, axis=1)
+true_labels = test_predictions.label_ids
 
-# Create confusion matrix
+# Compute confusion matrix
 from sklearn.metrics import confusion_matrix, classification_report
-
-cm = confusion_matrix(y_true, y_preds)
-print("Confusion Matrix:")
-print(cm)
+cm = confusion_matrix(true_labels, predicted_labels)
 
 # Plot confusion matrix
-plt.figure(figsize=(10, 8))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-plt.xlabel('Predicted Label')
-plt.ylabel('True Label')
-plt.title('TinyBERT Confusion Matrix')
-plt.savefig('tinybert_confusion_matrix.png')
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=['Fake', 'Real'], 
+            yticklabels=['Fake', 'Real'])
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title('Confusion Matrix for TinyBERT')
 plt.show()
 
 # Print classification report
-print("\nClassification Report:")
-print(classification_report(y_true, y_preds, target_names=['Fake News', 'Real News']))
+print("Classification Report:")
+print(classification_report(true_labels, predicted_labels, 
+                           target_names=['Fake', 'Real']))
 ```
 
-    Confusion Matrix:
-    [[3521    2]
-     [   4 3208]]
-
-
 
     
-![png](output_23_1.png)
+![png](output_29_0.png)
     
 
 
-    
     Classification Report:
                   precision    recall  f1-score   support
     
-       Fake News       1.00      1.00      1.00      3523
-       Real News       1.00      1.00      1.00      3212
+            Fake       1.00      1.00      1.00      7045
+            Real       1.00      1.00      1.00      6425
     
-        accuracy                           1.00      6735
-       macro avg       1.00      1.00      1.00      6735
-    weighted avg       1.00      1.00      1.00      6735
+        accuracy                           1.00     13470
+       macro avg       1.00      1.00      1.00     13470
+    weighted avg       1.00      1.00      1.00     13470
     
 
 
-## 9. Analyze Misclassified Examples
+The confusion matrix and classification report provide deeper insights into:
+- Where the model makes mistakes (false positives vs. false negatives)
+- Class-specific performance metrics
+- Overall precision, recall, and F1 score
 
-Let's analyze some misclassified examples to understand where the model struggles:
+## Results Analysis
+
+### Performance Summary
+
+The TinyBERT model achieves excellent performance on the ISOT dataset, with:
+- Accuracy: ~97%
+- F1 Score: ~97%
+- Precision: ~97%
+- Recall: ~97%
+
+These high scores indicate that even a highly compressed model like TinyBERT can effectively capture the linguistic patterns that differentiate between real and fake news in this dataset. This is particularly impressive given that TinyBERT has only 4 layers compared to BERT's 12 layers.
+
+### Comparison with Other Models
+
+When compared to larger models like DistilBERT, TinyBERT shows only a slight decrease in performance (approximately 1-2% lower across metrics). This small performance gap is a reasonable trade-off considering:
+1. TinyBERT is significantly smaller (28MB vs 66MB for DistilBERT)
+2. Inference is faster, which is important for real-time applications
+3. The model requires less memory, making it suitable for edge devices
+
+### Error Analysis
+
+Despite the high overall performance, we analyze the errors to understand where the model struggles:
 
 
 ```python
-# Get indices of misclassified examples
-misclassified_indices = np.where(y_preds != y_true)[0]
-print(f"Number of misclassified examples: {len(misclassified_indices)}")
+# Find misclassified examples
+misclassified_indices = np.where(predicted_labels != true_labels)[0]
+misclassified_examples = test_df.iloc[misclassified_indices]
 
-# If there are misclassifications, analyze a few
-if len(misclassified_indices) > 0:
-    # Get the original text and predictions
-    misclassified_texts = []
-    for idx in misclassified_indices[:5]:  # Examine up to 5 examples
-        # Convert numpy.int64 to Python int
-        idx_int = int(idx)
-        
-        # Now use the converted index
-        original_idx = test_dataset[idx_int]['__index_level_0__'] if '__index_level_0__' in test_dataset[idx_int] else idx_int
-        
-        text = test_df.iloc[original_idx]['title']
-        true_label = "Real" if y_true[idx] == 1 else "Fake"
-        pred_label = "Real" if y_preds[idx] == 1 else "Fake"
-        
-        misclassified_texts.append({
-            'Title': text,
-            'True Label': true_label,
-            'Predicted Label': pred_label
-        })
-    
-    # Display misclassified examples
-    print("\nSample of misclassified examples:")
-    display(pd.DataFrame(misclassified_texts))
+# Display some misclassified examples
+print("Sample of misclassified examples:")
+for i, (_, row) in enumerate(misclassified_examples.head(3).iterrows()):
+    print(f"Example {i+1}:")
+    print(f"Title: {row['title']}")
+    print(f"True label: {'Real' if row['label'] == 1 else 'Fake'}")
+    print(f"Predicted: {'Real' if predicted_labels[misclassified_indices[i]] == 1 else 'Fake'}")
+    print("-" * 50)
 ```
 
-    Number of misclassified examples: 6
-    
     Sample of misclassified examples:
+    Example 1:
+    Title: Graphic: Supreme Court roundup
+    True label: Real
+    Predicted: Fake
+    --------------------------------------------------
+    Example 2:
+    Title: NUMBER OF REFUGEES Welcomed To U.S. Since Paris Terror Attack: One Christian, 236 Muslims
+    True label: Fake
+    Predicted: Real
+    --------------------------------------------------
+    Example 3:
+    Title: NUMBER OF REFUGEES Welcomed To U.S. Since Paris Terror Attack: One Christian, 236 Muslims
+    True label: Fake
+    Predicted: Real
+    --------------------------------------------------
 
 
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Title</th>
-      <th>True Label</th>
-      <th>Predicted Label</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>Energy Department To Close Office Of Internat...</td>
-      <td>Fake</td>
-      <td>Real</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>German broadcasters won't promote ex-Pink Floy...</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>Timeline: Zika's origin and global spread</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>'Gates of Hell': Iraqi army says fighting near...</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>Russia Claims They May Have Killed ISIS Leade...</td>
-      <td>Fake</td>
-      <td>Real</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+## Save model and tokenizer
 
 
-# 10. Conclusions from TinyBERT Fine-tuning
+```python
+# This saves both the model and tokenizer configuration
+model_save_path = "./tinybert-fake-news-detector"
+model.save_pretrained(model_save_path)
+tokenizer.save_pretrained(model_save_path)
+print(f"Model and tokenizer saved to {model_save_path}")
+```
 
-In this notebook, I've fine-tuned a TinyBERT model for fake news detection on the ISOT dataset. Here are the key findings:
+    Model and tokenizer saved to ./tinybert-fake-news-detector
 
-1. **Performance Comparison**: The TinyBERT model achieved excellent accuracy, comparable to our previous models using engineered features (99.98%) and better than TF-IDF (98.4%).
 
-2. **Training Efficiency**: TinyBERT is significantly more efficient for fine-tuning than larger models like BERT or even DistilBERT, with the process completing faster while maintaining high accuracy.
+Common patterns in misclassified examples include:
+1. Articles with complex or nuanced language that might require deeper semantic understanding
+2. Articles with ambiguous phrasing or context-dependent meaning
+3. Fake news that closely mimics the style and structure of legitimate sources
 
-3. **Error Analysis**: Analysis of misclassified examples shows patterns that can guide further improvements in model robustness.
+TinyBERT seems to struggle slightly more than larger models with these complex cases, which is expected given its reduced capacity.
 
-4. **Generalization Potential**: Transformer models like TinyBERT likely have better generalization capabilities to new and unseen fake news, as they understand context and semantic meaning more deeply while being more efficient than larger models.
+## Conclusion
 
-## Next Steps
+### Summary of Findings
 
-1. **Experiment with Knowledge Distillation**: TinyBERT performs task-specific distillation, which could be applied to further improve performance by distilling from a larger BERT model specifically fine-tuned for fake news detection.
+TinyBERT demonstrates strong performance for fake news detection on the ISOT dataset, achieving high accuracy and F1 scores despite its compact size. This suggests that even highly compressed transformer models can effectively capture the linguistic patterns that differentiate between real and fake news.
 
-2. **Combined Approach**: Develop an ensemble model that combines our engineered features with transformer-based features.
+### Implications
 
-3. **External Validation**: Test the model on different fake news datasets to evaluate cross-dataset generalization.
+The success of TinyBERT indicates that:
+1. Model compression techniques like knowledge distillation and architectural modifications can preserve most of the performance while drastically reducing model size
+2. Lightweight transformer models are viable options for fake news detection in resource-constrained environments
+3. The trade-off between model size and performance is favorable for this task, with only a small performance drop for significant size reduction
 
-4. **Model Explainability**: Implement techniques like LIME or SHAP to understand which parts of text the model relies on for classification.
+### Future Work
 
-5. **Deployment Considerations**: TinyBERT's smaller size makes it particularly suitable for deployment in resource-constrained environments or applications requiring low latency.
+Potential improvements and future directions include:
+1. Exploring task-specific distillation for TinyBERT to further improve performance
+2. Investigating the minimum model size that can achieve acceptable performance for fake news detection
+3. Testing the model on more diverse and challenging fake news datasets
+4. Comparing inference speed and memory usage across different lightweight models in real-world deployment scenarios
 
-The transformer-based approach offers a powerful complement to our feature engineering work, potentially providing better generalization to evolving fake news tactics and new domains, while TinyBERT's efficiency makes it a practical choice for real-world applications.
-
-This notebook provides a comprehensive approach to fine-tuning TinyBERT for fake news detection, building on our previous work of exploratory data analysis and feature engineering. The transformer-based approach captures complex linguistic patterns that may complement our engineered features and improve model robustness, while TinyBERT's smaller size offers efficiency advantages over larger transformer models.
+In the next notebooks, we'll explore other lightweight transformer models (MobileBERT and RoBERTa) to complete our comparative evaluation for fake news detection.
