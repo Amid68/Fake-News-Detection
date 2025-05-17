@@ -5,3 +5,4 @@ ml_models/
 *.xml
 *.csv
 .env
+.idea/
