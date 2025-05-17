@@ -5,12 +5,14 @@ This notebook evaluates a fine-tuned TinyBERT model on two distinct fake news de
 2. **Full-text dataset**: Using complete articles with both titles and text
 
 ## Introduction
-This notebook evaluates TinyBERT on two distinct fake news detection scenarios:
-1. Title-only evaluation: Using only article headlines
-2. Full-text evaluation: Using complete articles with titles and text
+
+```python
+# This notebook evaluates TinyBERT on two distinct fake news detection scenarios:
+# 1. Title-only evaluation: Using only article headlines
+# 2. Full-text evaluation: Using complete articles with titles and text
+```
 
 ## 1. Setting Up the Environment
-
 
 ```python
 # Import necessary libraries
@@ -24,7 +26,6 @@ import gc
 import re
 ```
 
-
 ```python
 # Import model and evaluation libraries
 from transformers import BertTokenizer, BertForSequenceClassification
@@ -32,23 +33,17 @@ from datasets import Dataset as HFDataset
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
 ```
 
-
 ```python
 # Import visualization libraries
 import matplotlib.pyplot as plt
 import seaborn as sns
 ```
 
-
 ```python
 # Set device - using CPU for edge device testing
 device = torch.device("cpu")
 print(f"Using device: {device}")
 ```
-
-    Using device: cpu
-
-
 
 ```python
 # Function to get current memory usage
@@ -59,11 +54,7 @@ def get_memory_usage():
 print(f"Starting memory usage: {get_memory_usage():.2f} MB")
 ```
 
-    Starting memory usage: 818.70 MB
-
-
 ## 2. Loading the Pre-trained Model
-
 
 ```python
 # Load the pre-trained TinyBERT model
@@ -71,17 +62,11 @@ print("\nLoading model...")
 model_path = "../ml_models/tinybert-fake-news-detector"
 ```
 
-    
-    Loading model...
-
-
-
 ```python
 # Initialize tokenizer
 start_time = time.time()
-tokenizer = BertTokenizer.from_pretrained(model_path)
+tokenizer = BertTokenizer.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
 ```
-
 
 ```python
 # Load model
@@ -90,28 +75,17 @@ model.to(device)  # Move to CPU
 load_time = time.time() - start_time
 ```
 
-
 ```python
 print(f"Model loaded in {load_time:.2f} seconds")
 print(f"Memory usage after loading model: {get_memory_usage():.2f} MB")
 ```
 
-    Model loaded in 0.04 seconds
-    Memory usage after loading model: 833.34 MB
-
-
 ## 3. Data Loading and Preparation
-
 
 ```python
 # Load all data sources
 print("\nLoading all data sources...")
 ```
-
-    
-    Loading all data sources...
-
-
 
 ```python
 # 1. Load titles_only_real.csv (real news, titles only)
@@ -125,10 +99,6 @@ except Exception as e:
     titles_only_real_df = pd.DataFrame(columns=['title', 'label'])
 ```
 
-    Loaded 299 real news titles from titles_only_real.csv
-
-
-
 ```python
 # 2. Load FakeNewsNet (fake news only)
 try:
@@ -140,10 +110,6 @@ except Exception as e:
     print(f"Error loading FakeNewsNet: {e}")
     fake_news_net_df = pd.DataFrame(columns=['title', 'label'])
 ```
-
-    Loaded 5755 fake news articles from FakeNewsNet
-
-
 
 ```python
 # 3. Load fake_news_evaluation.csv (fake news with text)
@@ -157,10 +123,6 @@ except Exception as e:
     fake_news_eval_df = pd.DataFrame(columns=['title', 'text', 'label'])
 ```
 
-    Loaded 21 fake news articles from fake_news_evaluation.csv
-
-
-
 ```python
 # 4. Load manual_real.csv (real news with text)
 try:
@@ -173,11 +135,7 @@ except Exception as e:
     manual_real_df = pd.DataFrame(columns=['title', 'text', 'label'])
 ```
 
-    Loaded 32 real news articles with text from manual_real.csv
-
-
 ## 4. Preparing Title-Only Dataset
-
 
 ```python
 # Create title-only dataset
@@ -187,12 +145,6 @@ print("\nPreparing title-only dataset...")
 real_titles_count = len(titles_only_real_df)
 print(f"Target size for balanced dataset: {real_titles_count} articles per class")
 ```
-
-    
-    Preparing title-only dataset...
-    Target size for balanced dataset: 299 articles per class
-
-
 
 ```python
 # Prepare fake news data (titles only)
@@ -204,13 +156,11 @@ else:
     fake_news_net_df['text'] = fake_news_net_df['title']
 ```
 
-
 ```python
 # 2. From fake_news_evaluation.csv
 fake_news_eval_titles_df = fake_news_eval_df.copy()
 fake_news_eval_titles_df['text'] = fake_news_eval_titles_df['title']  # Use only title, not full text
 ```
-
 
 ```python
 # Combine all fake news sources (titles only)
@@ -218,7 +168,6 @@ fake_news_title_only = pd.concat([fake_news_net_df[['text', 'label']],
                                  fake_news_eval_titles_df[['text', 'label']]], 
                                  ignore_index=True)
 ```
-
 
 ```python
 # Balance fake news to match real news count
@@ -231,16 +180,11 @@ else:
     print(f"Note: Not enough fake news articles ({len(fake_news_title_only)}) to match real news count ({real_titles_count})")
 ```
 
-    Balancing fake news dataset: sampling 299 articles from 5776 total
-
-
-
 ```python
 # Prepare real news data (titles only)
 if 'text' not in titles_only_real_df.columns:
     titles_only_real_df['text'] = titles_only_real_df['title']
 ```
-
 
 ```python
 # Combine fake and real news (titles only)
@@ -248,22 +192,15 @@ title_only_dataset_df = pd.concat([fake_news_title_only, titles_only_real_df[['t
                                  ignore_index=True)
 ```
 
-
 ```python
 # Shuffle to mix real and fake news
 title_only_dataset_df = title_only_dataset_df.sample(frac=1, random_state=42).reset_index(drop=True)
 ```
 
-
 ```python
 print(f"Prepared title-only dataset with {len(title_only_dataset_df)} articles")
 print(f"Class distribution: {title_only_dataset_df['label'].value_counts().to_dict()}")
 ```
-
-    Prepared title-only dataset with 598 articles
-    Class distribution: {0: 299, 1: 299}
-
-
 
 ```python
 # Convert to HuggingFace Dataset format
@@ -272,16 +209,10 @@ title_only_dataset = HFDataset.from_pandas(title_only_dataset_df)
 
 ## 5. Preparing Full-Text Dataset
 
-
 ```python
 # Create full-text dataset
 print("\nPreparing full-text dataset...")
 ```
-
-    
-    Preparing full-text dataset...
-
-
 
 ```python
 # Prepare fake news data (with full text)
@@ -290,13 +221,11 @@ fake_news_full_text_df = fake_news_eval_df.copy()
 fake_news_full_text_df['text'] = fake_news_full_text_df['title'] + " " + fake_news_full_text_df['text'].fillna('')
 ```
 
-
 ```python
 # Prepare real news data (with full text)
 manual_real_text_df = manual_real_df.copy()
 manual_real_text_df['text'] = manual_real_text_df['title'] + " " + manual_real_text_df['text'].fillna('')
 ```
-
 
 ```python
 # Balance the datasets if needed
@@ -306,10 +235,6 @@ target_count = min(fake_count, real_count)
 
 print(f"Full-text dataset - Fake: {fake_count}, Real: {real_count}")
 ```
-
-    Full-text dataset - Fake: 21, Real: 32
-
-
 
 ```python
 # Balance the datasets if needed
@@ -321,10 +246,6 @@ elif real_count > fake_count:
     manual_real_text_df = manual_real_text_df.sample(n=fake_count, random_state=42)
 ```
 
-    Balancing full-text dataset: sampling 21 real articles from 32
-
-
-
 ```python
 # Combine fake and real news (with full text)
 full_text_dataset_df = pd.concat([fake_news_full_text_df[['text', 'label']], 
@@ -332,22 +253,15 @@ full_text_dataset_df = pd.concat([fake_news_full_text_df[['text', 'label']],
                                 ignore_index=True)
 ```
 
-
 ```python
 # Shuffle to mix real and fake news
 full_text_dataset_df = full_text_dataset_df.sample(frac=1, random_state=42).reset_index(drop=True)
 ```
 
-
 ```python
 print(f"Prepared full-text dataset with {len(full_text_dataset_df)} articles")
 print(f"Class distribution: {full_text_dataset_df['label'].value_counts().to_dict()}")
 ```
-
-    Prepared full-text dataset with 42 articles
-    Class distribution: {1: 21, 0: 21}
-
-
 
 ```python
 # Convert to HuggingFace Dataset format
@@ -355,7 +269,6 @@ full_text_dataset = HFDataset.from_pandas(full_text_dataset_df)
 ```
 
 ## 6. Evaluation Utility Functions
-
 
 ```python
 # Define tokenization function
@@ -391,7 +304,6 @@ def tokenize_dataset(dataset):
     return tokenized_dataset
 ```
 
-
 ```python
 # Define model evaluation function - Part 1: Setup
 def evaluate_model(tokenized_dataset, dataset_name):
@@ -418,7 +330,6 @@ def evaluate_model(tokenized_dataset, dataset_name):
     
     return eval_dataloader, all_preds, all_labels, total_inference_time, sample_count, inference_times, memory_usages
 ```
-
 
 ```python
 # Define model evaluation function - Part 2: Inference loop
@@ -467,7 +378,6 @@ def run_evaluation_loop(eval_dataloader, all_preds, all_labels, total_inference_
     return all_preds, all_labels, total_inference_time, sample_count, inference_times, memory_usages
 ```
 
-
 ```python
 # Define model evaluation function - Part 3: Metrics calculation
 def calculate_metrics(all_preds, all_labels, total_inference_time, sample_count, 
@@ -513,7 +423,6 @@ def calculate_metrics(all_preds, all_labels, total_inference_time, sample_count,
         return None
 ```
 
-
 ```python
 # Define model evaluation function - Part 4: Visualization
 def visualize_results(metrics_dict, all_labels, all_preds, inference_times, memory_usages, dataset_name):
@@ -557,7 +466,6 @@ def visualize_results(metrics_dict, all_labels, all_preds, inference_times, memo
     metrics_dict['classification_report'] = report
     return metrics_dict
 ```
-
 
 ```python
 # Combined evaluation function
@@ -612,167 +520,29 @@ def evaluate_model_setup(tokenized_dataset, dataset_name):
 
 ## 7. Evaluating Title-Only Dataset
 
-
 ```python
 # Tokenize the title-only dataset
 title_only_tokenized = tokenize_dataset(title_only_dataset)
 ```
-
-    Tokenizing dataset with 598 examples...
-
-
-
-    Map:   0%|          | 0/598 [00:00<?, ? examples/s]
-
-
-
-    Map:   0%|          | 0/598 [00:00<?, ? examples/s]
-
-
-    Dataset tokenized in 0.27 seconds
-    Memory usage after tokenization: 868.02 MB
-
-
 
 ```python
 # Evaluate model on title-only dataset
 title_only_results = evaluate_model(title_only_tokenized, "Title-Only")
 ```
 
-    
-    Evaluating model on Title-Only dataset...
-    Starting evaluation on 598 examples
-    Processing batch 0/38
-    Processing batch 5/38
-    Processing batch 10/38
-    Processing batch 15/38
-    Processing batch 20/38
-    Processing batch 25/38
-    Processing batch 30/38
-    Processing batch 35/38
-    Evaluation complete. Total predictions: 598, Total labels: 598
-    
-    Evaluation Results for Title-Only dataset:
-    Accuracy: 0.7274
-    Precision: 0.7974
-    Recall: 0.7274
-    F1 Score: 0.7104
-    
-    Confusion Matrix for Title-Only dataset:
-    [[290   9]
-     [154 145]]
-    
-    Resource Consumption Analysis for Title-Only dataset:
-    Total evaluation time: 8.39 seconds
-    Average inference time per batch: 0.2208 seconds
-    Average inference time per sample: 14.03 ms
-    Peak memory usage: 1082.33 MB
-
-
-
-    
-![png](output_48_1.png)
-    
-
-
-
-    
-![png](output_48_2.png)
-    
-
-
-    
-    Detailed Classification Report for Title-Only:
-                  precision    recall  f1-score   support
-    
-       Fake News       0.65      0.97      0.78       299
-       Real News       0.94      0.48      0.64       299
-    
-        accuracy                           0.73       598
-       macro avg       0.80      0.73      0.71       598
-    weighted avg       0.80      0.73      0.71       598
-    
-
-
 ## 8. Evaluating Full-Text Dataset
-
 
 ```python
 # Tokenize the full-text dataset
 full_text_tokenized = tokenize_dataset(full_text_dataset)
 ```
 
-    Tokenizing dataset with 42 examples...
-
-
-
-    Map:   0%|          | 0/42 [00:00<?, ? examples/s]
-
-
-
-    Map:   0%|          | 0/42 [00:00<?, ? examples/s]
-
-
-    Dataset tokenized in 0.17 seconds
-    Memory usage after tokenization: 1120.67 MB
-
-
-
 ```python
 # Evaluate model on full-text dataset
 full_text_results = evaluate_model(full_text_tokenized, "Full-Text")
 ```
 
-    
-    Evaluating model on Full-Text dataset...
-    Starting evaluation on 42 examples
-    Processing batch 0/3
-    Evaluation complete. Total predictions: 42, Total labels: 42
-    
-    Evaluation Results for Full-Text dataset:
-    Accuracy: 0.8810
-    Precision: 0.9038
-    Recall: 0.8810
-    F1 Score: 0.8792
-    
-    Confusion Matrix for Full-Text dataset:
-    [[16  5]
-     [ 0 21]]
-    
-    Resource Consumption Analysis for Full-Text dataset:
-    Total evaluation time: 0.60 seconds
-    Average inference time per batch: 0.1984 seconds
-    Average inference time per sample: 14.17 ms
-    Peak memory usage: 1123.69 MB
-
-
-
-    
-![png](output_51_1.png)
-    
-
-
-
-    
-![png](output_51_2.png)
-    
-
-
-    
-    Detailed Classification Report for Full-Text:
-                  precision    recall  f1-score   support
-    
-       Fake News       1.00      0.76      0.86        21
-       Real News       0.81      1.00      0.89        21
-    
-        accuracy                           0.88        42
-       macro avg       0.90      0.88      0.88        42
-    weighted avg       0.90      0.88      0.88        42
-    
-
-
 ## 9. Comparing Results Between Datasets
-
 
 ```python
 # Create comparison table
@@ -798,7 +568,6 @@ if title_only_results and full_text_results:
     })
 ```
 
-
 ```python
 # Format and display comparison table
 comparison_df['Title-Only'] = comparison_df['Title-Only'].apply(
@@ -809,17 +578,6 @@ comparison_df['Full-Text'] = comparison_df['Full-Text'].apply(
 print("Performance Comparison Between Datasets:")
 print(comparison_df.to_string(index=False))
 ```
-
-    Performance Comparison Between Datasets:
-                        Metric Title-Only Full-Text
-                      Accuracy     0.7274    0.8810
-                     Precision     0.7974    0.9038
-                        Recall     0.7274    0.8810
-                      F1 Score     0.7104    0.8792
-    Inference Time (ms/sample)    14.0305   14.1716
-              Peak Memory (MB)    1082.33   1123.69
-
-
 
 ```python
 # Create visualization of metrics comparison
@@ -846,28 +604,7 @@ plt.savefig('tinybert_performance_comparison.png')
 plt.show()
 ```
 
-    /var/folders/k5/hsz2tf890v51m3ylcwb7ft4c0000gn/T/ipykernel_24428/3618078742.py:5: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame.
-    Try using .loc[row_indexer,col_indexer] = value instead
-    
-    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-      metrics['Title-Only'] = metrics['Title-Only'].astype(float)
-    /var/folders/k5/hsz2tf890v51m3ylcwb7ft4c0000gn/T/ipykernel_24428/3618078742.py:6: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame.
-    Try using .loc[row_indexer,col_indexer] = value instead
-    
-    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-      metrics['Full-Text'] = metrics['Full-Text'].astype(float)
-
-
-
-    
-![png](output_55_1.png)
-    
-
-
 ## 10. Conclusion and Cleanup
-
 
 ```python
 # Free up memory
@@ -875,9 +612,6 @@ del model
 gc.collect()
 print(f"Final memory usage: {get_memory_usage():.2f} MB")
 ```
-
-    Final memory usage: 1127.23 MB
-
 
 The table and visualization above provide a clear comparison between using only titles versus full text for fake news detection with TinyBERT. Key findings include:
 

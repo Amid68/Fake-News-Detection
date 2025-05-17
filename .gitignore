@@ -4,3 +4,4 @@ ml_models/
 *.img
 *.xml
 *.csv
+.env
