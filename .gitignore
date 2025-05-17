@@ -6,3 +6,4 @@ ml_models/
 *.csv
 .env
 .idea/
+.ipynb_checkpoints/
