@@ -100,21 +100,21 @@ We begin by installing the necessary libraries for our fine-tuning process:
     Downloading nvidia_cublas_cu12-12.4.5.8-py3-none-manylinux2014_x86_64.whl (363.4 MB)
     [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m363.4/363.4 MB[0m [31m4.7 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
     [?25hDownloading nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl (664.8 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m664.8/664.8 MB[0m [31m2.5 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m664.8/664.8 MB[0m [31m2.3 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
     [?25hDownloading nvidia_cufft_cu12-11.2.1.3-py3-none-manylinux2014_x86_64.whl (211.5 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m211.5/211.5 MB[0m [31m5.3 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m211.5/211.5 MB[0m [31m2.4 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
     [?25hDownloading nvidia_curand_cu12-10.3.5.147-py3-none-manylinux2014_x86_64.whl (56.3 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m56.3/56.3 MB[0m [31m31.5 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m56.3/56.3 MB[0m [31m8.4 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
     [?25hDownloading nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_x86_64.whl (127.9 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m127.9/127.9 MB[0m [31m13.6 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m127.9/127.9 MB[0m [31m13.4 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
     [?25hDownloading nvidia_cusparse_cu12-12.3.1.170-py3-none-manylinux2014_x86_64.whl (207.5 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m207.5/207.5 MB[0m [31m2.2 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m207.5/207.5 MB[0m [31m8.2 MB/s[0m eta [36m0:00:00[0m0:00:01[0m00:01[0m
     [?25hDownloading nvidia_nvjitlink_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl (21.1 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m21.1/21.1 MB[0m [31m70.3 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m21.1/21.1 MB[0m [31m85.2 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
     [?25hDownloading evaluate-0.4.3-py3-none-any.whl (84 kB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m84.0/84.0 kB[0m [31m6.2 MB/s[0m eta [36m0:00:00[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m84.0/84.0 kB[0m [31m4.5 MB/s[0m eta [36m0:00:00[0m
     [?25hDownloading fsspec-2024.12.0-py3-none-any.whl (183 kB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m183.9/183.9 kB[0m [31m12.3 MB/s[0m eta [36m0:00:00[0m
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m183.9/183.9 kB[0m [31m9.7 MB/s[0m eta [36m0:00:00[0m
     [?25hInstalling collected packages: nvidia-nvjitlink-cu12, nvidia-curand-cu12, nvidia-cufft-cu12, nvidia-cublas-cu12, fsspec, nvidia-cusparse-cu12, nvidia-cudnn-cu12, nvidia-cusolver-cu12, evaluate
       Attempting uninstall: nvidia-nvjitlink-cu12
         Found existing installation: nvidia-nvjitlink-cu12 12.8.93
@@ -156,6 +156,15 @@ We begin by installing the necessary libraries for our fine-tuning process:
     [0mSuccessfully installed evaluate-0.4.3 fsspec-2024.12.0 nvidia-cublas-cu12-12.4.5.8 nvidia-cudnn-cu12-9.1.0.70 nvidia-cufft-cu12-11.2.1.3 nvidia-curand-cu12-10.3.5.147 nvidia-cusolver-cu12-11.6.1.9 nvidia-cusparse-cu12-12.3.1.170 nvidia-nvjitlink-cu12-12.4.127
 
 
+The libraries serve the following purposes:
+- `transformers`: Provides access to pretrained models like DistilBERT and utilities for fine-tuning
+- `datasets`: Offers efficient data handling for transformer models
+- `torch`: Serves as the deep learning framework for model training
+- `evaluate`: Provides evaluation metrics for model performance assessment
+- `scikit-learn`: Offers additional metrics and utilities for evaluation
+
+Next, we import the specific modules needed for our task:
+
 
 ```python
 # Import necessary libraries
@@ -178,13 +187,10 @@ import warnings
 warnings.filterwarnings('ignore')
 ```
 
-    2025-05-06 07:53:52.728666: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+    2025-05-17 08:10:27.341956: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
     WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-    E0000 00:00:1746518032.930675      62 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-    E0000 00:00:1746518032.991943      62 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-
-
-    Using device: cuda
+    E0000 00:00:1747469427.748775      31 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+    E0000 00:00:1747469427.878751      31 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
 
 
 ### Setting Up Reproducibility
@@ -215,6 +221,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 ```
 
+    Using device: cuda
+
+
 Using a GPU significantly speeds up the training process for transformer models. If a GPU is not available, the code will still run on CPU, but training will take considerably longer.
 
 ## Data Preparation
@@ -227,9 +236,9 @@ We load the preprocessed ISOT dataset that was prepared in our earlier data anal
 ```python
 # Load the preprocessed datasets
 try:
-    train_df = pd.read_csv('/kaggle/input/isot-processed-and-splitted/train_fake_news.csv')
-    val_df = pd.read_csv('/kaggle/input/isot-processed-and-splitted/val_fake_news.csv') 
-    test_df = pd.read_csv('/kaggle/input/isot-processed-and-splitted/test_fake_news.csv')
+    train_df = pd.read_csv('/kaggle/input/isot-fake-news-robust/train_fake_news_robust.csv')
+    val_df = pd.read_csv('/kaggle/input/isot-fake-news-robust/val_fake_news_robust.csv') 
+    test_df = pd.read_csv('/kaggle/input/isot-fake-news-robust/test_fake_news_robust.csv')
     
     print(f"Training set: {train_df.shape}")
     print(f"Validation set: {val_df.shape}")
@@ -238,9 +247,9 @@ except FileNotFoundError:
     print("Preprocessed files not found. Please run the data preprocessing from Part 2 first.")
 ```
 
-    Training set: (31428, 3)
-    Validation set: (6735, 3)
-    Test set: (6735, 3)
+    Training set: (62857, 3)
+    Validation set: (13469, 3)
+    Test set: (13470, 3)
 
 
 The dataset has already been split into training, validation, and test sets with a ratio of 70:15:15. This split ensures we have enough data for training while maintaining substantial validation and test sets for reliable evaluation.
@@ -288,21 +297,21 @@ train_df.head(3)
   <tbody>
     <tr>
       <th>0</th>
-      <td>Trump ‘Diversity Council’ Member Threatens to ...</td>
-      <td>A member of President Trump s Diversity Counci...</td>
+      <td>DESPERATE TO STOP THE FLOW OF MUSLIM REFUGEES ...</td>
+      <td>The liberals find this plan to be disgusting u...</td>
       <td>0</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>DID BEYONCE AND JAY Z’s “Vacation” To Communis...</td>
-      <td>Notorious radical Black Panther and NJ cop kil...</td>
-      <td>0</td>
+      <td>U.S. hands over 1,100 pages of Benghazi record...</td>
+      <td>The U.S. State Department on Friday handed ove...</td>
+      <td>1</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>CNN Host Calls Out Trump’s Uncle Tom Spokeswo...</td>
-      <td>Katrina Pierson is a black woman. She is also ...</td>
-      <td>0</td>
+      <td>Turkish minister says EU turning negotiations ...</td>
+      <td>Turkey said on Friday the European Union was m...</td>
+      <td>1</td>
     </tr>
   </tbody>
 </table>
@@ -323,7 +332,7 @@ We convert our pandas DataFrames to the HuggingFace Dataset format, which is opt
 ```python
 # Function to convert pandas DataFrames to HuggingFace Datasets
 def convert_to_hf_dataset(df):
-    # For DistilBERT, we'll use both title and text
+    # For DistilBERT, we'll combine title and text for better context
     df['text'] = df['title'] + " " + df['enhanced_cleaned_text']
     
     # Convert to HuggingFace Dataset format
@@ -334,27 +343,7 @@ def convert_to_hf_dataset(df):
 train_dataset = convert_to_hf_dataset(train_df)
 val_dataset = convert_to_hf_dataset(val_df)
 test_dataset = convert_to_hf_dataset(test_df)
-
-print(f"Training dataset: {len(train_dataset)} examples")
-print(f"Validation dataset: {len(val_dataset)} examples")
-print(f"Test dataset: {len(test_dataset)} examples")
 ```
-
-    Training dataset: 31428 examples
-    Validation dataset: 6735 examples
-    Test dataset: 6735 examples
-
-
-We combine the title and body text into a single text field because:
-1. News headlines often contain important contextual information
-2. DistilBERT can process sequences up to 512 tokens, which is sufficient for most news articles
-3. This approach provides the model with the maximum available information for classification
-
-## Model Architecture and Configuration
-
-### Tokenization
-
-We prepare the tokenizer for DistilBERT, which converts text into token IDs that the model can process:
 
 
 ```python
@@ -374,80 +363,65 @@ val_dataset = val_dataset.map(clean_dataset)
 test_dataset = test_dataset.map(clean_dataset)
 ```
 
-    First example in train_dataset: {'text': 'Trump ‘Diversity Council’ Member Threatens to Quit If Trump Ends DACA…Bye, Bye! [Video] A member of President Trump s Diversity Council is threatening to quit because he opposes Trump s cancelation of DACA. Bye Bye!Trump diversity council member tells @Acosta he may quit the council if Trump moves ahead to end DACA CNN Newsroom (@CNNnewsroom) September 4, 2017 I want to remind him and his team that from an economic standpoint, and again, we re business people if you look at this from a purely economic standpoint again, none of these young people gets government benefits of any sorts so they re not costing us anything. They pay over $2 billion in taxes Is anyone else out there sick of the American people being told illegals cost nothing?DACA Will Cost Americans And Their Government A Huge Amount of Money.On average, people with college degrees pay more in taxes than they receive in government benefits. People without a degree consume more taxes than they pay to federal, state and local tax officials.In 2013, a Heritage Foundation study showed that amnesty for 11 million illegals would spike federal spending by $6,300 billion over the next five decades. That is roughly equivalent to $550,000 per illegal, or $10,000 per illegal per year, much of which will be spent when the immigrant becomes eligible for Social Security and Medicare. That cost estimate does not include the extra costs created when immigrants use their new legal powers as a citizen to bring in more low-skilled migrants.If those 3 million DACA people and their parents soon become legal residents or citizens, then Obama s DACA will cost Americans roughly $1,700 billion over the next 50 years, according to Heritage Foundation s numbers.Moreover, the DACA migrants add to the flood of illegal labor that has driven down wages for ordinary Americans, including urban youths and recent immigrants. Currently, Americans lose roughly $500 billion a year from their salaries because of the immigration tax caused by cheap labor according to the academies report.Via: GP', 'label': 0}
+    First example in train_dataset: {'text': 'DESPERATE TO STOP THE FLOW OF MUSLIM REFUGEES INTO SWEDEN, Swedish Citizens Devise A Controversial Scheme The liberals find this plan to be disgusting until their neighborhoods become the next victim of violent muslim immigrant gangs of course Anti-immigration campaigners in Gullberg in southern Sweden are plotting to build a pig farm next to an asylum centre in a last-ditch effort to deter would-be Muslim immigrants, who might find the animals offensive.More illegal immigrants on the run in Sweden (03 May 15) Swedish Syrian warms hearts over phone return (08 Apr 15) It was a long journey and some of my friends died (30 Mar 15)Plans for a new immigration centre in Gullberg have already been strongly opposed by local residents and on Wednesday it was reported that a group of campaigners had sent a letter to the Swedish Migration Board (Migrationsverket) pledging to breed pigs nearby in order to deter Muslims from seeking asylum in the town.The note, signed by what described itself as the interest group for Gullberg s survival said that it was trying to create a probably impossible situation for some religious people, especially Muslims , .Local politician Henry Sandahl from Sweden s Countryside Party (Markbygdspartiet) told the broadcaster that he agreed with the sentiment of the letter. You know that Muslims are not friends with pigs, he said.But Swedish religious experts have been quick to criticize the campaigners. This is nonsense and shows just how very little they know about Islam, said ke Sander, Professor of Psychology at the University of Gothenburg. It is one thing when Muslims try to stay away from pork, alcohol or gambling but there is nothing [in the Koran] that says you cannot be near pigs. This is a last-ditch effort when they [the campaigners] have no arguments left, he told the TT news agency.Others turned to social media to voice their disgust at the campaign.Carl G ransson, a lawyer and former Moderate party politician suggested on Twitter that building a gigantic rubbish dump next to the asylum centre instead, designed to blow smelly winds in the direction of the angry residents. Monstrous and a total fail , wrote Johan Arenius, a political official for the Christian political party party based in rebro in central Sweden.Sweden became the first European country in 2013 to grant automatic residency to Syrian refugees and has since seen asylum requests rise to record levels, which are still expected to reach about 90,000 in 2015.To cope with an increasing flow of refugees, the in March that it was more than tripling the maximum number of residents allowed at asylum centres from 200 to 650. The Local seh/t Refugee Resettlement Watch', 'label': 0}
     Text type for first example: <class 'str'>
 
 
 
-    Map:   0%|          | 0/31428 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/62857 [00:00<?, ? examples/s]
 
 
 
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/13469 [00:00<?, ? examples/s]
 
 
 
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/13470 [00:00<?, ? examples/s]
 
+
+We combine the title and body text into a single text field because:
+1. News headlines often contain important contextual information
+2. DistilBERT can process sequences up to 512 tokens, which is sufficient for most news articles
+3. This approach provides the model with the maximum available information for classification
+
+## Model Architecture and Configuration
+
+### Tokenization
+
+We prepare the tokenizer for DistilBERT, which converts text into token IDs that the model can process:
 
 
 ```python
-# Initialize the DistilBERT tokenizer
+# Initialize the tokenizer
 tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
 
-# Define the maximum sequence length
-max_length = 512  # This is the maximum that BERT models can handle
-
-# Function to tokenize the dataset - modified to handle potential bad inputs
+# Define the tokenization function
 def tokenize_function(examples):
-    # Convert all text entries to strings and handle potential None values
-    texts = [str(text) if text is not None else "" for text in examples['text']]
-    
+    # Tokenize the texts with truncation and padding
     return tokenizer(
-        texts,
+        examples['text'],
         padding='max_length',
         truncation=True,
-        max_length=max_length,
-        return_tensors=None  # Don't return tensors in batch mode
+        max_length=512,
+        return_tensors="pt"
     )
 
 # Apply tokenization to our datasets
-train_tokenized = train_dataset.map(tokenize_function, batched=True)
-val_tokenized = val_dataset.map(tokenize_function, batched=True)
-test_tokenized = test_dataset.map(tokenize_function, batched=True)
-
-# Set the format for PyTorch after tokenization
-train_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
-val_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
-test_tokenized.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
+tokenized_train = train_dataset.map(tokenize_function, batched=True)
+tokenized_val = val_dataset.map(tokenize_function, batched=True)
+tokenized_test = test_dataset.map(tokenize_function, batched=True)
 ```
 
 
-    tokenizer_config.json:   0%|          | 0.00/48.0 [00:00<?, ?B/s]
+    Map:   0%|          | 0/62857 [00:00<?, ? examples/s]
 
 
 
-    vocab.txt:   0%|          | 0.00/232k [00:00<?, ?B/s]
+    Map:   0%|          | 0/13469 [00:00<?, ? examples/s]
 
 
 
-    tokenizer.json:   0%|          | 0.00/466k [00:00<?, ?B/s]
-
-
-
-    config.json:   0%|          | 0.00/483 [00:00<?, ?B/s]
-
-
-
-    Map:   0%|          | 0/31428 [00:00<?, ? examples/s]
-
-
-
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
-
-
-
-    Map:   0%|          | 0/6735 [00:00<?, ? examples/s]
+    Map:   0%|          | 0/13470 [00:00<?, ? examples/s]
 
 
 Key tokenization decisions:
@@ -462,13 +436,15 @@ We initialize the DistilBERT model for sequence classification:
 
 
 ```python
-# Initialize the DistilBERT model for sequence classification
+# Initialize the model
 model = DistilBertForSequenceClassification.from_pretrained(
     'distilbert-base-uncased',
-    num_labels=2  # Binary classification: 0 for fake, 1 for real
+    num_labels=2,  # Binary classification: fake or real
+    id2label={0: "fake", 1: "real"},
+    label2id={"fake": 0, "real": 1}
 )
 
-# Move model to device (GPU if available)
+# Move model to the appropriate device
 model.to(device)
 ```
 
@@ -533,17 +509,21 @@ We define a function to compute evaluation metrics during training:
 
 
 ```python
-# Function to compute metrics
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted')
-    acc = accuracy_score(labels, preds)
+# Define metrics computation function
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    
+    accuracy = accuracy_score(labels, predictions)
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels, predictions, average='weighted'
+    )
+    
     return {
-        'accuracy': acc,
-        'f1': f1,
+        'accuracy': accuracy,
         'precision': precision,
-        'recall': recall
+        'recall': recall,
+        'f1': f1
     }
 ```
 
@@ -561,20 +541,22 @@ We set up the training arguments with carefully chosen hyperparameters:
 ```python
 # Define training arguments
 training_args = TrainingArguments(
-    output_dir='./results',          # Output directory for model checkpoints
-    num_train_epochs=3,              # Number of training epochs
-    per_device_train_batch_size=8,   # Batch size for training
-    per_device_eval_batch_size=16,   # Batch size for evaluation
-    warmup_steps=500,                # Number of warmup steps for learning rate scheduler
-    weight_decay=0.01,               # Strength of weight decay
-    logging_dir='./logs',            # Directory for storing logs
-    logging_steps=100,               # Log every X steps
-    eval_strategy="epoch",           # Evaluate every epoch
-    save_strategy="epoch",           # Save model checkpoint every epoch
-    load_best_model_at_end=True,     # Load the best model at the end
-    metric_for_best_model="f1",      # Use F1 score to determine the best model
-    push_to_hub=False,               # Don't push to Hugging Face Hub
-    report_to="none"                 # Disable reporting to avoid wandb or other services
+    output_dir='./results/distilbert',
+    num_train_epochs=5,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=64,
+    warmup_steps=500,
+    weight_decay=0.01,
+    logging_dir='./logs',
+    logging_steps=10,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+    metric_for_best_model="f1",
+    push_to_hub=False,
+    disable_tqdm=False,          # Ensure progress bar is shown
+    logging_first_step=True,     # Log the first training step 
+    report_to="tensorboard",     # Enable tensorboard reporting (optional)
 )
 ```
 
@@ -588,47 +570,37 @@ Key hyperparameter choices and their rationale:
 
 ### Training Execution
 
-We initialize the Trainer:
+We initialize the Trainer and start the training process:
 
 
 ```python
-# Create the Trainer
+# Initialize the Trainer
 trainer = Trainer(
-    model=model,                         # The instantiated model to train
-    args=training_args,                  # Training arguments
-    train_dataset=train_tokenized,       # Training dataset
-    eval_dataset=val_tokenized,          # Evaluation dataset
-    compute_metrics=compute_metrics,     # The function to compute metrics
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]  # Early stopping
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_train,
+    eval_dataset=tokenized_val,
+    compute_metrics=compute_metrics,
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
 )
-```
-
-## 7. Fine-tune the Model
-
-Now I'll fine-tune the model:
-
-
-```python
-# Start the timer to measure training time
-start_time = time.time()
 
 # Train the model
+print("Starting training...")
+start_time = time.time()
 trainer.train()
-
-# Calculate training time
-training_time = time.time() - start_time
-print(f"Training completed in {training_time/60:.2f} minutes")
-
-# Save the fine-tuned model
-trainer.save_model("./distilbert-fake-news-detector")
+end_time = time.time()
+print(f"Training completed in {(end_time - start_time) / 60:.2f} minutes")
 ```
+
+    Starting training...
+
 
 
 
     <div>
 
-      <progress value='5895' max='5895' style='width:300px; height:20px; vertical-align: middle;'></progress>
-      [5895/5895 48:38, Epoch 3/3]
+      <progress value='6055' max='9825' style='width:300px; height:20px; vertical-align: middle;'></progress>
+      [6055/9825 1:37:58 < 1:01:01, 1.03 it/s, Epoch 3.08/5]
     </div>
     <table border="1" class="dataframe">
   <thead>
@@ -637,25 +609,25 @@ trainer.save_model("./distilbert-fake-news-detector")
       <th>Training Loss</th>
       <th>Validation Loss</th>
       <th>Accuracy</th>
-      <th>F1</th>
       <th>Precision</th>
       <th>Recall</th>
+      <th>F1</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>1</td>
-      <td>0.004200</td>
-      <td>0.000038</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
+      <td>0.000300</td>
+      <td>0.004967</td>
+      <td>0.999035</td>
+      <td>0.999036</td>
+      <td>0.999035</td>
+      <td>0.999035</td>
     </tr>
     <tr>
       <td>2</td>
       <td>0.000000</td>
-      <td>0.000297</td>
+      <td>0.001117</td>
       <td>0.999852</td>
       <td>0.999852</td>
       <td>0.999852</td>
@@ -664,20 +636,55 @@ trainer.save_model("./distilbert-fake-news-detector")
     <tr>
       <td>3</td>
       <td>0.000000</td>
-      <td>0.000008</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
+      <td>0.004282</td>
+      <td>0.999258</td>
+      <td>0.999258</td>
+      <td>0.999258</td>
+      <td>0.999258</td>
     </tr>
   </tbody>
 </table><p>
+    <div>
+
+      <progress value='106' max='106' style='width:300px; height:20px; vertical-align: middle;'></progress>
+      [106/106 02:03]
+    </div>
 
 
-    Training completed in 48.69 minutes
 
 
-We include an early stopping callback with a patience of 2 epochs to prevent overfitting. This means training will stop if the F1 score on the validation set doesn't improve for 2 consecutive epochs.
+    ---------------------------------------------------------------------------
+
+    KeyboardInterrupt                         Traceback (most recent call last)
+
+    /tmp/ipykernel_31/1203609593.py in <cell line: 0>()
+         12 print("Starting training...")
+         13 start_time = time.time()
+    ---> 14 trainer.train()
+         15 end_time = time.time()
+         16 print(f"Training completed in {(end_time - start_time) / 60:.2f} minutes")
+
+
+    /usr/local/lib/python3.11/dist-packages/transformers/trainer.py in train(self, resume_from_checkpoint, trial, ignore_keys_for_eval, **kwargs)
+       2243                 hf_hub_utils.enable_progress_bars()
+       2244         else:
+    -> 2245             return inner_training_loop(
+       2246                 args=args,
+       2247                 resume_from_checkpoint=resume_from_checkpoint,
+
+
+    /usr/local/lib/python3.11/dist-packages/transformers/trainer.py in _inner_training_loop(self, batch_size, args, resume_from_checkpoint, trial, ignore_keys_for_eval)
+       2563                         args.logging_nan_inf_filter
+       2564                         and not is_torch_xla_available()
+    -> 2565                         and (torch.isnan(tr_loss_step) or torch.isinf(tr_loss_step))
+       2566                     ):
+       2567                         # if loss is nan or inf simply add the average of previous logged losses
+
+
+    KeyboardInterrupt: 
+
+
+We include an early stopping callback with a patience of 2 epochs to prevent overfitting. This means training will stop if the F1 score on the validation set doesn't improve for 2 consecutive epochs. (I stopped after 3rd epoch)
 
 ## Evaluation Methodology
 
@@ -687,16 +694,21 @@ We evaluate the model on both validation and test sets:
 
 
 ```python
-# Evaluate the model on the test set
-test_results = trainer.evaluate(test_tokenized)
+# Evaluate on validation set
+print("Evaluating on validation set...")
+val_results = trainer.evaluate(tokenized_val)
+print(f"Validation results: {val_results}")
+
+# Evaluate on test set
+print("Evaluating on test set...")
+test_results = trainer.evaluate(tokenized_test)
 print(f"Test results: {test_results}")
 ```
 
-
-
-
-
-    Test results: {'eval_loss': 0.0023615937680006027, 'eval_accuracy': 0.999554565701559, 'eval_f1': 0.999554556431033, 'eval_precision': 0.9995549446870654, 'eval_recall': 0.999554565701559, 'eval_runtime': 57.3478, 'eval_samples_per_second': 117.441, 'eval_steps_per_second': 3.679, 'epoch': 3.0}
+    Evaluating on validation set...
+    Validation results: {'eval_loss': 0.003084964584559202, 'eval_accuracy': 0.999480288068899, 'eval_precision': 0.999480295551252, 'eval_recall': 0.999480288068899, 'eval_f1': 0.9994802862889609}
+    Evaluating on test set...
+    Test results: {'eval_loss': 0.004281902685761452, 'eval_accuracy': 0.9992576095025983, 'eval_precision': 0.9992579761020756, 'eval_recall': 0.9992576095025983, 'eval_f1': 0.9992575941011417}
 
 
 Evaluating on both validation and test sets allows us to:
@@ -710,53 +722,46 @@ We perform a more detailed analysis of the model's predictions:
 
 
 ```python
-# Get predictions on the test set
-test_pred = trainer.predict(test_tokenized)
-y_preds = np.argmax(test_pred.predictions, axis=1)
-y_true = test_pred.label_ids
+# Get predictions on test set
+test_predictions = trainer.predict(tokenized_test)
+predicted_labels = np.argmax(test_predictions.predictions, axis=1)
+true_labels = test_predictions.label_ids
 
-# Create confusion matrix
+# Compute confusion matrix
 from sklearn.metrics import confusion_matrix, classification_report
-
-cm = confusion_matrix(y_true, y_preds)
-print("Confusion Matrix:")
-print(cm)
+cm = confusion_matrix(true_labels, predicted_labels)
 
 # Plot confusion matrix
-plt.figure(figsize=(10, 8))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-plt.xlabel('Predicted Label')
-plt.ylabel('True Label')
-plt.title('DistilBERT Confusion Matrix')
-plt.savefig('distilbert_confusion_matrix.png')
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=['Fake', 'Real'], 
+            yticklabels=['Fake', 'Real'])
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title('Confusion Matrix for DistilBERT')
 plt.show()
 
 # Print classification report
-print("\nClassification Report:")
-print(classification_report(y_true, y_preds, target_names=['Fake News', 'Real News']))
+print("Classification Report:")
+print(classification_report(true_labels, predicted_labels, 
+                           target_names=['Fake', 'Real']))
 ```
 
-    Confusion Matrix:
-    [[3523    0]
-     [   3 3209]]
-
-
 
     
-![png](output_29_1.png)
+![png](output_28_0.png)
     
 
 
-    
     Classification Report:
                   precision    recall  f1-score   support
     
-       Fake News       1.00      1.00      1.00      3523
-       Real News       1.00      1.00      1.00      3212
+            Fake       1.00      1.00      1.00      7045
+            Real       1.00      1.00      1.00      6425
     
-        accuracy                           1.00      6735
-       macro avg       1.00      1.00      1.00      6735
-    weighted avg       1.00      1.00      1.00      6735
+        accuracy                           1.00     13470
+       macro avg       1.00      1.00      1.00     13470
+    weighted avg       1.00      1.00      1.00     13470
     
 
 
@@ -783,87 +788,48 @@ Despite the high overall performance, we analyze the errors to understand where 
 
 
 ```python
-# Get indices of misclassified examples
-misclassified_indices = np.where(y_preds != y_true)[0]
-print(f"Number of misclassified examples: {len(misclassified_indices)}")
+# Find misclassified examples
+misclassified_indices = np.where(predicted_labels != true_labels)[0]
+misclassified_examples = test_df.iloc[misclassified_indices]
 
-# If there are misclassifications, analyze a few
-if len(misclassified_indices) > 0:
-    # Get the original text and predictions
-    misclassified_texts = []
-    for idx in misclassified_indices[:5]:  # Examine up to 5 examples
-        # Convert numpy.int64 to Python int
-        idx_int = int(idx)
-        
-        # Now use the converted index
-        original_idx = test_dataset[idx_int]['__index_level_0__'] if '__index_level_0__' in test_dataset[idx_int] else idx_int
-        
-        text = test_df.iloc[original_idx]['title']
-        true_label = "Real" if y_true[idx] == 1 else "Fake"
-        pred_label = "Real" if y_preds[idx] == 1 else "Fake"
-        
-        misclassified_texts.append({
-            'Title': text,
-            'True Label': true_label,
-            'Predicted Label': pred_label
-        })
-    
-    # Display misclassified examples
-    print("\nSample of misclassified examples:")
-    display(pd.DataFrame(misclassified_texts))
+# Display some misclassified examples
+print("Sample of misclassified examples:")
+for i, (_, row) in enumerate(misclassified_examples.head(3).iterrows()):
+    print(f"Example {i+1}:")
+    print(f"Title: {row['title']}")
+    print(f"True label: {'Real' if row['label'] == 1 else 'Fake'}")
+    print(f"Predicted: {'Real' if predicted_labels[misclassified_indices[i]] == 1 else 'Fake'}")
+    print("-" * 50)
 ```
 
-    Number of misclassified examples: 3
-    
     Sample of misclassified examples:
+    Example 1:
+    Title: Indian Hindu tried to raise money with video of killing of Muslim: police
+    True label: Real
+    Predicted: Fake
+    --------------------------------------------------
+    Example 2:
+    Title:  String Of Deaths Linked To Human Experimentation By Bone Cement Company
+    True label: Fake
+    Predicted: Real
+    --------------------------------------------------
+    Example 3:
+    Title: Graphic: Supreme Court roundup
+    True label: Real
+    Predicted: Fake
+    --------------------------------------------------
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
+```python
+# This saves both the model and tokenizer configuration
+model_save_path = "./distilbert-fake-news-detector"
+model.save_pretrained(model_save_path)
+tokenizer.save_pretrained(model_save_path)
+print(f"Model and tokenizer saved to {model_save_path}")
+```
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Title</th>
-      <th>True Label</th>
-      <th>Predicted Label</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>Trump on Twitter (August 10): Mitch McConnell</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>Uber joins forces with global public transport...</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>'Gates of Hell': Iraqi army says fighting near...</td>
-      <td>Real</td>
-      <td>Fake</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+    Model and tokenizer saved to ./distilbert-fake-news-detector
 
 
 Common patterns in misclassified examples include:
