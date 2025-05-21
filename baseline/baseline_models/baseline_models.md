@@ -4,7 +4,7 @@
 
 Misinformation and fake news represent significant challenges in today's information ecosystem. The ability to automatically detect potentially misleading content has become increasingly important for media platforms, fact-checking organizations, and consumers of online information.
 
-In this notebook, I'll develop and evaluate machine learning approaches for detecting fake news using the WELFake dataset. This dataset combines real and fake news articles from four sources: Wikipedia, Kaggle's "Fake News", PolitiFact, and "Getting Real about Fake News."
+In this notebook, I'll develop and evaluate two machine learning approaches for detecting fake news using the WELFake dataset. This dataset combines real and fake news articles from four sources: Wikipedia, Kaggle's "Fake News", PolitiFact, and "Getting Real about Fake News."
 
 ### Why This Problem Matters
 
@@ -16,12 +16,12 @@ Fake news can:
 
 ### Our Approach
 
-I'll take a dual approach to this problem:
+For this baseline notebook, I'll focus on content-based detection using natural language processing techniques. I'll implement two models:
 
-1. **Content-based detection**: Analyzing the actual text content using natural language processing techniques
-2. **Feature-based detection**: Examining structural and stylistic characteristics of articles
+1. **Logistic Regression**: A simple, interpretable model that often performs well on text classification
+2. **Random Forest**: An ensemble approach that can capture more complex patterns
 
-By comparing these approaches, we can determine which signals are most effective for detecting potentially misleading content, and develop practical tools for identifying fake news.
+This simplified approach will establish strong baselines for fake news detection. In a separate notebook, we'll conduct more extensive evaluation and explore advanced techniques.
 
 ## Setting Up the Environment
 
@@ -79,12 +79,18 @@ class_dist = df['label'].value_counts(normalize=True).mul(100).round(2)
 print(class_dist)
 ```
 
-    Dataset shape: (71537, 10)
+    Dataset shape: (71537, 11)
     Class distribution:
+
+
+
+
+
     label
     1    51.04
     0    48.96
     Name: proportion, dtype: float64
+
 
 
 The dataset contains over 70,000 articles with a near-balanced distribution between real and fake news, which is ideal for training machine learning models. A balanced dataset helps prevent bias in model training and ensures the model learns to distinguish both classes effectively rather than just predicting the majority class.
@@ -127,181 +133,138 @@ Next, let's examine the structure of our data to understand what features are av
 ```python
 # Display first few rows to understand the data structure
 print("First few rows of the dataset:")
-print(df.head())
+df.head()
 ```
 
     First few rows of the dataset:
-       Unnamed: 0                                              title  \
-    0           0  LAW ENFORCEMENT ON HIGH ALERT Following Threat...   
-    1           2  UNBELIEVABLE! OBAMA’S ATTORNEY GENERAL SAYS MO...   
-    2           3  Bobby Jindal, raised Hindu, uses story of Chri...   
-    3           4  SATAN 2: Russia unvelis an image of its terrif...   
-    4           5  About Time! Christian Group Sues Amazon and SP...   
-    
-                                                    text  label  title_length  \
-    0  No comment is expected from Barack Obama Membe...      1           130   
-    1   Now, most of the demonstrators gathered last ...      1           137   
-    2  A dozen politically active pastors came here f...      0           105   
-    3  The RS-28 Sarmat missile, dubbed Satan 2, will...      1            95   
-    4  All we can say on this one is it s about time ...      1            78   
-    
-       text_length  word_count  title_has_allcaps  title_exclamation  \
-    0         5049         871               True              False   
-    1          216          34               True               True   
-    2         8010        1321              False              False   
-    3         1916         329               True              False   
-    4         1530         244               True               True   
-    
-       title_question  
-    0           False  
-    1           False  
-    2           False  
-    3           False  
-    4           False  
+
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Unnamed: 0</th>
+      <th>title</th>
+      <th>text</th>
+      <th>label</th>
+      <th>title_length</th>
+      <th>text_length</th>
+      <th>word_count</th>
+      <th>title_has_allcaps</th>
+      <th>title_exclamation</th>
+      <th>title_question</th>
+      <th>combined_text</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>LAW ENFORCEMENT ON HIGH ALERT Following Threat...</td>
+      <td>No comment is expected from Barack Obama Membe...</td>
+      <td>1</td>
+      <td>130</td>
+      <td>5049</td>
+      <td>871</td>
+      <td>True</td>
+      <td>False</td>
+      <td>False</td>
+      <td>LAW ENFORCEMENT ON HIGH ALERT Following Threat...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>UNBELIEVABLE! OBAMA’S ATTORNEY GENERAL SAYS MO...</td>
+      <td>Now, most of the demonstrators gathered last ...</td>
+      <td>1</td>
+      <td>137</td>
+      <td>216</td>
+      <td>34</td>
+      <td>True</td>
+      <td>True</td>
+      <td>False</td>
+      <td>UNBELIEVABLE! OBAMA’S ATTORNEY GENERAL SAYS MO...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>Bobby Jindal, raised Hindu, uses story of Chri...</td>
+      <td>A dozen politically active pastors came here f...</td>
+      <td>0</td>
+      <td>105</td>
+      <td>8010</td>
+      <td>1321</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>Bobby Jindal, raised Hindu, uses story of Chri...</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>SATAN 2: Russia unvelis an image of its terrif...</td>
+      <td>The RS-28 Sarmat missile, dubbed Satan 2, will...</td>
+      <td>1</td>
+      <td>95</td>
+      <td>1916</td>
+      <td>329</td>
+      <td>True</td>
+      <td>False</td>
+      <td>False</td>
+      <td>SATAN 2: Russia unvelis an image of its terrif...</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>About Time! Christian Group Sues Amazon and SP...</td>
+      <td>All we can say on this one is it s about time ...</td>
+      <td>1</td>
+      <td>78</td>
+      <td>1530</td>
+      <td>244</td>
+      <td>True</td>
+      <td>True</td>
+      <td>False</td>
+      <td>About Time! Christian Group Sues Amazon and SP...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
 
 
 The dataset contains several key columns:
 - `title`: The headline of the article
 - `text`: The body content of the article
 - `label`: Binary indicator (0 for real, 1 for fake)
-- Several derived features from preprocessing like `title_length`, `text_length`, etc.
+- Several derived features from preprocessing
 
-These derived features are particularly interesting as they capture structural and stylistic elements that might help distinguish fake from real news.
+For our text-based approach, we'll focus primarily on the title and text content.
 
+## Feature Engineering for Text-Based Classification
 
-```python
-# Summary statistics for numerical features
-print("\nSummary statistics for key features:")
-numeric_cols = ['title_length', 'text_length', 'word_count']
-print(df[numeric_cols].describe())
-```
-
-    
-    Summary statistics for key features:
-           title_length    text_length    word_count
-    count  71537.000000   71537.000000  71537.000000
-    mean      77.130240    3292.722116    544.562814
-    std       25.028377    3738.194002    626.341486
-    min        1.000000       1.000000      0.000000
-    25%       62.000000    1410.000000    232.000000
-    50%       73.000000    2440.000000    401.000000
-    75%       89.000000    4077.000000    670.000000
-    max      456.000000  142961.000000  24234.000000
-
-
-These statistics reveal important characteristics of our dataset:
-- Article lengths vary significantly, from extremely short (1 character) to very long (over 140,000 characters)
-- The median text length is around 2,440 characters, suggesting most articles are relatively short
-- There's substantial variation in title lengths, which might be a discriminative feature
-
-## Feature Analysis
-
-Now that we understand the basic structure of our data, let's analyze specific features that might help distinguish real from fake news. Journalistic practices often differ between legitimate news sources and outlets publishing misinformation, potentially leaving detectable patterns.
-
-### Content Length Analysis
-
-Let's first examine whether content length differs between real and fake news articles.
-
-
-```python
-# Examine the distribution of content length
-plt.figure(figsize=(15, 5))
-plt.subplot(1, 2, 1)
-sns.histplot(data=df, x='title_length', hue='label', bins=30, kde=True, alpha=0.7)
-plt.title('Distribution of Title Length')
-plt.xlabel('Title Length (characters)')
-
-plt.subplot(1, 2, 2)
-sns.histplot(data=df, x='text_length', hue='label', bins=30, kde=True, alpha=0.7)
-plt.title('Distribution of Text Length')
-plt.xlabel('Text Length (characters)')
-plt.xlim(0, 10000)  # Limit x-axis to focus on the majority of data
-
-plt.tight_layout()
-plt.show()
-```
-
-
-    
-![png](output_15_0.png)
-    
-
-
-This visualization reveals interesting patterns:
-
-1. **Title Length**: Fake news articles tend to have longer titles than real news articles. The distribution for real news peaks earlier and drops off more quickly, suggesting that legitimate news sources generally prefer concise headlines. Fake news, on the other hand, often uses longer, more elaborate titles that might be designed to grab attention or convey more emotion.
-
-2. **Article Length**: Both distributions have similar shapes, but real news shows a broader spread and extends further to the right, indicating that legitimate sources occasionally publish more comprehensive, in-depth articles.
-
-These differences, while subtle, could provide valuable signals for our classification models.
-
-### Title Stylistic Features
-
-Headlines are the first point of contact for readers and often determine whether they'll engage with an article. Let's analyze stylistic features of titles that might differentiate real from fake news.
-
-
-```python
-# Analyze binary features
-binary_cols = ['title_has_allcaps', 'title_exclamation', 'title_question']
-binary_df = df.groupby('label')[binary_cols].mean()
-```
-
-
-```python
-plt.figure(figsize=(12, 6))
-binary_df.T.plot(kind='bar', color=['#3498db', '#e74c3c'])
-plt.title('Proportion of Articles with Title Features by Class')
-plt.xlabel('Feature')
-plt.ylabel('Proportion')
-plt.xticks(rotation=45)
-plt.legend(['Real News', 'Fake News'])
-plt.tight_layout()
-plt.show()
-```
-
-
-    <Figure size 1200x600 with 0 Axes>
-
-
-
-    
-![png](output_18_1.png)
-    
-
-
-Let's look at the exact proportions for clarity:
-
-
-```python
-# Print out the actual proportions for clarity
-print("Proportion of articles with stylistic features by class:")
-print(binary_df.T.round(3))
-```
-
-    Proportion of articles with stylistic features by class:
-    label                  0      1
-    title_has_allcaps  0.235  0.632
-    title_exclamation  0.002  0.108
-    title_question     0.024  0.073
-
-
-This analysis reveals dramatic differences in title styling:
-
-1. **All-Caps Usage**: Fake news headlines use all-caps words (63.2%) nearly three times more frequently than real news (23.5%). This suggests sensationalism and attention-grabbing tactics more common in misinformation.
-
-2. **Exclamation Marks**: Fake news headlines use exclamation marks (10.8%) much more frequently than real news (0.2%). This reflects an attempt to convey urgency or emotional content.
-
-3. **Question Marks**: Fake news headlines use questions (7.3%) about three times more often than real news (2.4%). This might indicate speculative content or headlines designed to provoke curiosity.
-
-These stylistic differences align with journalistic standards: professional news organizations typically follow style guides that discourage sensationalist formatting, while fake news sources often employ emotional appeals and attention-grabbing tactics.
-
-## Feature Engineering
-
-Based on our exploratory analysis, I'll now create features that might help distinguish between real and fake news. I'll focus on both content-based features and metadata features.
+For content-based classification, it's beneficial to analyze both the headline and body text together, as this provides the model with all available textual information.
 
 ### Combining Text Fields for Content Analysis
 
-For content-based classification, it's beneficial to analyze both the headline and body text together, as this provides the model with all available textual information.
+By combining the title and text, we allow the model to identify patterns that might exist in how headlines relate to article content. For instance, misleading articles might have headlines that exaggerate or misrepresent the actual content.
 
 
 ```python
@@ -309,34 +272,6 @@ For content-based classification, it's beneficial to analyze both the headline a
 # This allows us to analyze the full article content as a single text unit
 df['combined_text'] = df['title'] + " " + df['text']
 ```
-
-By combining the title and text, we allow the model to identify patterns that might exist in how headlines relate to article content. For instance, misleading articles might have headlines that exaggerate or misrepresent the actual content.
-
-### Creating Feature-Based Dataset
-
-For our feature-based approach, I'll extract the structural and stylistic features we've identified as potentially useful discriminators.
-
-
-```python
-# Create a DataFrame with engineered features and label
-features_df = df[['title_length', 'text_length', 'word_count', 
-                 'title_has_allcaps', 'title_exclamation', 'title_question', 
-                 'label']]
-```
-
-
-```python
-print("Feature dataframe shape:", features_df.shape)
-```
-
-    Feature dataframe shape: (71537, 7)
-
-
-These six features capture different aspects of content structure and style:
-- Content length metrics (title_length, text_length, word_count) provide insight into the comprehensiveness of the article
-- Stylistic features (title_has_allcaps, title_exclamation, title_question) capture tone and presentation 
-
-By separating these features, we can evaluate whether simple structural characteristics alone can identify fake news, or if we need deeper content analysis.
 
 ## Data Preparation for Modeling
 
@@ -355,32 +290,17 @@ X_text_train, X_text_test, y_train, y_test = train_test_split(
 )
 ```
 
-### Splitting Data for Feature-Based Models
-
-
-```python
-# Split data for feature-based models
-X_features = features_df.drop('label', axis=1)
-X_features_train, X_features_test, y_train_feat, y_test_feat = train_test_split(
-    X_features, y, test_size=0.2, random_state=42, stratify=y
-)
-```
-
 
 ```python
 print(f"Text training set: {len(X_text_train)} samples")
 print(f"Text testing set: {len(X_text_test)} samples")
-print(f"Feature training set: {len(X_features_train)} samples")
-print(f"Feature testing set: {len(X_features_test)} samples")
 ```
 
     Text training set: 57229 samples
     Text testing set: 14308 samples
-    Feature training set: 57229 samples
-    Feature testing set: 14308 samples
 
 
-I've used an 80/20 train-test split, which provides sufficient data for both training robust models and thoroughly evaluating their performance. Using the same random seed and stratification ensures our comparisons between models are fair.
+I've used an 80/20 train-test split, which provides sufficient data for both training robust models and thoroughly evaluating their performance. Using stratification ensures our comparisons between models are fair by maintaining the same class distribution in both sets.
 
 ### Text Vectorization Using TF-IDF
 
@@ -495,7 +415,7 @@ This comprehensive evaluation function captures multiple dimensions of model per
 
 ## Model Training and Evaluation
 
-Now I'll train and evaluate several models using both our text-based and feature-based approaches. Based on preliminary analysis, I'll focus on two powerful algorithms that work well for text classification: Logistic Regression and Random Forest.
+Now I'll train and evaluate two models using our text-based approach. I've selected Logistic Regression and Random Forest as our baseline models based on their effectiveness for text classification tasks.
 
 ### Text-Based Classification with Logistic Regression
 
@@ -517,7 +437,7 @@ lr_text_results = train_evaluate_model(
     
     Logistic Regression (Text) Results:
     Accuracy: 0.9490
-    Training time: 0.51 seconds
+    Training time: 0.50 seconds
     Prediction time: 0.00 seconds
     
     Classification Report:
@@ -534,16 +454,11 @@ lr_text_results = train_evaluate_model(
 
 
     
-![png](output_37_1.png)
+![png](output_23_1.png)
     
 
 
-The Logistic Regression model has achieved impressive results:
-- 94.90% accuracy, with balanced performance across both classes
-- Extremely fast training (0.49 seconds) and near-instantaneous prediction time
-- Strong precision and recall for both real and fake news categories
-
-The confusion matrix shows that the model correctly classified 6,590 real news articles and 6,989 fake news articles, while misclassifying 416 real news articles as fake and 313 fake news articles as real. This balanced error pattern indicates the model isn't biased toward either class.
+The Logistic Regression model achieves impressive results with very fast training and prediction times. The confusion matrix shows the number of correctly and incorrectly classified articles across both classes.
 
 ### Text-Based Classification with Random Forest
 
@@ -565,7 +480,7 @@ rf_text_results = train_evaluate_model(
     
     Random Forest (Text) Results:
     Accuracy: 0.9541
-    Training time: 74.18 seconds
+    Training time: 74.45 seconds
     Prediction time: 0.36 seconds
     
     Classification Report:
@@ -582,116 +497,13 @@ rf_text_results = train_evaluate_model(
 
 
     
-![png](output_39_1.png)
+![png](output_25_1.png)
     
 
 
-The Random Forest model achieves slightly better performance than Logistic Regression:
-- 95.41% accuracy, with strong balanced precision and recall
-- Higher computation cost (74.25 seconds training time) but still reasonable
-- Better performance on fake news detection (0.97 precision vs. 0.94 for Logistic Regression)
+The Random Forest model typically achieves slightly better performance than Logistic Regression, but at a significantly higher computational cost. The confusion matrix helps us understand where the model makes errors in classification.
 
-The confusion matrix reveals that Random Forest correctly classified 6,548 real news articles and 7,103 fake news articles, with 458 real news articles misclassified as fake and only 199 fake news articles misclassified as real. This indicates that Random Forest is particularly good at identifying fake news (high recall for fake news category), making it potentially valuable in applications where missing fake news is more concerning than falsely flagging real news.
-
-### Feature-Based Classification with Random Forest
-
-To compare with our text-based approaches, let's evaluate how well our engineered features perform without using the actual text content.
-
-
-```python
-# Random Forest on engineered features
-rf_feat = RandomForestClassifier(n_estimators=100, random_state=42)
-rf_feat_results = train_evaluate_model(
-    rf_feat, X_features_train, X_features_test, y_train_feat, y_test_feat, 
-    "Random Forest (Features)"
-)
-```
-
-    
-    Random Forest (Features) Results:
-    Accuracy: 0.8140
-    Training time: 4.81 seconds
-    Prediction time: 0.20 seconds
-    
-    Classification Report:
-                  precision    recall  f1-score   support
-    
-       Real News       0.80      0.82      0.81      7006
-       Fake News       0.82      0.81      0.82      7302
-    
-        accuracy                           0.81     14308
-       macro avg       0.81      0.81      0.81     14308
-    weighted avg       0.81      0.81      0.81     14308
-    
-
-
-
-    
-![png](output_41_1.png)
-    
-
-
-The feature-based model performs reasonably well but significantly worse than the text-based approaches:
-- 81.40% accuracy, about 14 percentage points lower than text-based models
-- Balanced performance across classes (similar precision and recall for both)
-- Faster training than text-based Random Forest due to much lower feature dimensionality
-
-The confusion matrix shows 5,750 correctly classified real news articles and 5,896 correctly classified fake news articles, with 1,256 real news misclassified as fake and 1,406 fake news misclassified as real. This higher error rate indicates that while structural and stylistic features provide useful signals, they're not as powerful as the actual content for distinguishing fake news.
-
-## Feature Importance Analysis
-
-To gain insights into what makes our models effective, let's examine which features contribute most to the classification decisions.
-
-### Feature Importance in Random Forest (Engineered Features)
-
-Random Forest models provide a feature importance measure that indicates how much each feature contributes to the model's decisions.
-
-
-```python
-# Get feature importances from Random Forest on engineered features
-if hasattr(rf_feat, 'feature_importances_'):
-    # Create a DataFrame of features and their importance scores
-    feature_importance = pd.DataFrame({
-        'Feature': X_features.columns,
-        'Importance': rf_feat.feature_importances_
-    }).sort_values('Importance', ascending=False)
-    
-    # Plot feature importances
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x='Importance', y='Feature', data=feature_importance)
-    plt.title('Feature Importance for Fake News Detection')
-    plt.tight_layout()
-    plt.show()
-    
-    print("Feature importance ranking:")
-    print(feature_importance)
-```
-
-
-    
-![png](output_43_0.png)
-    
-
-
-    Feature importance ranking:
-                 Feature  Importance
-    1        text_length    0.302090
-    0       title_length    0.286267
-    2         word_count    0.260185
-    3  title_has_allcaps    0.113548
-    4  title_exclamation    0.027978
-    5     title_question    0.009932
-
-
-This analysis reveals the relative importance of our engineered features:
-
-1. **Content Length Metrics**: The top three features are all related to content length, with text_length (30.2%), title_length (28.6%), and word_count (26.0%) together accounting for about 85% of the predictive power.
-
-2. **Title Styling**: While less important overall, title_has_allcaps (11.4%) provides meaningful signal, while title_exclamation (2.8%) and title_question (1.0%) contribute minimally.
-
-This hierarchy makes intuitive sense: the length and structure of content reflect journalistic practices and editorial standards that differ between legitimate news outlets and sources of misinformation. The strong performance of length-related features aligns with our earlier observation that real and fake news articles show different distributions in title and text length.
-
-### Important Words in Logistic Regression
+## Important Words in Logistic Regression
 
 The coefficients in a Logistic Regression model indicate which terms most strongly predict each class. Let's examine these to understand the vocabulary patterns that differentiate real from fake news.
 
@@ -753,7 +565,7 @@ if hasattr(lr_text, 'coef_'):
 
 
     
-![png](output_45_0.png)
+![png](output_27_0.png)
     
 
 
@@ -804,33 +616,16 @@ if hasattr(lr_text, 'coef_'):
     19         its    -3.174841
 
 
-This analysis reveals fascinating linguistic patterns:
-
-**Fake News Indicators**:
-1. **Media-related terms**: Words like "via," "video," "image," "featured," and "pic" are strong indicators of fake news, suggesting a focus on visual content and sharing
-2. **Political references**: Terms like "hillary" suggest specific political targeting
-3. **Time markers**: "2016," "october," "november" indicate potential focus on election-related content
-4. **Action words**: "read," "watch," "breaking" create urgency and call for engagement
-5. **Casual language**: "just," "this" reflect a more informal, direct writing style
-
-**Real News Indicators**:
-1. **Attribution markers**: "reuters," "said" strongly indicate real news, reflecting journalistic sourcing practices
-2. **Time references**: Days of the week ("friday," "thursday," etc.) indicate standard news dating conventions
-3. **Formal language**: Words like "its," "an," "mr," "ms" reflect more formal journalistic style
-4. **Balanced reporting**: "but" suggests presentation of multiple perspectives
-
-These patterns align with journalistic standards: legitimate news typically follows style guides that emphasize attribution, balanced reporting, and formal language, while fake news often uses more emotional, attention-grabbing, and visually-oriented language.
+This analysis reveals linguistic patterns that distinguish fake from real news. Understanding these patterns provides insights into the writing styles and content strategies that differentiate legitimate journalism from misinformation.
 
 ## Model Comparison
 
-Let's compare the performance of our different approaches to determine the most effective method for fake news detection.
+Let's compare the performance of our two models to determine the most effective approach for fake news detection.
 
 
 ```python
 # Collect results from all models
-all_results = [
-    lr_text_results, rf_text_results, rf_feat_results
-]
+all_results = [lr_text_results, rf_text_results]
 ```
 
 
@@ -855,14 +650,12 @@ print(comparison_df)
 
     Model Comparison:
                             Model  Accuracy  Training Time (s)  \
-    0  Logistic Regression (Text)  0.949049           0.508312   
-    1        Random Forest (Text)  0.954082          74.184684   
-    2    Random Forest (Features)  0.813950           4.812805   
+    0  Logistic Regression (Text)  0.949049           0.499870   
+    1        Random Forest (Text)  0.954082          74.453069   
     
        Prediction Time (s)  
-    0             0.003593  
-    1             0.362011  
-    2             0.201224  
+    0             0.003473  
+    1             0.361113  
 
 
 
@@ -871,7 +664,7 @@ print(comparison_df)
 plt.figure(figsize=(10, 5))
 ax = sns.barplot(x='Model', y='Accuracy', data=comparison_df, palette='viridis')
 plt.title('Model Accuracy Comparison')
-plt.ylim(0.6, 1.0)  # Set y-axis range for better visualization
+plt.ylim(0.75, 1.0)  # Set y-axis range for better visualization
 plt.xticks(rotation=45, ha='right')
 
 # Add accuracy values on top of bars
@@ -886,23 +679,17 @@ plt.show()
 
 
     
-![png](output_50_0.png)
+![png](output_32_0.png)
     
 
 
-This comparison highlights several key insights:
+This comparison highlights key insights about our two models:
 
-1. **Text content is crucial**: Both text-based models significantly outperform the feature-based approach, suggesting that the actual content provides stronger signals than structural features alone.
+1. **Algorithm selection matters**: Random Forest typically outperforms Logistic Regression for text classification, but at a significant computational cost.
 
-2. **Algorithm selection matters**: Random Forest slightly outperforms Logistic Regression for text classification, but at a significant computational cost (74.25s vs. 0.49s training time).
+2. **Efficiency trade-offs**: Logistic Regression offers an excellent balance of performance and efficiency, achieving nearly the same accuracy as Random Forest with dramatically faster training and prediction times.
 
-3. **Efficiency trade-offs**: Logistic Regression offers an excellent balance of performance and efficiency, achieving nearly the same accuracy as Random Forest with dramatically faster training and prediction times.
-
-4. **Feature-based approach has value**: While not as accurate as text-based methods, the feature-based approach still achieves reasonable performance (81.4% accuracy) using just six simple features, which could be valuable in situations where text processing is impractical or too resource-intensive.
-
-These findings suggest that a production system might benefit from either:
-- Using Logistic Regression for maximum efficiency with strong performance
-- Using a two-stage approach where the feature-based model serves as a quick first-pass filter, with the more accurate text-based model applied only to uncertain cases
+These findings suggest that a production system might benefit from using Logistic Regression for maximum efficiency with strong performance, especially in scenarios where computational resources are limited or real-time prediction is needed.
 
 ## Model Persistence
 
@@ -938,13 +725,6 @@ with open('../ml_models/rf_text_model.pkl', 'wb') as f:
 
 
 ```python
-# Save Random Forest feature model
-with open('../ml_models/rf_feat_model.pkl', 'wb') as f:
-    pickle.dump(rf_feat_results['model'], f)
-```
-
-
-```python
 print("All models saved successfully!")
 ```
 
@@ -959,38 +739,30 @@ Saving these models and components enables:
 
 ## Conclusion
 
-This analysis has provided valuable insights into fake news detection using the WELFake dataset. Here's a summary of our key findings:
+This simplified analysis has provided valuable insights into fake news detection using the WELFake dataset. Here's a summary of our key findings:
 
-# FAKE NEWS DETECTION: KEY FINDINGS
+### Key Findings
 
-## 1. Model Performance
-- **Best performing model**: Random Forest (Text) with 95.41% accuracy
-- **Fastest model**: Logistic Regression (Text) in 0.51 seconds
+1. **Model Performance**
+   - Both Logistic Regression and Random Forest achieve high accuracy on the text classification task
+   - Random Forest typically performs slightly better but requires significantly more computational resources
+   - Logistic Regression offers an excellent balance of accuracy and speed
 
-## 2. Feature Importance
-- Content-based features are more effective than metadata features
-- **Top 3 metadata features**: text_length, title_length, word_count
+2. **Linguistic Markers**
+   - We identified specific words and phrases that strongly indicate either real or fake news
+   - This linguistic analysis reveals distinct writing patterns between legitimate journalism and misinformation
 
-## 3. Linguistic Markers
-- **Fake news indicators**: com, featured, image, video, via
-- **Real news indicators**: reuters, breitbart, said, follow, twitter
+3. **Practical Implications**
+   - Text content alone provides strong signals for fake news detection
+   - Simple, efficient models can achieve very good performance on this task
+   - The insights from linguistic analysis can inform better content evaluation practices
 
-## 4. Practical Implications
-- Logistic Regression offers an excellent balance of accuracy and speed
-- Text content is significantly more predictive than structural features
-- Fake news often contains sensationalist language and specific trigger words
-- Real news typically contains references to reputable sources and time indicators
+### Next Steps
 
-### Understanding Fake News Patterns
+In a separate notebook, we'll conduct more extensive evaluation, including:
+- Cross-validation to assess model stability
+- Hyperparameter optimization to improve performance
+- Error analysis to understand challenging cases
+- More advanced models for comparison
 
-Our comprehensive analysis reveals clear patterns that distinguish fake from real news:
-
-1. **Content Matters Most**: Text-based models significantly outperform feature-based models, indicating that the content itself contains the strongest signals for fake news detection.
-
-2. **Structural Differences Exist**: Real and fake news show measurable differences in content length, headline style, and formatting. Fake news tends to have longer, more sensationalist headlines with greater use of all-caps, exclamation marks, and question marks.
-
-3. **Linguistic Markers Are Strong Predictors**: Certain words and phrases strongly indicate fake or real news. Fake news often uses media-related terms, urgent language, and emotional appeals, while real news contains more attribution, balanced reporting language, and formal journalistic style.
-
-4. **Efficiency Considerations**: While Random Forest achieves the highest accuracy (95.41%), Logistic Regression offers nearly identical performance (94.90%) with dramatically faster training and prediction times, making it potentially more practical for real-world applications.
-
-These findings provide a solid foundation for developing fake news detection systems, with clear pathways for both immediate implementation and future research. By combining linguistic analysis with machine learning, we can create tools to help identify potentially misleading content and support more informed media consumption.
+This baseline approach establishes strong foundations for fake news detection and provides a framework for more sophisticated methods in the future.
