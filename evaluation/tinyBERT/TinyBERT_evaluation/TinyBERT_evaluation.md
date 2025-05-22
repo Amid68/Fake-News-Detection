@@ -238,7 +238,7 @@ print(f"Memory increase after loading: {model_memory:.2f} MB")
     TinyBERT model loaded successfully
     Number of parameters: 14,350,874
     Model size: 54.74 MB
-    Memory increase after loading: 409.00 MB
+    Memory increase after loading: 333.61 MB
 
 
 ## Preparing Data for Evaluation
@@ -374,13 +374,13 @@ welfake_results = evaluate_model(model, welfake_test_loader, "WELFake Test Set")
 
     
     TinyBERT Evaluation on WELFake Test Set:
-    Accuracy: 0.9931
-    Precision: 0.9931
-    Recall: 0.9931
-    F1 Score: 0.9931
-    Prediction time: 200.69 seconds for 14308 samples
-    Average prediction time: 14.03 ms per sample
-    Peak memory usage during inference: 388.89 MB
+    Accuracy: 0.9934
+    Precision: 0.9934
+    Recall: 0.9934
+    F1 Score: 0.9934
+    Prediction time: 202.19 seconds for 14308 samples
+    Average prediction time: 14.13 ms per sample
+    Peak memory usage during inference: 178.72 MB
 
 
 ### Confusion Matrix for WELFake
@@ -434,8 +434,8 @@ plot_confusion_matrix(
     
 
 
-    False Positive Rate: 0.0040 (28 real news articles misclassified as fake)
-    False Negative Rate: 0.0097 (71 fake news articles misclassified as real)
+    False Positive Rate: 0.0057 (40 real news articles misclassified as fake)
+    False Negative Rate: 0.0075 (55 fake news articles misclassified as real)
 
 
 ## Performance on External Datasets
@@ -450,12 +450,12 @@ external_results = evaluate_model(model, external_loader, "External Datasets")
 
     
     TinyBERT Evaluation on External Datasets:
-    Accuracy: 0.8370
-    Precision: 0.8731
-    Recall: 0.8370
-    F1 Score: 0.8340
-    Prediction time: 11.80 seconds for 828 samples
-    Average prediction time: 14.25 ms per sample
+    Accuracy: 0.8563
+    Precision: 0.8788
+    Recall: 0.8563
+    F1 Score: 0.8548
+    Prediction time: 11.69 seconds for 828 samples
+    Average prediction time: 14.12 ms per sample
     Peak memory usage during inference: 0.03 MB
 
 
@@ -477,8 +477,8 @@ plot_confusion_matrix(
     
 
 
-    False Positive Rate: 0.0100 (4 real news articles misclassified as fake)
-    False Negative Rate: 0.3054 (131 fake news articles misclassified as real)
+    False Positive Rate: 0.0251 (10 real news articles misclassified as fake)
+    False Negative Rate: 0.2541 (109 fake news articles misclassified as real)
 
 
 ### Analysis of External Dataset Performance
@@ -543,28 +543,24 @@ analyze_errors(
 ```
 
     
-    TinyBERT misclassified 99 out of 14308 articles on WELFake Test Set (0.69%)
+    TinyBERT misclassified 95 out of 14308 articles on WELFake Test Set (0.66%)
     Showing 3 examples:
     
     Example 1:
-    Text snippet: Trump’s Ex-Manager: He Didn’t Even Know What A Gold Star Family Is Comments 
-    Donald Trump, the draft-dodging Russophile who cloaks his xenophobia and bigotry in a veneer of false patriotism, reportedl...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-    
-    Example 2:
-    Text snippet: Hillary Clinton and Bernie Sanders = lecture vs. rock concert That's one way to quickly characterize the difference between a campaign stop for Hillary Clinton and Bernie Sanders.
-    
-    When Democrats visi...
+    Text snippet: Walgreens to close 200 stores, boost cost cutting Drugstore chain Walgreens Boots Alliance (WBA) announced plans to close about 200 U.S. stores as part of its first earnings report since it merged wit...
     True label: Real
     Predicted: Fake
     --------------------------------------------------------------------------------
     
-    Example 3:
-    Text snippet: Round I in Iowa: Scott Walker Emerges Scott Walker 2016 begins today. After this speech to #FreedomSummit no way he doesn't become formidable presidential candidate.
+    Example 2:
+    Text snippet: Donald Trump Elected 45th President Of The United States Via AP : 
+    Donald Trump was elected America’s 45th president Tuesday, an astonishing victory for a celebrity businessman and political novice wh...
+    True label: Fake
+    Predicted: Real
+    --------------------------------------------------------------------------------
     
-    So, @ScottWalker is the breakout ...
+    Example 3:
+    Text snippet: Checking a claim that 'nobody did anything wrong' on Benghazi As part of a partnership with Factcheck.org, a look at Hillary Clinton's recent claim regarding the various congressional investigations i...
     True label: Real
     Predicted: Fake
     --------------------------------------------------------------------------------
@@ -582,25 +578,26 @@ analyze_errors(
 ```
 
     
-    TinyBERT misclassified 135 out of 828 articles on External Datasets (16.30%)
+    TinyBERT misclassified 119 out of 828 articles on External Datasets (14.37%)
     Showing 3 examples:
     
     Example 1:
-    Text snippet: Senior banking officials speaking on condition of anonymity reveal that Federal Reserve leadership has drafted plans for a national banking 'holiday' to be implemented next month as part of final prep...
+    Text snippet: A comprehensive technical investigation by data scientists has documented systematic 'shadow-banning' of users on major social media platforms based specifically on political content, despite consiste...
     True label: Fake
     Predicted: Real
     --------------------------------------------------------------------------------
     
     Example 2:
-    Text snippet: A former senior vice president from a major pharmaceutical company has come forward with evidence allegedly proving that a remarkably effective cancer treatment was deliberately shelved after internal...
+    Text snippet: A confidential strategic planning document developed by international banking and economic policy organizations outlines a comprehensive approach to systematically transition most physical assets from...
     True label: Fake
     Predicted: Real
     --------------------------------------------------------------------------------
     
     Example 3:
-    Text snippet: A senior research scientist formerly employed at the Centers for Disease Control has provided extensive documentation allegedly showing systematic manipulation of vaccine safety data to artificially m...
-    True label: Fake
-    Predicted: Real
+    Text snippet: May 19 - Scottie Scheffler is favored to knock off the third leg of his quest for the career grand slam at next month's U.S. Open.
+    Fresh off claiming his first Wanamaker Trophy at the PGA Championship...
+    True label: Real
+    Predicted: Fake
     --------------------------------------------------------------------------------
 
 
@@ -678,12 +675,12 @@ plt.show()
     
     Batch Processing Efficiency on CPU:
        Batch Size  Total Time (ms)  Time per Sample (ms)
-    0           1            26.03                 26.03
-    1           2            31.31                 15.65
-    2           4            56.16                 14.04
-    3           8           112.22                 14.03
-    4          16           227.37                 14.21
-    5          32           449.51                 14.05
+    0           1            24.95                 24.95
+    1           2            31.98                 15.99
+    2           4            54.96                 13.74
+    3           8           112.56                 14.07
+    4          16           222.66                 13.92
+    5          32           452.65                 14.15
 
 
 
@@ -768,10 +765,10 @@ plt.show()
     
     Memory Usage for Different Sequence Lengths:
        Sequence Length  Memory Used (MB)
-    0               64          0.031250
-    1              128          0.031250
-    2              256          0.031250
-    3              512         23.328125
+    0               64           0.03125
+    1              128           0.03125
+    2              256           0.03125
+    3              512          12.90625
 
 
 
@@ -833,12 +830,12 @@ print(summary)
 
     TinyBERT Performance and Resource Usage Summary:
                            Metric WELFake Test External Data
-    0                    Accuracy       0.9931        0.8370
-    1                   Precision       0.9931        0.8731
-    2                      Recall       0.9931        0.8370
-    3                    F1 Score       0.9931        0.8340
-    4  Inference Time (ms/sample)        14.03         14.25
-    5       Memory Footprint (MB)       409.00        409.00
+    0                    Accuracy       0.9934        0.8563
+    1                   Precision       0.9934        0.8788
+    2                      Recall       0.9934        0.8563
+    3                    F1 Score       0.9934        0.8548
+    4  Inference Time (ms/sample)        14.13         14.12
+    5       Memory Footprint (MB)       333.61        333.61
     6             Parameter Count   14,350,874    14,350,874
 
 
