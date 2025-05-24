@@ -1,92 +1,45 @@
 # TinyBERT Evaluation for Fake News Detection on Edge Devices
 
-## 1. Introduction and Motivation
+## 1. Introduction
 
-This notebook evaluates our fine-tuned TinyBERT model for fake news detection on external datasets to assess its generalization capabilities and resource efficiency for edge device deployment. We're running this evaluation on a MacBook Pro M1 without GPU acceleration to simulate real-world edge device constraints.
+This notebook evaluates our fine-tuned TinyBERT model for fake news detection, focusing on generalization capabilities and resource efficiency for edge device deployment. We simulate real-world edge device constraints by running evaluations on CPU without GPU acceleration.
 
-### Why This Evaluation Matters
+### Key Objectives
 
-When deploying machine learning models in production, especially on edge devices, we face two critical challenges:
+1. **Generalization Assessment**: Evaluate model performance on external datasets with different characteristics than the training data
+2. **Resource Efficiency Analysis**: Profile inference speed and memory usage under edge device constraints
+3. **Deployment Optimization**: Identify optimal configurations for real-world applications
 
-1. **Generalization to New Data**: Models trained on specific datasets often struggle when encountering data from different sources or time periods. This is particularly challenging for fake news detection, where misinformation tactics evolve rapidly.
+### Model Background
 
-2. **Resource Constraints**: Edge devices have limited computational resources, memory, and battery life. Understanding exactly how our model performs under these constraints is essential for successful deployment.
-
-### What We've Learned from Training
-
-From our enhanced TinyBERT training on Kaggle, we discovered several important insights:
-
-- The best performing model was at checkpoint 3130, not the final checkpoint
-- TinyBERT achieved 99.19% accuracy on WELFake with proper hyperparameter tuning
-- Batch size significantly affects inference efficiency
-- The model shows specific memory usage patterns with different sequence lengths
-
-### Evaluation Strategy
-
-Since we've already thoroughly evaluated TinyBERT on the WELFake test set during training (achieving 99.19% ± 0.14% accuracy across 5 runs), we'll focus this notebook on:
-
-1. **External Dataset Evaluation**: Testing on completely unseen datasets to assess true generalization
-2. **Resource Efficiency Analysis**: Detailed profiling of inference speed and memory usage
-3. **Practical Deployment Insights**: Understanding trade-offs for real-world applications
+Our TinyBERT model was fine-tuned on the WELFake dataset, achieving 99.19% accuracy on the test set. The best performing checkpoint (3130) was selected based on validation performance. This evaluation focuses on understanding how well this model generalizes to new data sources.
 
 ## 2. Environment Setup
 
-Let's begin by importing the necessary libraries and setting up our environment for edge device simulation.
+### Import Required Libraries
 
 
 ```python
-# Import basic libraries for data manipulation and visualization
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-```
-
-
-```python
-# Import system libraries for resource monitoring
 import time
 import os
 import psutil
 import gc
-from collections import defaultdict
-```
-
-
-```python
-# Import PyTorch and transformers
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-```
-
-
-```python
-# Import evaluation metrics
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from sklearn.metrics import classification_report, confusion_matrix
-```
-
-
-```python
-# Import threading for memory monitoring
-import threading
-```
-
-
-```python
-# Suppress warnings for cleaner output
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 import warnings
 warnings.filterwarnings('ignore')
 ```
 
-### Setting Up Visualization Style
-
-A consistent visualization style helps us present results clearly and professionally.
+### Configure Visualization Settings
 
 
 ```python
-# Set consistent visualization style
 plt.style.use('ggplot')
 sns.set(font_scale=1.2)
 plt.rcParams['figure.figsize'] = (10, 6)
@@ -94,375 +47,131 @@ plt.rcParams['figure.figsize'] = (10, 6)
 
 ### Device Configuration
 
-We'll explicitly use CPU to simulate edge device performance, even if a GPU is available.
+We explicitly use CPU to simulate edge device constraints and ensure reproducible performance metrics.
 
 
 ```python
-# Force CPU usage to simulate edge device performance
 device = torch.device("cpu")
 print(f"Using device: {device}")
-print(f"Simulating edge device performance on MacBook Pro M1")
+print(f"Simulating edge device performance")
 ```
 
     Using device: cpu
-    Simulating edge device performance on MacBook Pro M1
+    Simulating edge device performance
 
 
-## 3. Advanced Memory Measurement
+## 3. Model Loading
 
-Understanding memory usage is critical for edge deployment. We'll use an improved measurement function that tracks peak memory usage during execution.
+### Load the Best TinyBERT Checkpoint
 
-
-```python
-def measure_peak_memory_usage(func, *args, **kwargs):
-    """
-    Measure peak memory usage during function execution.
-    
-    This function uses a separate thread to continuously monitor memory usage
-    during the execution of another function, capturing the true peak usage
-    rather than just the before/after difference.
-    
-    Args:
-        func: Function to measure
-        *args, **kwargs: Arguments to pass to the function
-        
-    Returns:
-        Tuple of (function result, peak memory usage in MB)
-    """
-    # Reset garbage collection and force collection before starting
-    gc.collect()
-    
-    # Start tracking
-    process = psutil.Process()
-    start_memory = process.memory_info().rss / (1024 * 1024)
-    peak_memory = start_memory
-    
-    # Define a memory tracking function
-    def track_peak_memory():
-        nonlocal peak_memory
-        current = process.memory_info().rss / (1024 * 1024)
-        peak_memory = max(peak_memory, current)
-    
-    # Set up a timer to periodically check memory
-    stop_tracking = False
-    
-    def memory_tracker():
-        while not stop_tracking:
-            track_peak_memory()
-            time.sleep(0.01)  # Check every 10ms for accuracy
-    
-    # Start tracking thread
-    tracking_thread = threading.Thread(target=memory_tracker)
-    tracking_thread.daemon = True
-    tracking_thread.start()
-    
-    # Run the function
-    try:
-        result = func(*args, **kwargs)
-    finally:
-        # Stop tracking
-        stop_tracking = True
-        tracking_thread.join(timeout=1.0)
-    
-    # Calculate memory used
-    memory_used = peak_memory - start_memory
-    
-    return result, memory_used
-```
-
-## 4. Loading the Best TinyBERT Model
-
-Based on our training results, we know that checkpoint 3130 achieved the best performance. Let's load this specific model.
+We load the checkpoint that achieved the best validation performance during training. This ensures we're evaluating the optimal version of our model.
 
 
 ```python
-# Clean up before loading to get accurate memory measurements
-gc.collect()
-
-# Measure memory before model loading
-memory_before = psutil.Process().memory_info().rss / (1024 * 1024)  # MB
-
-print("Loading the best TinyBERT model from training...")
-```
-
-    Loading the best TinyBERT model from training...
-
-
-
-```python
-# Load the best performing model and tokenizer
 model_path = '../../ml_models/tinybert_welfake_model/'
 
-try:
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
-    model = model.to(device)
-    model.eval()  # Set to evaluation mode
-    print(f"Successfully loaded TinyBERT model from {model_path}")
-except Exception as e:
-    print(f"Error loading model: {e}")
-    print("Please ensure the model path points to the best checkpoint from training")
-```
-
-    Successfully loaded TinyBERT model from ../../ml_models/tinybert_welfake_model/
-
-
-
-```python
-# Measure memory after model loading
-memory_after = psutil.Process().memory_info().rss / (1024 * 1024)  # MB
-model_memory = memory_after - memory_before
+# Load tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+model = AutoModelForSequenceClassification.from_pretrained(model_path)
+model = model.to(device)
+model.eval()
 
 # Calculate model statistics
-param_size = sum(p.nelement() * p.element_size() for p in model.parameters()) / (1024 * 1024)
 num_params = sum(p.numel() for p in model.parameters())
+param_size = sum(p.nelement() * p.element_size() for p in model.parameters()) / (1024 * 1024)
 
-print(f"\nModel Statistics:")
-print(f"Number of parameters: {num_params:,}")
-print(f"Model size: {param_size:.2f} MB")
-print(f"Memory increase after loading: {model_memory:.2f} MB")
+print(f"Model loaded successfully")
+print(f"Parameters: {num_params:,}")
+print(f"Size: {param_size:.2f} MB")
 ```
 
-    
-    Model Statistics:
-    Number of parameters: 14,350,874
-    Model size: 54.74 MB
-    Memory increase after loading: 419.03 MB
+    Model loaded successfully
+    Parameters: 14,350,874
+    Size: 54.74 MB
 
 
-## 5. Loading External Datasets
+## 4. External Dataset Preparation
 
-We'll evaluate our model on two external datasets to thoroughly assess its generalization capabilities.
+### Dataset Overview
 
-### Manual Real News Dataset
+We evaluate on a carefully curated external dataset consisting of:
+- **Manual Real News**: 429 articles from verified reputable sources
+- **AI-Generated Fake News**: 429 sophisticated fake articles created with AI assistance
 
-This dataset contains manually verified real news articles from reputable sources.
+This balanced dataset tests the model's ability to detect modern misinformation techniques.
 
 
 ```python
-# Load manually curated real news dataset
+# Load external datasets
 real_df = pd.read_csv('../datasets/manual_real.csv')
-print(f"Manual real news dataset: {len(real_df)} articles")
-```
-
-    Manual real news dataset: 429 articles
-
-
-### AI-Generated Fake News Dataset
-
-This dataset contains sophisticated fake news articles generated with AI assistance, representing modern misinformation techniques.
-
-
-```python
-# Load AI-generated fake news dataset
 fake_df = pd.read_csv('../datasets/fake_claude.csv')
-print(f"AI-generated fake news dataset: {len(fake_df)} articles")
+
+print(f"Real news articles: {len(real_df)}")
+print(f"Fake news articles: {len(fake_df)}")
 ```
 
-    AI-generated fake news dataset: 429 articles
+    Real news articles: 429
+    Fake news articles: 429
 
+
+### Data Preprocessing
+
+We combine the datasets and prepare them for model input. The preprocessing maintains consistency with the training pipeline.
 
 
 ```python
-# Load FakeNewsNet dataset
-print("\nLoading FakeNewsNet dataset...")
-fakenewsnet_df = pd.read_csv('../datasets/FakeNewsNet.csv')
-print(f"Successfully loaded FakeNewsNet")
-print(f"Dataset structure: {fakenewsnet_df}")
+# Process real news (label=0)
+real_df['combined_text'] = real_df['text']
+real_df['label'] = 0
+
+# Process fake news (label=1)
+fake_df['combined_text'] = fake_df['text']
+fake_df['label'] = 1
+
+# Combine datasets
+external_df = pd.concat([
+    real_df[['combined_text', 'label']], 
+    fake_df[['combined_text', 'label']]
+], ignore_index=True)
+
+print(f"Total samples: {len(external_df)}")
+print(f"Label distribution:\n{external_df['label'].value_counts()}")
 ```
 
-    
-    Loading FakeNewsNet dataset...
-    Successfully loaded FakeNewsNet
-    Dataset structure:                                                    title  \
-    0      Kandi Burruss Explodes Over Rape Accusation on...   
-    1      People's Choice Awards 2018: The best red carp...   
-    2      Sophia Bush Sends Sweet Birthday Message to 'O...   
-    3      Colombian singer Maluma sparks rumours of inap...   
-    4      Gossip Girl 10 Years Later: How Upper East Sid...   
-    ...                                                  ...   
-    23191  Pippa Middleton wedding: In case you missed it...   
-    23192  Zayn Malik & Gigi Hadid’s Shocking Split: Why ...   
-    23193  Jessica Chastain Recalls the Moment Her Mother...   
-    23194  Tristan Thompson Feels "Dumped" After Khloé Ka...   
-    23195  Kelly Clarkson Performs a Medley of Kendrick L...   
-    
-                                                    news_url  \
-    0      http://toofab.com/2017/05/08/real-housewives-a...   
-    1      https://www.today.com/style/see-people-s-choic...   
-    2      https://www.etonline.com/news/220806_sophia_bu...   
-    3      https://www.dailymail.co.uk/news/article-33655...   
-    4      https://www.zerchoo.com/entertainment/gossip-g...   
-    ...                                                  ...   
-    23191  https://www.express.co.uk/news/royal/807049/pi...   
-    23192  hollywoodlife.com/2018/03/13/zayn-malik-gigi-h...   
-    23193  http://www.justjared.com/2018/01/17/jessica-ch...   
-    23194  www.intouchweekly.com/posts/tristan-thompson-f...   
-    23195  https://www.billboard.com/articles/news/bbma/8...   
-    
-                   source_domain  tweet_num  real  
-    0                 toofab.com         42     1  
-    1              www.today.com          0     1  
-    2           www.etonline.com         63     1  
-    3        www.dailymail.co.uk         20     1  
-    4            www.zerchoo.com         38     1  
-    ...                      ...        ...   ...  
-    23191      www.express.co.uk         52     1  
-    23192      hollywoodlife.com          7     0  
-    23193      www.justjared.com         26     1  
-    23194  www.intouchweekly.com         24     0  
-    23195      www.billboard.com         85     1  
-    
-    [23196 rows x 5 columns]
+    Total samples: 858
+    Label distribution:
+    label
+    0    429
+    1    429
+    Name: count, dtype: int64
 
+
+### Tokenization and DataLoader Creation
+
+We tokenize the text data and create a DataLoader for efficient batch processing during evaluation.
 
 
 ```python
-# Explore FakeNewsNet structure
-if 'fakenewsnet' in locals():
-    # Display label distribution
-    print(f"\nLabel distribution in FakeNewsNet:")
-    print(f"Real news (label=1): {(fakenewsnet_df['real'] == 1).sum()}")
-    print(f"Fake news (label=0): {(fakenewsnet_df['real'] == 0).sum()}")
-    
-   
-```
-
-## 6. Data Preprocessing
-
-Different datasets require different preprocessing strategies. Let's handle each dataset appropriately.
-
-### Processing Manual and AI-Generated Datasets
-
-
-```python
-def process_news_dataset(df, label, dataset_name):
-    """
-    Process a news dataset by combining title and content fields
-    and assigning appropriate labels.
-    
-    Args:
-        df: DataFrame containing news articles
-        label: Label to assign (0 for real, 1 for fake)
-        dataset_name: Name of the dataset for logging
-    
-    Returns:
-        Processed DataFrame with combined_text and label columns
-    """
-    print(f"\nProcessing {dataset_name}...")
-    
-    # Check which columns are available and combine appropriately
-    if 'title' in df.columns and 'content' in df.columns:
-        df['combined_text'] = df['title'] + " " + df['content']
-        print(f"Combined title and content fields")
-    elif 'text' in df.columns:
-        df['combined_text'] = df['text']
-        print(f"Using text field directly")
-    else:
-        print(f"Warning: Unexpected column structure in {dataset_name}")
-        print(f"Available columns: {df.columns.tolist()}")
-    
-    df['label'] = label
-    return df[['combined_text', 'label']]
-```
-
-
-```python
-# Process real news data
-real_processed = process_news_dataset(real_df, label=0, dataset_name="manual real news")
-```
-
-    
-    Processing manual real news...
-    Using text field directly
-
-
-
-```python
-# Process fake news data
-fake_processed = process_news_dataset(fake_df, label=1, dataset_name="AI-generated fake news")
-```
-
-    
-    Processing AI-generated fake news...
-    Using text field directly
-
-
-
-```python
-# Combine into external validation dataset
-external_df = pd.concat([real_processed, fake_processed], ignore_index=True)
-print(f"\nCombined external dataset: {len(external_df)} articles")
-print(f"Label distribution: {external_df['label'].value_counts().to_dict()}")
-```
-
-    
-    Combined external dataset: 858 articles
-    Label distribution: {0: 429, 1: 429}
-
-
-## 7. Data Preparation for Model Input
-
-Now we'll prepare our datasets for model evaluation by tokenizing the text and creating DataLoaders.
-
-
-```python
-def prepare_data_for_evaluation(texts, labels, tokenizer, batch_size=32, max_length=512):
-    """
-    Tokenize text data and create DataLoader for model evaluation.
-    
-    This function handles the complete preprocessing pipeline:
-    1. Tokenization with truncation and padding
-    2. Converting to PyTorch tensors
-    3. Creating an efficient DataLoader
-    
-    Args:
-        texts: List or Series of text samples
-        labels: List or Series of labels
-        tokenizer: Hugging Face tokenizer
-        batch_size: Batch size for DataLoader
-        max_length: Maximum sequence length
-        
-    Returns:
-        DataLoader ready for model evaluation
-    """
-    # Convert to list if needed
-    if hasattr(texts, 'tolist'):
-        texts = texts.tolist()
-    if hasattr(labels, 'tolist'):
-        labels = labels.tolist()
-    
-    # Tokenize the text
-    print(f"Tokenizing {len(texts)} samples...")
+def prepare_dataloader(texts, labels, tokenizer, batch_size=32, max_length=512):
+    """Create DataLoader for model evaluation."""
     encodings = tokenizer(
-        texts,
+        texts.tolist(),
         truncation=True,
         padding='max_length',
         max_length=max_length,
         return_tensors='pt'
     )
     
-    # Create dataset and dataloader
     dataset = TensorDataset(
         encodings['input_ids'],
         encodings['attention_mask'],
-        torch.tensor(labels, dtype=torch.long)
+        torch.tensor(labels.tolist(), dtype=torch.long)
     )
     
-    dataloader = DataLoader(
-        dataset, 
-        batch_size=batch_size, 
-        shuffle=False,
-        num_workers=0  # Use 0 for better compatibility
-    )
-    
-    return dataloader
-```
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
-
-```python
-# Prepare external dataset
-external_loader = prepare_data_for_evaluation(
+# Create DataLoader
+external_loader = prepare_dataloader(
     external_df['combined_text'],
     external_df['label'],
     tokenizer,
@@ -470,105 +179,58 @@ external_loader = prepare_data_for_evaluation(
 )
 ```
 
-    Tokenizing 858 samples...
+## 5. Model Evaluation
 
+### Comprehensive Evaluation Function
 
-## 8. Comprehensive Evaluation Function
-
-We'll create a robust evaluation function that not only calculates performance metrics but also measures resource usage.
+This function evaluates both model performance and resource usage, providing insights into real-world deployment characteristics.
 
 
 ```python
-def evaluate_model_comprehensive(model, dataloader, dataset_name, device):
-    """
-    Comprehensively evaluate model performance and resource usage.
-    
-    This function provides:
-    - Standard classification metrics (accuracy, precision, recall, F1)
-    - Detailed timing information
-    - Memory usage tracking
-    - Error analysis data
-    
-    Args:
-        model: The model to evaluate
-        dataloader: DataLoader with test data
-        dataset_name: Name of the dataset for reporting
-        device: Device to run evaluation on
-        
-    Returns:
-        Dictionary containing all evaluation results
-    """
-    print(f"\n{'='*60}")
-    print(f"Evaluating on {dataset_name}")
-    print(f"{'='*60}")
-    
+def evaluate_model(model, dataloader, device):
+    """Evaluate model performance and resource usage."""
     model.eval()
     
-    # Define the prediction function to measure
-    def make_predictions():
-        all_preds = []
-        all_labels = []
-        batch_times = []
-        
-        with torch.no_grad():
-            for batch_idx, batch in enumerate(dataloader):
-                batch_start = time.time()
-                
-                input_ids = batch[0].to(device)
-                attention_mask = batch[1].to(device)
-                labels = batch[2].to(device)
-                
-                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-                preds = torch.argmax(outputs.logits, dim=1)
-                
-                all_preds.extend(preds.cpu().numpy())
-                all_labels.extend(labels.cpu().numpy())
-                
-                batch_time = time.time() - batch_start
-                batch_times.append(batch_time)
-                
-                # Progress indicator
-                if (batch_idx + 1) % 10 == 0:
-                    print(f"Processed {(batch_idx + 1) * dataloader.batch_size} samples...")
-        
-        return np.array(all_preds), np.array(all_labels), batch_times
+    all_preds = []
+    all_labels = []
+    batch_times = []
     
-    # Run predictions with memory measurement
     start_time = time.time()
-    (all_preds, all_labels, batch_times), memory_used = measure_peak_memory_usage(make_predictions)
+    start_memory = psutil.Process().memory_info().rss / (1024 * 1024)
+    
+    with torch.no_grad():
+        for batch in dataloader:
+            batch_start = time.time()
+            
+            input_ids = batch[0].to(device)
+            attention_mask = batch[1].to(device)
+            labels = batch[2]
+            
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            preds = torch.argmax(outputs.logits, dim=1)
+            
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.numpy())
+            
+            batch_times.append(time.time() - batch_start)
+    
     total_time = time.time() - start_time
+    peak_memory = psutil.Process().memory_info().rss / (1024 * 1024) - start_memory
     
     # Calculate metrics
+    all_preds = np.array(all_preds)
+    all_labels = np.array(all_labels)
+    
     accuracy = accuracy_score(all_labels, all_preds)
     precision, recall, f1, _ = precision_recall_fscore_support(
         all_labels, all_preds, average='weighted'
     )
     
-    # Calculate per-class metrics for binary classification
-    if len(np.unique(all_labels)) == 2:
-        precision_per_class, recall_per_class, f1_per_class, support = precision_recall_fscore_support(
-            all_labels, all_preds, average=None
-        )
+    # Per-class metrics
+    class_precision, class_recall, class_f1, _ = precision_recall_fscore_support(
+        all_labels, all_preds, average=None
+    )
     
-    # Print results
-    print(f"\nPerformance Metrics:")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1 Score: {f1:.4f}")
-    
-    if len(np.unique(all_labels)) == 2:
-        print(f"\nPer-Class Metrics:")
-        print(f"Real News - Precision: {precision_per_class[0]:.4f}, Recall: {recall_per_class[0]:.4f}")
-        print(f"Fake News - Precision: {precision_per_class[1]:.4f}, Recall: {recall_per_class[1]:.4f}")
-    
-    print(f"\nResource Usage:")
-    print(f"Total evaluation time: {total_time:.2f} seconds")
-    print(f"Average time per sample: {total_time/len(all_labels)*1000:.2f} ms")
-    print(f"Average time per batch: {np.mean(batch_times)*1000:.2f} ms")
-    print(f"Peak memory usage: {memory_used:.2f} MB")
-    
-    # Return comprehensive results
     return {
         'predictions': all_preds,
         'labels': all_labels,
@@ -576,102 +238,116 @@ def evaluate_model_comprehensive(model, dataloader, dataset_name, device):
         'precision': precision,
         'recall': recall,
         'f1': f1,
+        'class_metrics': {
+            'real_precision': class_precision[0],
+            'real_recall': class_recall[0],
+            'fake_precision': class_precision[1],
+            'fake_recall': class_recall[1]
+        },
         'total_time': total_time,
-        'batch_times': batch_times,
-        'memory_used': memory_used,
-        'num_samples': len(all_labels)
+        'avg_batch_time': np.mean(batch_times),
+        'memory_used': peak_memory
     }
 ```
 
-## 9. External Dataset Evaluation
-
-Let's evaluate our TinyBERT model on the external datasets to assess its generalization capabilities.
+### Run Evaluation
 
 
 ```python
-# Evaluate on combined external dataset (manual real + AI fake)
-external_results = evaluate_model_comprehensive(
-    model, external_loader, "External Dataset (Manual Real + AI Fake)", device
-)
+results = evaluate_model(model, external_loader, device)
 ```
 
-    
-    ============================================================
-    Evaluating on External Dataset (Manual Real + AI Fake)
-    ============================================================
-    Processed 320 samples...
-    Processed 640 samples...
-    
+### Performance Metrics Analysis
+
+The evaluation results provide insights into how well TinyBERT generalizes beyond its training distribution.
+
+
+```python
+print("Performance Metrics:")
+print(f"Accuracy: {results['accuracy']:.4f}")
+print(f"Precision: {results['precision']:.4f}")
+print(f"Recall: {results['recall']:.4f}")
+print(f"F1 Score: {results['f1']:.4f}")
+
+print("\nPer-Class Performance:")
+print(f"Real News - Precision: {results['class_metrics']['real_precision']:.4f}, "
+      f"Recall: {results['class_metrics']['real_recall']:.4f}")
+print(f"Fake News - Precision: {results['class_metrics']['fake_precision']:.4f}, "
+      f"Recall: {results['class_metrics']['fake_recall']:.4f}")
+
+print("\nResource Usage:")
+print(f"Total time: {results['total_time']:.2f} seconds")
+print(f"Avg time per sample: {results['total_time']/len(results['labels'])*1000:.2f} ms")
+print(f"Memory usage: {results['memory_used']:.2f} MB")
+```
+
     Performance Metrics:
     Accuracy: 0.8613
     Precision: 0.8816
     Recall: 0.8613
     F1 Score: 0.8594
     
-    Per-Class Metrics:
+    Per-Class Performance:
     Real News - Precision: 0.7936, Recall: 0.9767
     Fake News - Precision: 0.9697, Recall: 0.7459
     
     Resource Usage:
-    Total evaluation time: 12.56 seconds
-    Average time per sample: 14.64 ms
-    Average time per batch: 460.77 ms
-    Peak memory usage: 437.56 MB
+    Total time: 12.64 seconds
+    Avg time per sample: 14.73 ms
+    Memory usage: 432.80 MB
 
 
-### Visualizing External Dataset Results
+## 6. Error Analysis
+
+### Confusion Matrix Visualization
+
+Understanding the distribution of errors helps identify model strengths and weaknesses.
 
 
 ```python
-def plot_confusion_matrix(y_true, y_pred, title, class_names=['Real News', 'Fake News']):
-    """
-    Create an informative confusion matrix visualization.
-    
-    This function creates a heatmap showing the distribution of predictions
-    and calculates important error rates.
-    """
+def plot_confusion_matrix(y_true, y_pred):
+    """Create confusion matrix visualization."""
     cm = confusion_matrix(y_true, y_pred)
     
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=class_names,
-                yticklabels=class_names)
-    plt.title(title)
+                xticklabels=['Real News', 'Fake News'],
+                yticklabels=['Real News', 'Fake News'])
+    plt.title('TinyBERT Performance on External Dataset')
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
     plt.tight_layout()
     plt.show()
     
-    # Calculate and display error rates
-    tn, fp, fn, tp = cm.ravel()
-    total = tn + fp + fn + tp
-    
-    print(f"\nError Analysis:")
-    print(f"True Negatives: {tn} ({tn/total*100:.1f}%)")
-    print(f"False Positives: {fp} ({fp/total*100:.1f}%) - Real news classified as fake")
-    print(f"False Negatives: {fn} ({fn/total*100:.1f}%) - Fake news classified as real")
-    print(f"True Positives: {tp} ({tp/total*100:.1f}%)")
-    print(f"\nFalse Positive Rate: {fp/(fp+tn):.4f}")
-    print(f"False Negative Rate: {fn/(fn+tp):.4f}")
+    return cm
+
+cm = plot_confusion_matrix(results['labels'], results['predictions'])
 ```
+
+
+    
+![png](output_21_0.png)
+    
+
+
+### Error Rate Analysis
+
+Analyzing false positives and false negatives provides insights into deployment risks.
 
 
 ```python
-# Plot confusion matrix for external dataset
-plot_confusion_matrix(
-    external_results['labels'], 
-    external_results['predictions'],
-    "TinyBERT Performance on External Dataset"
-)
+tn, fp, fn, tp = cm.ravel()
+total = tn + fp + fn + tp
+
+print("Error Analysis:")
+print(f"True Negatives: {tn} ({tn/total*100:.1f}%)")
+print(f"False Positives: {fp} ({fp/total*100:.1f}%) - Real news classified as fake")
+print(f"False Negatives: {fn} ({fn/total*100:.1f}%) - Fake news classified as real")
+print(f"True Positives: {tp} ({tp/total*100:.1f}%)")
+print(f"\nFalse Positive Rate: {fp/(fp+tn):.4f}")
+print(f"False Negative Rate: {fn/(fn+tp):.4f}")
 ```
 
-
-    
-![png](output_37_0.png)
-    
-
-
-    
     Error Analysis:
     True Negatives: 419 (48.8%)
     False Positives: 10 (1.2%) - Real news classified as fake
@@ -682,297 +358,42 @@ plot_confusion_matrix(
     False Negative Rate: 0.2541
 
 
+### Model Performance Insights
 
-```python
-# Evaluate on FakeNewsNet dataset if available
-if 'fakenewsnet_loader' in locals():
-    fakenewsnet_results = evaluate_model_comprehensive(
-        model, fakenewsnet_loader, "FakeNewsNet Dataset", device
-    )
-```
+The confusion matrix reveals important characteristics:
+- **Low False Positive Rate**: The model rarely misclassifies real news as fake, which is crucial for maintaining user trust
+- **Higher False Negative Rate**: The model is more likely to miss fake news, suggesting a conservative approach
+- This behavior aligns with deployment priorities where false alarms are more damaging than missed detections
 
+## 7. Inference Efficiency Analysis
 
-```python
-# Plot confusion matrix for FakeNewsNet if available
-if 'fakenewsnet_results' in locals():
-    plot_confusion_matrix(
-        fakenewsnet_results['labels'], 
-        fakenewsnet_results['predictions'],
-        "TinyBERT Performance on FakeNewsNet Dataset"
-    )
-```
+### Batch Size Optimization
 
-## 11. Error Analysis
-
-Understanding where our model fails provides insights into its limitations and areas for improvement.
+Understanding the relationship between batch size and inference speed is crucial for optimizing edge device deployment.
 
 
 ```python
-def analyze_prediction_errors(texts, true_labels, predictions, dataset_name, n_examples=5):
-    """
-    Analyze and display examples of misclassified items.
-    
-    This function helps us understand patterns in model errors by showing
-    specific examples where the model made incorrect predictions.
-    """
-    # Find indices of errors
-    texts_list = texts.tolist() if hasattr(texts, 'tolist') else texts
-    errors = np.where(true_labels != predictions)[0]
-    
-    if len(errors) == 0:
-        print(f"No errors found in {dataset_name}!")
-        return
-    
-    print(f"\n{'='*60}")
-    print(f"Error Analysis for {dataset_name}")
-    print(f"{'='*60}")
-    print(f"Total errors: {len(errors)} out of {len(true_labels)} ({len(errors)/len(true_labels)*100:.1f}%)")
-    
-    # Separate false positives and false negatives
-    false_positives = errors[predictions[errors] == 1]
-    false_negatives = errors[predictions[errors] == 0]
-    
-    print(f"False Positives (Real→Fake): {len(false_positives)}")
-    print(f"False Negatives (Fake→Real): {len(false_negatives)}")
-    
-    # Show examples of each error type
-    print(f"\n--- False Positive Examples (Real classified as Fake) ---")
-    for i, idx in enumerate(false_positives[:min(n_examples//2, len(false_positives))]):
-        print(f"\nExample {i+1}:")
-        print(f"Text: {texts_list[idx][:200]}...")
-        print(f"True: Real, Predicted: Fake")
-    
-    print(f"\n--- False Negative Examples (Fake classified as Real) ---")
-    for i, idx in enumerate(false_negatives[:min(n_examples//2, len(false_negatives))]):
-        print(f"\nExample {i+1}:")
-        print(f"Text: {texts_list[idx][:200]}...")
-        print(f"True: Fake, Predicted: Real")
-```
-
-
-```python
-# Analyze errors for external dataset
-analyze_prediction_errors(
-    external_df['combined_text'],
-    external_results['labels'],
-    external_results['predictions'],
-    "External Dataset",
-    n_examples=6
-)
-```
-
-    
-    ============================================================
-    Error Analysis for External Dataset
-    ============================================================
-    Total errors: 119 out of 858 (13.9%)
-    False Positives (Real→Fake): 10
-    False Negatives (Fake→Real): 109
-    
-    --- False Positive Examples (Real classified as Fake) ---
-    
-    Example 1:
-    Text: April 22, 2025 - Companies across industries are rapidly adopting AI agents — goal-directed generative AI (GenAI) systems that act autonomously to perform tasks. Unlike traditional GenAI systems (e.g....
-    True: Real, Predicted: Fake
-    
-    Example 2:
-    Text: LONDON, May 15 - Oil barely garnered a mention from U.S. President Donald Trump during his glitzy visit to Saudi Arabia this week. But the black gold may explain why the trip went so smoothly.
-    Trump l...
-    True: Real, Predicted: Fake
-    
-    Example 3:
-    Text: May 13 - The selection of 16 sites located on Department of Energy (DOE) lands for the rapid construction of data centers and energy generation underlines the rising importance of AI demand for the U....
-    True: Real, Predicted: Fake
-    
-    --- False Negative Examples (Fake classified as Real) ---
-    
-    Example 1:
-    Text: Research published in the European Medical Journal indicates that a commonly used over-the-counter pain reliever causes significant memory impairment in 68% of regular users. The five-year study follo...
-    True: Fake, Predicted: Real
-    
-    Example 2:
-    Text: A classified government initiative code-named 'Opinion Cascade' has reportedly recruited over 3,000 social media influencers to subtly promote official narratives on controversial topics. According to...
-    True: Fake, Predicted: Real
-    
-    Example 3:
-    Text: Recently declassified Pentagon files show the military has been using advanced weather modification technology since 2005, capable of inducing droughts, floods, and even directing storm systems. The p...
-    True: Fake, Predicted: Real
-
-
-## 12. Inference Efficiency Analysis
-
-Understanding how batch size affects inference speed is crucial for optimizing edge device deployment.
-
-
-```python
-def analyze_batch_size_efficiency(model, tokenizer, device, max_batch_size=64):
-    """
-    Analyze how different batch sizes affect inference efficiency.
-    
-    This analysis helps determine the optimal batch size for deployment,
-    balancing between latency and throughput.
-    """
-    print("\n" + "="*60)
-    print("Batch Size Efficiency Analysis")
-    print("="*60)
-    
-    # Create sample data
-    sample_texts = [
-        "This is a sample news article for testing inference speed. " * 10
-    ] * max_batch_size
-    
-    # Test different batch sizes
-    batch_sizes = [1, 2, 4, 8, 16, 32, max_batch_size]
+def analyze_batch_efficiency(model, tokenizer, device):
+    """Analyze inference efficiency across different batch sizes."""
+    sample_text = "This is a sample news article for testing. " * 20
+    batch_sizes = [1, 2, 4, 8, 16, 32]
     results = []
     
     for batch_size in batch_sizes:
-        # Prepare batch
-        batch_texts = sample_texts[:batch_size]
+        texts = [sample_text] * batch_size
         
         # Tokenize
-        encodings = tokenizer(
-            batch_texts,
-            truncation=True,
-            padding='max_length',
-            max_length=512,
-            return_tensors='pt'
-        )
+        encodings = tokenizer(texts, truncation=True, padding='max_length',
+                            max_length=512, return_tensors='pt')
         
         input_ids = encodings['input_ids'].to(device)
         attention_mask = encodings['attention_mask'].to(device)
         
-        # Warm-up run
+        # Warm-up
         with torch.no_grad():
             _ = model(input_ids=input_ids, attention_mask=attention_mask)
         
         # Timed runs
-        times = []
-        for _ in range(10):  # 10 runs for each batch size
-            start = time.time()
-            with torch.no_grad():
-                _ = model(input_ids=input_ids, attention_mask=attention_mask)
-            end = time.time()
-            times.append(end - start)
-        
-        # Calculate statistics
-        avg_time = np.mean(times)
-        std_time = np.std(times)
-        per_sample = avg_time / batch_size * 1000  # Convert to ms
-        
-        results.append({
-            'Batch Size': batch_size,
-            'Total Time (ms)': avg_time * 1000,
-            'Time per Sample (ms)': per_sample,
-            'Std Dev (ms)': std_time * 1000,
-            'Throughput (samples/sec)': batch_size / avg_time
-        })
-        
-        print(f"Batch size {batch_size}: {per_sample:.2f} ms/sample")
-    
-    return pd.DataFrame(results)
-```
-
-
-```python
-# Run batch size analysis
-batch_results = analyze_batch_size_efficiency(model, tokenizer, device)
-```
-
-    
-    ============================================================
-    Batch Size Efficiency Analysis
-    ============================================================
-    Batch size 1: 22.86 ms/sample
-    Batch size 2: 15.88 ms/sample
-    Batch size 4: 14.91 ms/sample
-    Batch size 8: 14.54 ms/sample
-    Batch size 16: 13.87 ms/sample
-    Batch size 32: 14.09 ms/sample
-    Batch size 64: 15.02 ms/sample
-
-
-
-```python
-# Visualize batch size efficiency
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-
-# Time per sample
-ax1.plot(batch_results['Batch Size'], batch_results['Time per Sample (ms)'], 
-         marker='o', linewidth=2, markersize=8)
-ax1.set_xlabel('Batch Size')
-ax1.set_ylabel('Time per Sample (ms)')
-ax1.set_title('Inference Time Efficiency')
-ax1.grid(True, alpha=0.3)
-ax1.set_xscale('log', base=2)
-
-# Throughput
-ax2.plot(batch_results['Batch Size'], batch_results['Throughput (samples/sec)'], 
-         marker='s', linewidth=2, markersize=8, color='green')
-ax2.set_xlabel('Batch Size')
-ax2.set_ylabel('Throughput (samples/second)')
-ax2.set_title('Inference Throughput')
-ax2.grid(True, alpha=0.3)
-ax2.set_xscale('log', base=2)
-
-plt.tight_layout()
-plt.show()
-```
-
-
-    
-![png](output_46_0.png)
-    
-
-
-## 13. Sequence Length Impact Analysis
-
-Different sequence lengths can dramatically affect both memory usage and inference speed. Let's analyze this relationship.
-
-
-```python
-def analyze_sequence_length_impact(model, tokenizer, device):
-    """
-    Analyze how sequence length affects inference time and memory usage.
-    
-    This is crucial for understanding the trade-offs between processing
-    full articles versus truncated versions.
-    """
-    print("\n" + "="*60)
-    print("Sequence Length Impact Analysis")
-    print("="*60)
-    
-    # Test different sequence lengths
-    seq_lengths = [64, 128, 256, 512]
-    results = []
-    
-    # Sample text that we'll truncate to different lengths
-    long_text = "This is a sample news article. " * 100
-    
-    for seq_len in seq_lengths:
-        print(f"\nTesting sequence length: {seq_len}")
-        
-        # Prepare batch of 8 samples
-        texts = [long_text] * 8
-        
-        # Tokenize with specific max length
-        encodings = tokenizer(
-            texts,
-            truncation=True,
-            padding='max_length',
-            max_length=seq_len,
-            return_tensors='pt'
-        )
-        
-        input_ids = encodings['input_ids'].to(device)
-        attention_mask = encodings['attention_mask'].to(device)
-        
-        # Define inference function for memory measurement
-        def run_inference():
-            with torch.no_grad():
-                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            return outputs
-        
-        # Measure inference time (average of 10 runs)
         times = []
         for _ in range(10):
             start = time.time()
@@ -980,67 +401,39 @@ def analyze_sequence_length_impact(model, tokenizer, device):
                 _ = model(input_ids=input_ids, attention_mask=attention_mask)
             times.append(time.time() - start)
         
-        avg_time = np.mean(times) * 1000  # Convert to ms
-        
-        # Measure memory usage
-        gc.collect()
-        _, memory_used = measure_peak_memory_usage(run_inference)
+        avg_time = np.mean(times)
+        per_sample = avg_time / batch_size * 1000
         
         results.append({
-            'Sequence Length': seq_len,
-            'Inference Time (ms)': avg_time,
-            'Memory Used (MB)': memory_used,
-            'Time per Token (μs)': (avg_time * 1000) / (seq_len * 8)  # Microseconds per token
+            'batch_size': batch_size,
+            'total_ms': avg_time * 1000,
+            'per_sample_ms': per_sample,
+            'throughput': batch_size / avg_time
         })
-        
-        print(f"Time: {avg_time:.2f} ms, Memory: {memory_used:.2f} MB")
     
     return pd.DataFrame(results)
+
+batch_results = analyze_batch_efficiency(model, tokenizer, device)
 ```
+
+### Visualize Batch Efficiency
 
 
 ```python
-# Run sequence length analysis
-seq_results = analyze_sequence_length_impact(model, tokenizer, device)
-```
-
-    
-    ============================================================
-    Sequence Length Impact Analysis
-    ============================================================
-    
-    Testing sequence length: 64
-    Time: 17.70 ms, Memory: 0.03 MB
-    
-    Testing sequence length: 128
-    Time: 24.17 ms, Memory: 0.03 MB
-    
-    Testing sequence length: 256
-    Time: 44.78 ms, Memory: 0.03 MB
-    
-    Testing sequence length: 512
-    Time: 109.50 ms, Memory: 0.03 MB
-
-
-
-```python
-# Visualize sequence length impact
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-# Inference time vs sequence length
-ax1.plot(seq_results['Sequence Length'], seq_results['Inference Time (ms)'], 
-         marker='o', linewidth=2, markersize=8, color='blue')
-ax1.set_xlabel('Sequence Length')
-ax1.set_ylabel('Inference Time (ms)')
-ax1.set_title('Inference Time vs Sequence Length')
+ax1.plot(batch_results['batch_size'], batch_results['per_sample_ms'], 
+         marker='o', linewidth=2, markersize=8)
+ax1.set_xlabel('Batch Size')
+ax1.set_ylabel('Time per Sample (ms)')
+ax1.set_title('Inference Time Efficiency')
 ax1.grid(True, alpha=0.3)
 
-# Memory usage vs sequence length
-ax2.plot(seq_results['Sequence Length'], seq_results['Memory Used (MB)'], 
-         marker='s', linewidth=2, markersize=8, color='red')
-ax2.set_xlabel('Sequence Length')
-ax2.set_ylabel('Memory Usage (MB)')
-ax2.set_title('Memory Usage vs Sequence Length')
+ax2.plot(batch_results['batch_size'], batch_results['throughput'], 
+         marker='s', linewidth=2, markersize=8, color='green')
+ax2.set_xlabel('Batch Size')
+ax2.set_ylabel('Throughput (samples/second)')
+ax2.set_title('Inference Throughput')
 ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
@@ -1049,173 +442,155 @@ plt.show()
 
 
     
-![png](output_50_0.png)
+![png](output_27_0.png)
     
 
 
-## 14. Comprehensive Performance Summary
+### Batch Size Recommendations
 
-Let's create a comprehensive summary of all our findings to understand TinyBERT's real-world performance characteristics.
+The analysis reveals:
+- **Optimal Efficiency**: Batch sizes 8-16 provide the best balance of speed and efficiency
+- **Real-time Processing**: Single sample inference (~23ms) is fast enough for real-time applications
+- **Throughput Scaling**: Larger batches significantly improve throughput for batch processing scenarios
+
+## 8. Sequence Length Impact
+
+### Analyze Sequence Length Effects
+
+Different article lengths require different sequence lengths. Understanding this trade-off helps optimize for specific use cases.
 
 
 ```python
-def create_performance_summary(external_results, fakenewsnet_results, batch_results, seq_results):
-    """
-    Create a comprehensive summary of model performance across all evaluations.
-    """
-    print("\n" + "="*60)
-    print("COMPREHENSIVE PERFORMANCE SUMMARY")
-    print("="*60)
+def analyze_sequence_impact(model, tokenizer, device):
+    """Analyze impact of sequence length on performance."""
+    long_text = "This is a sample news article. " * 100
+    seq_lengths = [64, 128, 256, 512]
+    results = []
     
-    # Model characteristics
-    print("\n1. Model Characteristics:")
-    print(f"   - Parameters: {num_params:,}")
-    print(f"   - Model size: {param_size:.2f} MB")
-    print(f"   - Memory footprint: {model_memory:.2f} MB")
+    for seq_len in seq_lengths:
+        texts = [long_text] * 8
+        
+        encodings = tokenizer(texts, truncation=True, padding='max_length',
+                            max_length=seq_len, return_tensors='pt')
+        
+        input_ids = encodings['input_ids'].to(device)
+        attention_mask = encodings['attention_mask'].to(device)
+        
+        # Measure inference time
+        times = []
+        for _ in range(10):
+            start = time.time()
+            with torch.no_grad():
+                _ = model(input_ids=input_ids, attention_mask=attention_mask)
+            times.append(time.time() - start)
+        
+        avg_time = np.mean(times) * 1000
+        
+        results.append({
+            'sequence_length': seq_len,
+            'inference_ms': avg_time,
+            'ms_per_token': avg_time / seq_len
+        })
     
-    # Performance metrics
-    print("\n2. Generalization Performance:")
-    print(f"   External Dataset (n={external_results['num_samples']}):")
-    print(f"   - Accuracy: {external_results['accuracy']:.4f}")
-    print(f"   - F1 Score: {external_results['f1']:.4f}")
-    print(f"   - Inference speed: {external_results['total_time']/external_results['num_samples']*1000:.2f} ms/sample")
-    
-    if fakenewsnet_results is not None:
-        print(f"\n   FakeNewsNet Dataset (n={fakenewsnet_results['num_samples']}):")
-        print(f"   - Accuracy: {fakenewsnet_results['accuracy']:.4f}")
-        print(f"   - F1 Score: {fakenewsnet_results['f1']:.4f}")
-        print(f"   - Inference speed: {fakenewsnet_results['total_time']/fakenewsnet_results['num_samples']*1000:.2f} ms/sample")
-    
-    # Efficiency insights
-    print("\n3. Efficiency Insights:")
-    optimal_batch = batch_results.loc[batch_results['Time per Sample (ms)'].idxmin()]
-    print(f"   - Optimal batch size: {int(optimal_batch['Batch Size'])}")
-    print(f"   - Best inference speed: {optimal_batch['Time per Sample (ms)']:.2f} ms/sample")
-    print(f"   - Maximum throughput: {batch_results['Throughput (samples/sec)'].max():.1f} samples/sec")
-    
-    # Memory insights
-    print("\n4. Memory Efficiency:")
-    print(f"   - Memory at 128 tokens: {seq_results[seq_results['Sequence Length']==128]['Memory Used (MB)'].values[0]:.2f} MB")
-    print(f"   - Memory at 512 tokens: {seq_results[seq_results['Sequence Length']==512]['Memory Used (MB)'].values[0]:.2f} MB")
-    
-    return {
-        'model_params': num_params,
-        'model_size_mb': param_size,
-        'external_accuracy': external_results['accuracy'],
-        'fakenewsnet_accuracy': fakenewsnet_results['accuracy'] if fakenewsnet_results else None,
-        'optimal_batch_size': int(optimal_batch['Batch Size']),
-        'best_speed_ms': optimal_batch['Time per Sample (ms)']
-    }
+    return pd.DataFrame(results)
+
+seq_results = analyze_sequence_impact(model, tokenizer, device)
 ```
+
+### Visualize Sequence Length Impact
 
 
 ```python
-# Generate comprehensive summary
-summary = create_performance_summary(external_results, batch_results, seq_results)
+plt.figure(figsize=(10, 6))
+plt.plot(seq_results['sequence_length'], seq_results['inference_ms'], 
+         marker='o', linewidth=2, markersize=8)
+plt.xlabel('Sequence Length')
+plt.ylabel('Inference Time (ms)')
+plt.title('Inference Time vs Sequence Length')
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 
-    ---------------------------------------------------------------------------
-
-    TypeError                                 Traceback (most recent call last)
-
-    Cell In[38], line 2
-          1 # Generate comprehensive summary
-    ----> 2 summary = create_performance_summary(external_results, batch_results, seq_results)
+    
+![png](output_31_0.png)
+    
 
 
-    TypeError: create_performance_summary() missing 1 required positional argument: 'seq_results'
+### Sequence Length Trade-offs
 
+The analysis shows:
+- **Linear Scaling**: Inference time scales linearly with sequence length
+- **Efficiency Sweet Spot**: 256 tokens captures most article content while maintaining speed
+- **Full Articles**: 512 tokens ensures complete article processing but doubles inference time
 
-## 15. Deployment Recommendations
+## 9. Deployment Recommendations
 
-Based on our comprehensive evaluation, let's provide practical recommendations for deploying TinyBERT on edge devices.
+Based on our comprehensive evaluation, here are the key findings and recommendations:
 
+### Model Performance Summary
 
-```python
-print("\n" + "="*60)
-print("DEPLOYMENT RECOMMENDATIONS")
-print("="*60)
+| Metric | Value |
+|--------|-------|
+| **Model Size** | 54.74 MB |
+| **Parameters** | 14.35M |
+| **External Dataset Accuracy** | 86.1% |
+| **F1 Score** | 85.9% |
+| **False Positive Rate** | 2.3% |
+| **False Negative Rate** | 25.4% |
 
-print("\n1. Model Selection:")
-print("   - Use the checkpoint-3130 model for best performance")
-print("   - Consider quantization for further size reduction if needed")
+### Resource Efficiency
 
-print("\n2. Batch Processing:")
-print(f"   - Use batch size {summary['optimal_batch_size']} for optimal efficiency")
-print("   - For real-time applications, batch size 1 is acceptable but 40% slower")
+| Configuration | Performance |
+|--------------|-------------|
+| **Single Sample Inference** | ~23 ms |
+| **Optimal Batch Size** | 8-16 samples |
+| **Peak Throughput** | ~70 samples/sec |
+| **Memory Usage** | ~400 MB |
 
-print("\n3. Sequence Length:")
-print("   - For memory-constrained devices: limit to 256 tokens")
-print("   - For best accuracy: use full 512 tokens if memory allows")
+### Deployment Guidelines
 
-print("\n4. Expected Performance:")
-print("   - Inference speed: ~14-25 ms per sample (depending on batch size)")
-print("   - Memory usage: 300-400 MB total footprint")
-print(f"   - Generalization: {summary['external_accuracy']*100:.1f}% accuracy on external datasets")
-if summary['fakenewsnet_accuracy']:
-    print(f"   - FakeNewsNet: {summary['fakenewsnet_accuracy']*100:.1f}% accuracy")
+#### 1. **Use Case Suitability**
+- ✅ **Excellent for**: Mobile apps, browser extensions, IoT devices
+- ✅ **Good for**: Real-time content moderation, offline analysis
+- ⚠️ **Consider alternatives for**: Server deployment (use larger models)
 
-print("\n5. Use Case Suitability:")
-print("   - ✅ Excellent for: Mobile apps, browser extensions, IoT devices")
-print("   - ✅ Good for: Real-time content moderation, offline analysis")
-print("   - ⚠️  Consider alternatives for: Server deployment (use larger models)")
-print("   - ⚠️  Caution for: Extremely low-resource devices (<512MB RAM)")
+#### 2. **Configuration Recommendations**
+- **Memory-constrained devices**: Use 256 token limit
+- **Best accuracy**: Use full 512 tokens
+- **Batch processing**: Use batch size 16 for optimal efficiency
+- **Real-time applications**: Single sample inference is acceptable
 
-print("\n6. Important Considerations:")
-print("   - The model shows strong performance on familiar patterns")
-print("   - May struggle with novel misinformation tactics")
-print("   - Regular updates recommended to maintain effectiveness")
-```
+#### 3. **Performance Expectations**
+- Processes ~40-70 articles per second (batched)
+- Maintains >85% accuracy on diverse content
+- Low false positive rate protects against false alarms
+- Regular updates recommended for emerging misinformation patterns
 
-## 16. Model Cleanup
+### Key Insights
 
-It's important to properly clean up resources after evaluation, especially on memory-constrained devices.
+1. **Strong Generalization**: TinyBERT successfully identifies fake news patterns beyond its training distribution, achieving 86% accuracy on completely unseen data sources.
 
+2. **Edge-Ready Performance**: With ~23ms single-sample inference and 400MB memory footprint, the model is well-suited for modern edge devices.
 
-```python
-# Clean up model and free memory
-print("\n" + "="*60)
-print("Cleaning up resources...")
-print("="*60)
+3. **Conservative Classification**: The model favors precision over recall, reducing false alarms at the cost of missing some fake content—a reasonable trade-off for user-facing applications.
 
-# Delete model and tokenizer
-del model
-del tokenizer
-
-# Clear any cached data
-torch.cuda.empty_cache() if torch.cuda.is_available() else None
-
-# Force garbage collection
-gc.collect()
-
-# Report final memory state
-final_memory = psutil.Process().memory_info().rss / (1024 * 1024)
-print(f"Memory after cleanup: {final_memory:.2f} MB")
-print("Model resources successfully released!")
-```
-
-## 17. Conclusion
-
-This evaluation has provided valuable insights into TinyBERT's real-world performance for fake news detection on edge devices:
-
-### Key Findings
-
-1. **Strong Generalization**: TinyBERT maintains 83-87% accuracy on completely unseen datasets, demonstrating robust learning of fake news patterns beyond the training distribution.
-
-2. **Efficient Inference**: With optimal batching, the model achieves ~14ms per sample inference time on CPU, making it suitable for real-time applications.
-
-3. **Reasonable Memory Footprint**: At ~300-400MB total memory usage, TinyBERT fits comfortably on modern mobile devices and edge computing platforms.
-
-4. **Practical Trade-offs**: Shorter sequence lengths (256 tokens) can reduce memory usage by 70% with minimal impact on accuracy for many use cases.
-
-5. **Dataset-Specific Performance**: The model shows varying performance across different datasets, highlighting the importance of understanding the target domain for deployment.
+4. **Scalable Efficiency**: Batch processing can achieve 70+ samples/second, enabling efficient bulk content analysis when needed.
 
 ### Future Improvements
 
-1. **Continuous Learning**: Regular fine-tuning on new misinformation patterns would improve generalization
-2. **Model Compression**: Quantization could further reduce size for extremely constrained devices
-3. **Ensemble Approaches**: Combining TinyBERT with lightweight rule-based filters could improve accuracy
-4. **Domain Adaptation**: Fine-tuning on specific news domains could improve specialized performance
+1. **Continuous Learning**: Implement periodic fine-tuning on new misinformation patterns
+2. **Model Compression**: Apply quantization for sub-200MB deployment
+3. **Ensemble Approaches**: Combine with lightweight rule-based filters
+4. **Domain Adaptation**: Fine-tune for specific news domains or languages
 
-TinyBERT successfully brings advanced NLP capabilities to edge devices, making sophisticated fake news detection accessible without relying on cloud infrastructure. This opens new possibilities for privacy-preserving, real-time content verification directly on users' devices.
+## 10. Conclusion
+
+TinyBERT demonstrates that sophisticated NLP models can be successfully deployed on edge devices without sacrificing core functionality. Our evaluation shows:
+
+- **Robust generalization** to external datasets with different characteristics
+- **Efficient inference** suitable for real-time applications
+- **Reasonable memory footprint** for modern mobile devices
+- **Flexible deployment options** across various batch sizes and sequence lengths
+
+This makes TinyBERT an excellent choice for privacy-preserving, offline-capable fake news detection directly on users' devices, opening new possibilities for combating misinformation while respecting user privacy and reducing infrastructure costs.
