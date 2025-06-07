@@ -126,36 +126,6 @@ print(f"Using device: {device} (simulating edge device performance)")
 
 ## Loading Data
 
-### WELFake Test Set
-
-We'll first load the WELFake dataset, which contains a balanced collection of real and fake news articles. This dataset combines articles from multiple sources: PolitiFact, GossipCop, Reuters, and BuzzFeed.
-
-
-```python
-# Load the WELFake dataset
-df = pd.read_csv('../../data/WELFake_cleaned.csv')
-
-# Combine title and text to provide complete information to the model
-df['combined_text'] = df['title'] + " " + df['text']
-
-# Prepare features and labels
-X_welfake = df['combined_text']
-y_welfake = df['label']
-```
-
-
-```python
-# Split into train and test sets with stratification to maintain class balance
-X_train, X_test, y_train, y_test = train_test_split(
-    X_welfake, y_welfake, test_size=0.2, random_state=42, stratify=y_welfake
-)
-
-print(f"WELFake test set: {len(X_test)} articles")
-```
-
-    WELFake test set: 14308 articles
-
-
 ### External Datasets
 
 To evaluate the model's generalization capabilities, we'll also test it on external datasets containing news articles not seen during training. This helps assess how well the model performs on real-world content.
@@ -197,7 +167,7 @@ y_external = external_df['label']
 print(f"External dataset: {len(external_df)} articles ({len(real_df)} real, {len(fake_df)} fake)")
 ```
 
-    External dataset: 828 articles (399 real, 429 fake)
+    External dataset: 858 articles (429 real, 429 fake)
 
 
 ## Loading and Measuring DistilBERT
@@ -238,7 +208,7 @@ print(f"Memory increase after loading: {model_memory:.2f} MB")
     DistilBERT model loaded successfully
     Number of parameters: 66,955,010
     Model size: 255.41 MB
-    Memory increase after loading: 407.66 MB
+    Memory increase after loading: 419.61 MB
 
 
 ## Preparing Data for Evaluation
@@ -283,7 +253,6 @@ def prepare_data(texts, labels, tokenizer, batch_size=32):
 
 ```python
 # Prepare test sets
-welfake_test_loader = prepare_data(X_test, y_test, tokenizer)
 external_loader = prepare_data(X_external, y_external, tokenizer)
 ```
 
@@ -362,27 +331,6 @@ def evaluate_model(model, dataloader, dataset_name):
     }
 ```
 
-## Performance on WELFake Test Set
-
-Now we'll evaluate DistilBERT on the WELFake test set to measure its performance on data similar to what it was trained on.
-
-
-```python
-# Evaluate on WELFake test set
-welfake_results = evaluate_model(model, welfake_test_loader, "WELFake Test Set")
-```
-
-    
-    DistilBERT Evaluation on WELFake Test Set:
-    Accuracy: 0.9969
-    Precision: 0.9969
-    Recall: 0.9969
-    F1 Score: 0.9969
-    Prediction time: 736.08 seconds for 14308 samples
-    Average prediction time: 51.45 ms per sample
-    Peak memory usage during inference: 307.14 MB
-
-
 ### Confusion Matrix for WELFake
 
 Visualizing the confusion matrix helps us understand where the model makes errors and whether there are any patterns in its mistakes.
@@ -418,26 +366,6 @@ def plot_confusion_matrix(y_true, y_pred, title):
     print(f"False Negative Rate: {fnr:.4f} ({fn} fake news articles misclassified as real)")
 ```
 
-
-```python
-# Plot confusion matrix for WELFake
-plot_confusion_matrix(
-    welfake_results['y_true'], 
-    welfake_results['y_pred'], 
-    "DistilBERT Confusion Matrix on WELFake Test Set"
-)
-```
-
-
-    
-![png](output_25_0.png)
-    
-
-
-    False Positive Rate: 0.0016 (11 real news articles misclassified as fake)
-    False Negative Rate: 0.0045 (33 fake news articles misclassified as real)
-
-
 ## Performance on External Datasets
 
 To assess how well the model generalizes to new, unseen data, we'll evaluate it on our external datasets.
@@ -450,16 +378,47 @@ external_results = evaluate_model(model, external_loader, "External Datasets")
 
     
     DistilBERT Evaluation on External Datasets:
-    Accuracy: 0.6437
-    Precision: 0.7952
-    Recall: 0.6437
-    F1 Score: 0.5985
-    Prediction time: 42.77 seconds for 828 samples
-    Average prediction time: 51.65 ms per sample
-    Peak memory usage during inference: 389.91 MB
+    Accuracy: 0.7075
+    Precision: 0.8103
+    Recall: 0.7075
+    F1 Score: 0.6810
+    Prediction time: 44.95 seconds for 858 samples
+    Average prediction time: 52.38 ms per sample
+    Peak memory usage during inference: 1143.52 MB
 
 
 ### Confusion Matrix for External Data
+
+
+```python
+# Create and plot confusion matrix
+def plot_confusion_matrix(y_true, y_pred, title):
+    """
+    Create and visualize confusion matrix
+    
+    Args:
+        y_true: True labels
+        y_pred: Predicted labels
+        title: Plot title
+    """
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=['Real News', 'Fake News'],
+                yticklabels=['Real News', 'Fake News'])
+    plt.title(title)
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    plt.tight_layout()
+    plt.show()
+    
+    # Calculate error rates
+    tn, fp, fn, tp = cm.ravel()
+    fpr = fp/(fp+tn)
+    fnr = fn/(fn+tp)
+    print(f"False Positive Rate: {fpr:.4f} ({fp} real news articles misclassified as fake)")
+    print(f"False Negative Rate: {fnr:.4f} ({fn} fake news articles misclassified as real)")
+```
 
 
 ```python
@@ -473,12 +432,12 @@ plot_confusion_matrix(
 
 
     
-![png](output_29_0.png)
+![png](output_25_0.png)
     
 
 
-    False Positive Rate: 0.0000 (0 real news articles misclassified as fake)
-    False Negative Rate: 0.6876 (295 fake news articles misclassified as real)
+    False Positive Rate: 0.0047 (2 real news articles misclassified as fake)
+    False Negative Rate: 0.5804 (249 fake news articles misclassified as real)
 
 
 ### Analysis of External Dataset Performance
@@ -533,45 +492,6 @@ def analyze_errors(X_text, y_true, y_pred, dataset_name, n_examples=3):
 
 
 ```python
-# Analyze errors on WELFake
-analyze_errors(
-    X_test, 
-    welfake_results['y_true'], 
-    welfake_results['y_pred'], 
-    "WELFake Test Set"
-)
-```
-
-    
-    DistilBERT misclassified 44 out of 14308 articles on WELFake Test Set (0.31%)
-    Showing 3 examples:
-    
-    Example 1:
-    Text snippet: Aziz Ansari Why Trump Makes Me Scared for My Family
-     DONT go anywhere near a mosque, I told my mother. Do all your prayer at home. O.K.?
-    
-    Were not going, she replied.
-    
-    I am the son of Muslim immi...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 2:
-    Text snippet: Jeff Rovin: Clintons paid me to ‘fix’ their sex scandals It’s all old news to those of us who, unlike Democrat LIVs (low information voters), pay attention to the Alternative Media. But it’s still sig...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-    
-    Example 3:
-    Text snippet: Exchange of equipment, arms & experience: Large-scale joint NATO drills held in Romania 4   Debate is raging in the UK over the work of Sharia Councils often used by Muslims to settle family disputes ...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-
-
-
-```python
 # Analyze errors on External datasets
 analyze_errors(
     X_external, 
@@ -582,23 +502,23 @@ analyze_errors(
 ```
 
     
-    DistilBERT misclassified 295 out of 828 articles on External Datasets (35.63%)
+    DistilBERT misclassified 251 out of 858 articles on External Datasets (29.25%)
     Showing 3 examples:
     
     Example 1:
-    Text snippet: Internal documents from a classified urban monitoring initiative reveal that 'smart city' technologies being installed in metropolitan areas nationwide are primarily designed for population surveillan...
+    Text snippet: Unauthorized recordings from a closed Federal Reserve strategy session capture senior officials explicitly discussing the need for sustained high inflation as the only viable solution to address unsus...
     True label: Fake
     Predicted: Real
     --------------------------------------------------------------------------------
     
     Example 2:
-    Text snippet: Internal communications between central banking officials reveal advanced plans to implement mandatory 'climate impact freezes' on personal and business bank accounts that exceed their allocated carbo...
+    Text snippet: In a leaked conference call with shareholders, the CEO of a major smartphone manufacturer admitted that all modern smartphones continuously record conversations even when seemingly turned off. Accordi...
     True label: Fake
     Predicted: Real
     --------------------------------------------------------------------------------
     
     Example 3:
-    Text snippet: A classified Pentagon study accidentally published online reveals that approximately 85% of municipal water supplies in the United States contain synthetic compounds designed to increase public compli...
+    Text snippet: A contractor who worked on classified military research programs claims intelligence agencies have developed a sophisticated neuroweapon that can remotely induce confusion, docility, and susceptibilit...
     True label: Fake
     Predicted: Real
     --------------------------------------------------------------------------------
@@ -678,17 +598,17 @@ plt.show()
     
     Batch Processing Efficiency on CPU:
        Batch Size  Total Time (ms)  Time per Sample (ms)
-    0           1            76.25                 76.25
-    1           2           115.73                 57.87
-    2           4           223.82                 55.96
-    3           8           405.03                 50.63
-    4          16           775.62                 48.48
-    5          32          1629.73                 50.93
+    0           1            68.25                 68.25
+    1           2           112.59                 56.30
+    2           4           209.25                 52.31
+    3           8           404.38                 50.55
+    4          16           773.88                 48.37
+    5          32          1646.39                 51.45
 
 
 
     
-![png](output_38_1.png)
+![png](output_33_1.png)
     
 
 
@@ -764,15 +684,15 @@ plt.show()
     
     Memory Usage for Different Sequence Lengths:
        Sequence Length  Memory Used (MB)
-    0               64          0.031250
-    1              128          0.031250
-    2              256          5.046875
-    3              512          6.531250
+    0               64           0.03125
+    1              128           0.03125
+    2              256           6.03125
+    3              512           0.03125
 
 
 
     
-![png](output_43_1.png)
+![png](output_38_1.png)
     
 
 
@@ -783,10 +703,6 @@ The memory usage graph shows the expected pattern for transformer models, where 
 3. A continued increase to 6.53 MB for full 512-token sequences
 
 This pattern aligns with theoretical expectations and demonstrates why transformer models can be memory-intensive for long sequences. For memory-constrained environments, using shorter sequences can provide significant memory savings with minimal impact on accuracy for tasks like fake news detection.
-
-## Summary
-
-Let's compile our key findings into a comprehensive summary table to better understand DistilBERT's performance and resource characteristics.
 
 
 ```python
@@ -800,15 +716,6 @@ summary = pd.DataFrame({
         'Inference Time (ms/sample)',
         'Memory Footprint (MB)',
         'Parameter Count'
-    ],
-    'WELFake Test': [
-        f"{welfake_results['accuracy']:.4f}",
-        f"{welfake_results['precision']:.4f}",
-        f"{welfake_results['recall']:.4f}",
-        f"{welfake_results['f1']:.4f}",
-        f"{welfake_results['predict_time']/welfake_results['samples']*1000:.2f}",
-        f"{model_memory:.2f}",
-        f"{num_params:,}"
     ],
     'External Data': [
         f"{external_results['accuracy']:.4f}",
@@ -826,14 +733,14 @@ print(summary)
 ```
 
     DistilBERT Performance and Resource Usage Summary:
-                           Metric WELFake Test External Data
-    0                    Accuracy       0.9969        0.6437
-    1                   Precision       0.9969        0.7952
-    2                      Recall       0.9969        0.6437
-    3                    F1 Score       0.9969        0.5985
-    4  Inference Time (ms/sample)        51.45         51.65
-    5       Memory Footprint (MB)       407.66        407.66
-    6             Parameter Count   66,955,010    66,955,010
+                           Metric External Data
+    0                    Accuracy        0.7075
+    1                   Precision        0.8103
+    2                      Recall        0.7075
+    3                    F1 Score        0.6810
+    4  Inference Time (ms/sample)         52.38
+    5       Memory Footprint (MB)        419.61
+    6             Parameter Count    66,955,010
 
 
 ## Conclusion

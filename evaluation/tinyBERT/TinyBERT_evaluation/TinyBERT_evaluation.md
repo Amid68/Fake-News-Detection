@@ -282,19 +282,19 @@ print(f"Memory usage: {results['memory_used']:.2f} MB")
 ```
 
     Performance Metrics:
-    Accuracy: 0.8613
-    Precision: 0.8816
-    Recall: 0.8613
-    F1 Score: 0.8594
+    Accuracy: 0.7681
+    Precision: 0.8379
+    Recall: 0.7681
+    F1 Score: 0.7554
     
     Per-Class Performance:
-    Real News - Precision: 0.7936, Recall: 0.9767
-    Fake News - Precision: 0.9697, Recall: 0.7459
+    Real News - Precision: 0.6843, Recall: 0.9953
+    Fake News - Precision: 0.9915, Recall: 0.5408
     
     Resource Usage:
-    Total time: 12.64 seconds
-    Avg time per sample: 14.73 ms
-    Memory usage: 432.80 MB
+    Total time: 12.43 seconds
+    Avg time per sample: 14.49 ms
+    Memory usage: 438.77 MB
 
 
 ## 6. Error Analysis
@@ -349,13 +349,13 @@ print(f"False Negative Rate: {fn/(fn+tp):.4f}")
 ```
 
     Error Analysis:
-    True Negatives: 419 (48.8%)
-    False Positives: 10 (1.2%) - Real news classified as fake
-    False Negatives: 109 (12.7%) - Fake news classified as real
-    True Positives: 320 (37.3%)
+    True Negatives: 427 (49.8%)
+    False Positives: 2 (0.2%) - Real news classified as fake
+    False Negatives: 197 (23.0%) - Fake news classified as real
+    True Positives: 232 (27.0%)
     
-    False Positive Rate: 0.0233
-    False Negative Rate: 0.2541
+    False Positive Rate: 0.0047
+    False Negative Rate: 0.4592
 
 
 ### Model Performance Insights
@@ -364,6 +364,16 @@ The confusion matrix reveals important characteristics:
 - **Low False Positive Rate**: The model rarely misclassifies real news as fake, which is crucial for maintaining user trust
 - **Higher False Negative Rate**: The model is more likely to miss fake news, suggesting a conservative approach
 - This behavior aligns with deployment priorities where false alarms are more damaging than missed detections
+
+### Generalization Gap Analysis
+
+The substantial difference between training performance (99.2% accuracy) and external validation performance (76.8% accuracy) indicates several important considerations:
+
+**Domain Shift Impact**: The 22.4 percentage point accuracy drop suggests the model may have overfit to specific patterns in the WELFake dataset that don't generalize well to other news sources.
+
+**Conservative Classification Behavior**: The model's tendency toward conservative classification (very low false positive rate of 0.5% but high false negative rate of 45.9%) suggests it has learned to be cautious about labeling content as fake unless it's very confident.
+
+**Deployment Implications**: This performance gap should inform deployment decisions, particularly regarding the need for continuous learning, domain-specific fine-tuning, or ensemble approaches to improve generalization.
 
 ## 7. Inference Efficiency Analysis
 
@@ -534,10 +544,10 @@ Based on our comprehensive evaluation, here are the key findings and recommendat
 |--------|-------|
 | **Model Size** | 54.74 MB |
 | **Parameters** | 14.35M |
-| **External Dataset Accuracy** | 86.1% |
-| **F1 Score** | 85.9% |
-| **False Positive Rate** | 2.3% |
-| **False Negative Rate** | 25.4% |
+| **External Dataset Accuracy** | 76.8% |
+| **F1 Score** | 75.5% |
+| **False Positive Rate** | 0.5% |
+| **False Negative Rate** | 45.9% |
 
 ### Resource Efficiency
 
@@ -563,13 +573,14 @@ Based on our comprehensive evaluation, here are the key findings and recommendat
 
 #### 3. **Performance Expectations**
 - Processes ~40-70 articles per second (batched)
-- Maintains >85% accuracy on diverse content
-- Low false positive rate protects against false alarms
+- Achieves ~77% accuracy on diverse external content
+- Very low false positive rate (0.5%) protects against false alarms
+- Higher false negative rate (46%) means some fake news may be missed
 - Regular updates recommended for emerging misinformation patterns
 
 ### Key Insights
 
-1. **Strong Generalization**: TinyBERT successfully identifies fake news patterns beyond its training distribution, achieving 86% accuracy on completely unseen data sources.
+1. **Moderate Generalization**: TinyBERT shows reasonable generalization capabilities, achieving 76.8% accuracy on completely unseen data sources, though this represents a significant drop from its 99.2% training performance.
 
 2. **Edge-Ready Performance**: With ~23ms single-sample inference and 400MB memory footprint, the model is well-suited for modern edge devices.
 
@@ -593,4 +604,9 @@ TinyBERT demonstrates that sophisticated NLP models can be successfully deployed
 - **Reasonable memory footprint** for modern mobile devices
 - **Flexible deployment options** across various batch sizes and sequence lengths
 
-This makes TinyBERT an excellent choice for privacy-preserving, offline-capable fake news detection directly on users' devices, opening new possibilities for combating misinformation while respecting user privacy and reducing infrastructure costs.
+While TinyBERT shows promise for privacy-preserving, offline-capable fake news detection, the significant performance gap between training (99.2%) and external validation (76.8%) suggests careful consideration is needed for deployment. The model's conservative approach (very low false positives but higher false negatives) may be suitable for applications where avoiding false alarms is more critical than catching all misinformation. Further domain adaptation or ensemble approaches should be considered for improved generalization.
+
+
+```python
+
+```

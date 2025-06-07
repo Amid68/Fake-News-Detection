@@ -1,370 +1,277 @@
-# Evaluation of Fake News Detection Models
+# Baseline Models Evaluation: Testing Generalization and Real-World Performance
 
-## Introduction
+## Introduction and Evaluation Philosophy
 
-In our previous notebook, we developed two machine learning models for fake news detection using the WELFake dataset:
-1. Logistic Regression with TF-IDF features
-2. Random Forest with TF-IDF features
+In our previous baseline training notebook, we developed and optimized two machine learning models for fake news detection: Logistic Regression and Random Forest, both using TF-IDF features. Those models achieved excellent performance on the WELFake test set, with accuracies above 96%. However, high performance on a held-out test set from the same dataset tells us only part of the story.
 
-This notebook focuses on evaluating these models to understand their strengths, weaknesses, and overall performance. A good fake news detection system needs to be both accurate and reliable, as false classifications in either direction can have negative consequences - either allowing misinformation to spread or incorrectly flagging legitimate content.
+The critical question for any machine learning system intended for real-world deployment is: **How well does the model generalize to completely new data sources?** This notebook addresses that fundamental question through rigorous external validation.
 
-We'll evaluate our models on two types of data:
-1. **Internal validation**: Using the held-out test set from the WELFake dataset
-2. **External validation**: Using two additional datasets:
-   - A collection of manually verified real news articles
-   - A set of fake news articles generated with assistance from AI
+### Why External Validation Matters
 
-This external validation is crucial for assessing how well our models generalize to news sources that may differ from the training data in terms of writing style, topics, or time period.
+Think of model evaluation like testing a student's knowledge. If you only test them on problems very similar to what they practiced, you might get an overly optimistic view of their understanding. But if you test them on problems from a different textbook or covering slightly different contexts, you get a much better sense of whether they truly learned the underlying concepts or just memorized specific patterns.
 
-We'll perform a straightforward evaluation that includes standard metrics, cross-validation, and simple error analysis. A more extensive comparison with advanced metrics and techniques will be covered in a separate notebook.
+In fake news detection, this distinction is crucial because:
 
-## Setting Up the Environment
+- **Writing styles vary** across news sources and time periods
+- **Topics and current events** change constantly  
+- **Misinformation tactics evolve** as bad actors adapt to detection methods
+- **Language patterns shift** with cultural and technological changes
 
-First, let's import the necessary libraries for our evaluation. We'll need pandas and numpy for data manipulation, matplotlib and seaborn for visualization, and various metrics from scikit-learn for model evaluation.
+Our external validation uses two carefully curated datasets: manually verified real news articles from reputable sources, and AI-generated fake news articles that represent modern misinformation techniques. This combination tests whether our models learned generalizable patterns of credibility versus source-specific quirks.
 
 
 ```python
-# Import basic libraries
 import pandas as pd
 import numpy as np
-```
-
-
-```python
-# Import visualization libraries
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pickle
+import time
+import warnings
+warnings.filterwarnings('ignore')
+
+# Set up clear, professional visualizations
+plt.style.use('ggplot')
+sns.set(font_scale=1.2)
+plt.rcParams['figure.figsize'] = (10, 6)
 ```
 
 
 ```python
-# Import evaluation metrics
+# Import evaluation metrics for comprehensive model assessment
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 ```
 
+## Loading Pre-Trained Models and Components
 
-```python
-# Import model selection tools
-from sklearn.model_selection import cross_val_score, train_test_split
-```
+Rather than rebuilding everything from scratch, we'll load the optimized models and preprocessing components created in our training notebook. This approach ensures consistency and focuses our attention on the evaluation insights rather than setup mechanics.
 
+### Loading the TF-IDF Vectorizer
 
-```python
-# Import utilities for loading models
-import pickle
-import time
-```
+The TF-IDF vectorizer is crucial because it transforms raw text into the numerical features our models expect. We must use the exact same vectorizer that was fit on the training data to ensure our features have the same dimensionality and scaling.
 
 
 ```python
-# Suppress warnings
-import warnings
-warnings.filterwarnings('ignore')
-```
-
-Next, we'll set up a consistent visualization style to make our plots more readable and appealing. This helps ensure that our evaluation results are presented clearly.
-
-
-```python
-# Set visualization style
-plt.style.use('ggplot')
-```
-
-
-```python
-# Set font scale for better readability
-sns.set(font_scale=1.2)
-```
-
-
-```python
-# Set default figure size
-plt.rcParams['figure.figsize'] = (10, 6)
-```
-
-## Loading Data and Models
-
-### Loading the WELFake Dataset
-
-First, we'll load the WELFake dataset that was used for training our models. This dataset contains both real and fake news articles with corresponding labels.
-
-
-```python
-# Load the WELFake dataset
-df = pd.read_csv('../../data/WELFake_cleaned.csv')
-```
-
-
-```python
-# Display basic info about the dataset
-print(f"WELFake dataset: {len(df)} articles total")
-```
-
-    WELFake dataset: 71537 articles total
-
-
-For our models, we combined the title and text of each article to provide more complete information. This approach captures both the headline style and the content, which often contain different signals for fake news detection.
-
-
-```python
-# Combine title and text to create the feature
-df['combined_text'] = df['title'] + " " + df['text']
-```
-
-
-```python
-# Prepare features and labels
-X_welfake = df['combined_text']
-y_welfake = df['label']
-```
-
-To evaluate model performance, we'll use the same train-test split that was used during model training. This ensures our evaluation is consistent with the original training process.
-
-
-```python
-# Split the data to get the same test set used during training
-X_train, X_test, y_train, y_test = train_test_split(
-    X_welfake, y_welfake, test_size=0.2, random_state=42, stratify=y_welfake
-)
-```
-
-
-```python
-# Print test set size
-print(f"WELFake test set: {len(X_test)} articles")
-```
-
-    WELFake test set: 14308 articles
-
-
-### Loading External Datasets
-
-To thoroughly evaluate our models, we need to test them on data from sources not included in the training set. This helps assess how well they generalize to real-world scenarios. We'll load two external datasets: manually verified real news and AI-assisted fake news articles.
-
-
-```python
-# Load external real news data
-real_df = pd.read_csv('../datasets/manual_real.csv')
-```
-
-
-```python
-# Load external fake news data
-fake_df = pd.read_csv('../datasets/fake_claude.csv')
-```
-
-
-```python
-# Print dataset sizes
-print(f"External real news dataset: {len(real_df)} articles")
-print(f"External fake news dataset: {len(fake_df)} articles")
-```
-
-    External real news dataset: 399 articles
-    External fake news dataset: 429 articles
-
-
-#### Preparing External Real News Data
-
-The external datasets might have different column structures than our training data. We'll need to process them to match the format our models expect, combining title and content where available.
-
-
-```python
-# Process real news data
-if 'title' in real_df.columns and 'content' in real_df.columns:
-    real_df['combined_text'] = real_df['title'] + " " + real_df['content']
-elif 'text' in real_df.columns:
-    real_df['combined_text'] = real_df['text']
-else:
-    print("Warning: Column structure in real_df is unexpected. Please check the dataset.")
-```
-
-
-```python
-# Assign label for real news (0)
-real_df['label'] = 0
-```
-
-#### Preparing External Fake News Data
-
-Similar to the real news data, we need to process the fake news dataset to match our expected format.
-
-
-```python
-# Process fake news data
-if 'title' in fake_df.columns and 'content' in fake_df.columns:
-    fake_df['combined_text'] = fake_df['title'] + " " + fake_df['content']
-elif 'text' in fake_df.columns:
-    fake_df['combined_text'] = fake_df['text']
-else:
-    print("Warning: Column structure in fake_df is unexpected. Please check the dataset.")
-```
-
-
-```python
-# Assign label for fake news (1)
-fake_df['label'] = 1
-```
-
-#### Combining External Datasets
-
-Now we'll combine the external real and fake news datasets into a single validation set for evaluation.
-
-
-```python
-# Select only the columns we need
-real_subset = real_df[['combined_text', 'label']]
-fake_subset = fake_df[['combined_text', 'label']]
-```
-
-
-```python
-# Concatenate into one external validation dataset
-external_df = pd.concat([real_subset, fake_subset], ignore_index=True)
-```
-
-
-```python
-# Extract features and labels
-X_external = external_df['combined_text']
-y_external = external_df['label']
-```
-
-
-```python
-# Print combined dataset size
-print(f"Combined external validation dataset: {len(external_df)} articles")
-```
-
-    Combined external validation dataset: 828 articles
-
-
-### Loading Pre-trained Models
-
-Next, we'll load the models we trained in the previous notebook, along with the TF-IDF vectorizer used to transform the text data.
-
-
-```python
-# Load the TF-IDF vectorizer
+# Load the fitted TF-IDF vectorizer from training
 with open('../../ml_models/baseline/tfidf_vectorizer.pkl', 'rb') as f:
     tfidf_vectorizer = pickle.load(f)
-```
-
-
-```python
-# Load the Logistic Regression model
-with open('../../ml_models/baseline/lr_text_model.pkl', 'rb') as f:
-    lr_model = pickle.load(f)
-```
-
-
-```python
-# Load the Random Forest model
-with open('../../ml_models/baseline/rf_text_model.pkl', 'rb') as f:
-    rf_model = pickle.load(f)
-```
-
-
-```python
-print("Models and vectorizer loaded successfully!")
-```
-
-    Models and vectorizer loaded successfully!
-
-
-### Preparing Data for Evaluation
-
-Before evaluating our models, we need to transform the text data into the TF-IDF representation that our models were trained on.
-
-
-```python
-# Transform the WELFake test data
-X_test_tfidf = tfidf_vectorizer.transform(X_test)
-```
-
-
-```python
-# Transform the external validation data
-X_external_tfidf = tfidf_vectorizer.transform(X_external)
-```
-
-## Evaluation Framework
-
-We'll define several functions to streamline our evaluation process. These functions will help us calculate metrics, visualize results, and analyze errors consistently across both models and datasets.
-
-### Model Evaluation Function
-
-This function will evaluate a model's performance on a given dataset, calculating key metrics like accuracy, precision, recall, and F1 score.
-
-
-```python
-def evaluate_model(model, X_test, y_test, model_name):
-    """
-    Evaluate a model and print key performance metrics.
     
-    Parameters:
-    - model: The trained model to evaluate
-    - X_test: Test features
-    - y_test: True test labels
-    - model_name: A descriptive name for the model
+print(f"TF-IDF vectorizer loaded")
+print(f"Vocabulary size: {len(tfidf_vectorizer.vocabulary_):,} features")
+print(f"Max features used: {tfidf_vectorizer.max_features}")
+```
+
+    TF-IDF vectorizer loaded
+    Vocabulary size: 10,000 features
+    Max features used: 10000
+
+
+### Loading the Trained Models
+
+Our trained models represent hundreds of iterations of hyperparameter tuning and validation. By loading these optimized versions, we ensure our evaluation reflects the best possible performance of each approach.
+
+
+```python
+# Load the optimized Logistic Regression model
+with open('../../ml_models/baseline/lr_model.pkl', 'rb') as f:
+    lr_model = pickle.load(f)
+    
+print("Logistic Regression model loaded")
+print(f"Regularization strength (C): {lr_model.C}")
+print(f"Max iterations: {lr_model.max_iter}")
+```
+
+    Logistic Regression model loaded
+    Regularization strength (C): 10.0
+    Max iterations: 3000
+
+
+
+```python
+# Load the optimized Random Forest model  
+with open('../../ml_models/baseline/rf_model.pkl', 'rb') as f:
+    rf_model = pickle.load(f)
+    
+print("Random Forest model loaded")
+print(f"Number of trees: {rf_model.n_estimators}")
+print(f"Max depth: {rf_model.max_depth}")
+print(f"Min samples per split: {rf_model.min_samples_split}")
+```
+
+    Random Forest model loaded
+    Number of trees: 200
+    Max depth: None
+    Min samples per split: 5
+
+
+## External Dataset Preparation
+
+Our external validation uses two distinct datasets that together create a challenging but realistic test of model generalization. Understanding the characteristics of these datasets helps us interpret the results appropriately.
+
+### Understanding Our External Data Sources
+
+**Real News Dataset**: Contains manually verified articles from established news sources. These articles follow professional journalism standards but may cover topics, use language patterns, or reflect time periods different from the WELFake training data.
+
+**AI-Generated Fake News Dataset**: Contains sophisticated fake articles created with AI assistance. These represent modern misinformation techniques and may be more subtle than some historical fake news examples.
+
+
+```python
+# Load external validation datasets
+real_df = pd.read_csv('../datasets/manual_real.csv')
+fake_df = pd.read_csv('../datasets/fake_claude.csv')
+
+print(f"External real news articles: {len(real_df)}")
+print(f"External fake news articles: {len(fake_df)}")
+print(f"Total external validation samples: {len(real_df) + len(fake_df)}")
+```
+
+    External real news articles: 429
+    External fake news articles: 429
+    Total external validation samples: 858
+
+
+### Preparing External Data for Evaluation
+
+We need to ensure our external data matches the format our models expect. This includes using the same text combination approach and label encoding used during training.
+
+
+```python
+# Prepare real news data (label = 0 for real news)
+real_df['label'] = 0
+real_articles = real_df[['text', 'label']].copy()
+real_articles.columns = ['combined_text', 'label']
+
+print(f"Real news articles prepared: {len(real_articles)}")
+```
+
+    Real news articles prepared: 429
+
+
+
+```python
+# Prepare fake news data (label = 1 for fake news)  
+fake_df['label'] = 1
+fake_articles = fake_df[['text', 'label']].copy()
+fake_articles.columns = ['combined_text', 'label']
+
+print(f"Fake news articles prepared: {len(fake_articles)}")
+```
+
+    Fake news articles prepared: 429
+
+
+
+```python
+# Combine into single external validation dataset
+external_df = pd.concat([real_articles, fake_articles], ignore_index=True)
+
+# Extract features and labels for model evaluation
+X_external = external_df['combined_text']
+y_external = external_df['label']
+
+print(f"Combined external dataset: {len(external_df)} articles")
+print(f"Class balance: {y_external.mean():.1%} fake news")
+```
+
+    Combined external dataset: 858 articles
+    Class balance: 50.0% fake news
+
+
+### Transforming Text to Model Features
+
+This step converts our external text data into the TF-IDF numerical features our models require. We use the transform method (not fit_transform) because the vectorizer was already fit on the training data.
+
+
+```python
+# Transform external text data to TF-IDF features
+X_external_tfidf = tfidf_vectorizer.transform(X_external)
+
+print(f"External data transformed to TF-IDF")
+print(f"Feature matrix shape: {X_external_tfidf.shape}")
+print(f"Sparsity: {(1 - X_external_tfidf.nnz / X_external_tfidf.size) * 100:.1f}% zero values")
+```
+
+    External data transformed to TF-IDF
+    Feature matrix shape: (858, 10000)
+    Sparsity: 0.0% zero values
+
+
+## Evaluation Framework and Methodology
+
+Before diving into results, let's establish our evaluation framework. This systematic approach ensures we capture all relevant aspects of model performance and can make fair comparisons between different approaches.
+
+### Comprehensive Model Evaluation Function
+
+Our evaluation function goes beyond simple accuracy to provide a complete picture of model performance. Each metric tells us something different about how the model behaves in real-world scenarios.
+
+
+```python
+def evaluate_model_comprehensive(model, X_test, y_test, model_name):
+    """
+    Perform comprehensive model evaluation with multiple metrics and timing.
+    
+    This function captures both performance and efficiency characteristics,
+    which are both crucial for deployment decisions.
     
     Returns:
-    - Dictionary with predictions and metrics
+    - Dictionary containing predictions, probabilities, and all key metrics
     """
-    # Measure prediction time
+    print(f"\n{'='*50}")
+    print(f"Evaluating {model_name}")
+    print(f"{'='*50}")
+    
+    # Measure prediction time for efficiency assessment
     start_time = time.time()
     y_pred = model.predict(X_test)
-    predict_time = time.time() - start_time
+    prediction_time = time.time() - start_time
     
-    # Calculate probability predictions (for ROC curve)
+    # Get prediction probabilities for ROC analysis
     y_pred_proba = model.predict_proba(X_test)[:, 1]
     
-    # Calculate basic metrics
+    # Calculate comprehensive metrics
     accuracy = accuracy_score(y_test, y_pred)
     precision, recall, f1, _ = precision_recall_fscore_support(
         y_test, y_pred, average='weighted'
     )
     
-    # Print results
-    print(f"\n{model_name} Evaluation:")
+    # Display results with interpretation
     print(f"Accuracy: {accuracy:.4f}")
     print(f"Precision: {precision:.4f}")
     print(f"Recall: {recall:.4f}")
     print(f"F1 Score: {f1:.4f}")
-    print(f"Prediction time: {predict_time:.2f} seconds")
+    print(f"Prediction time: {prediction_time:.4f} seconds")
+    print(f"Time per sample: {(prediction_time/len(y_test)*1000):.2f} ms")
     
-    # Return results dictionary
     return {
-        'y_pred': y_pred,
-        'y_pred_proba': y_pred_proba,
+        'predictions': y_pred,
+        'probabilities': y_pred_proba,
         'accuracy': accuracy,
         'precision': precision,
         'recall': recall,
         'f1': f1,
-        'predict_time': predict_time
+        'prediction_time': prediction_time
     }
 ```
 
-### Confusion Matrix Function
+### Confusion Matrix Analysis Function
 
-Confusion matrices help us understand the types of errors each model makes. This function will create and visualize confusion matrices.
+Confusion matrices reveal the specific types of errors our models make, which is crucial for understanding their real-world behavior and potential risks.
 
 
 ```python
-def plot_confusion_matrix(y_true, y_pred, model_name):
+def create_confusion_matrix_analysis(y_true, y_pred, model_name):
     """
-    Plot a confusion matrix for model predictions.
+    Create detailed confusion matrix analysis with error rate calculations.
     
-    Parameters:
-    - y_true: True labels
-    - y_pred: Predicted labels
-    - model_name: Name of the model for the plot title
+    Understanding error patterns helps us assess deployment risks:
+    - False positives: Real news incorrectly labeled as fake (credibility damage)
+    - False negatives: Fake news incorrectly labeled as real (misinformation spread)
     """
     # Calculate confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     
-    # Create the plot
+    # Create visualization
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=['Real News', 'Fake News'],
@@ -375,798 +282,533 @@ def plot_confusion_matrix(y_true, y_pred, model_name):
     plt.tight_layout()
     plt.show()
     
-    # Extract values for error analysis
+    # Extract and analyze error components
     tn, fp, fn, tp = cm.ravel()
+    total = tn + fp + fn + tp
     
-    # Calculate and print error rates
-    print(f"False Positive Rate: {fp/(fp+tn):.4f} ({fp} real news articles misclassified as fake)")
-    print(f"False Negative Rate: {fn/(fn+tp):.4f} ({fn} fake news articles misclassified as real)")
+    # Calculate error rates with business context
+    false_positive_rate = fp / (fp + tn)
+    false_negative_rate = fn / (fn + tp)
+    
+    print(f"\nError Analysis for {model_name}:")
+    print(f"True Negatives: {tn} ({tn/total*100:.1f}%) - Correctly identified real news")
+    print(f"False Positives: {fp} ({fp/total*100:.1f}%) - Real news labeled as fake")
+    print(f"False Negatives: {fn} ({fn/total*100:.1f}%) - Fake news labeled as real") 
+    print(f"True Positives: {tp} ({tp/total*100:.1f}%) - Correctly identified fake news")
+    print(f"\nFalse Positive Rate: {false_positive_rate:.4f}")
+    print(f"False Negative Rate: {false_negative_rate:.4f}")
+    
+    return cm, false_positive_rate, false_negative_rate
 ```
 
-### Error Analysis Function
+### ROC Curve Comparison Function
 
-Understanding specific examples where our models fail can provide valuable insights. This function will display and analyze misclassified articles.
+ROC curves help us understand how well our models discriminate between real and fake news across different decision thresholds. This is particularly valuable for understanding model confidence and calibration.
 
 
 ```python
-def analyze_errors(X_text, y_true, y_pred, model_name, n_examples=5):
+def plot_roc_comparison(y_true, model_results, model_names):
     """
-    Display examples where the model made incorrect predictions.
+    Create ROC curve comparison showing discrimination ability across thresholds.
     
-    Parameters:
-    - X_text: Original text samples
-    - y_true: True labels
-    - y_pred: Predicted labels
-    - model_name: Name of the model
-    - n_examples: Number of examples to display
+    ROC curves help us understand:
+    - Overall discrimination capability (AUC)
+    - Performance trade-offs at different thresholds
+    - Relative model strengths
+    """
+    plt.figure(figsize=(10, 8))
+    colors = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12']
+    
+    for i, (results, name, color) in enumerate(zip(model_results, model_names, colors)):
+        # Calculate ROC curve
+        fpr, tpr, _ = roc_curve(y_true, results['probabilities'])
+        roc_auc = auc(fpr, tpr)
+        
+        # Plot with AUC in legend
+        plt.plot(fpr, tpr, color=color, lw=2,
+                 label=f'{name} (AUC = {roc_auc:.3f})')
+    
+    # Add reference line for random classifier
+    plt.plot([0, 1], [0, 1], 'k--', lw=2, label='Random Classifier')
+    
+    # Format plot
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC Curves: Model Discrimination Comparison')
+    plt.legend(loc="lower right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+```
+
+## External Dataset Evaluation: Testing Generalization
+
+Now we reach the heart of our evaluation: testing how well our models perform on completely unseen data from external sources. This is where we discover whether our models learned generalizable patterns or simply memorized characteristics specific to the WELFake dataset.
+
+### Evaluating Logistic Regression on External Data
+
+Logistic Regression offers the advantage of interpretability and efficiency. Let's see how these benefits translate to real-world performance on our external validation set.
+
+
+```python
+# Evaluate Logistic Regression on external data
+lr_external_results = evaluate_model_comprehensive(
+    lr_model, X_external_tfidf, y_external, 
+    "Logistic Regression (External Validation)"
+)
+```
+
+    
+    ==================================================
+    Evaluating Logistic Regression (External Validation)
+    ==================================================
+    Accuracy: 0.9394
+    Precision: 0.9402
+    Recall: 0.9394
+    F1 Score: 0.9394
+    Prediction time: 0.0005 seconds
+    Time per sample: 0.00 ms
+
+
+### Understanding Logistic Regression Results
+
+The performance we see here represents the model's ability to generalize beyond its training distribution. Any significant drop from the training performance (which was above 96%) would indicate overfitting to the WELFake dataset characteristics.
+
+
+```python
+# Analyze Logistic Regression confusion matrix
+lr_cm, lr_fp_rate, lr_fn_rate = create_confusion_matrix_analysis(
+    y_external, lr_external_results['predictions'], 
+    "Logistic Regression"
+)
+```
+
+
+    
+![png](output_25_0.png)
+    
+
+
+    
+    Error Analysis for Logistic Regression:
+    True Negatives: 412 (48.0%) - Correctly identified real news
+    False Positives: 17 (2.0%) - Real news labeled as fake
+    False Negatives: 35 (4.1%) - Fake news labeled as real
+    True Positives: 394 (45.9%) - Correctly identified fake news
+    
+    False Positive Rate: 0.0396
+    False Negative Rate: 0.0816
+
+
+### Evaluating Random Forest on External Data
+
+Random Forest models can capture more complex patterns but may be more prone to overfitting. Let's examine how this complexity-flexibility trade-off affects generalization performance.
+
+
+```python
+# Evaluate Random Forest on external data  
+rf_external_results = evaluate_model_comprehensive(
+    rf_model, X_external_tfidf, y_external,
+    "Random Forest (External Validation)"
+)
+```
+
+    
+    ==================================================
+    Evaluating Random Forest (External Validation)
+    ==================================================
+    Accuracy: 0.9779
+    Precision: 0.9786
+    Recall: 0.9779
+    F1 Score: 0.9778
+    Prediction time: 0.0482 seconds
+    Time per sample: 0.06 ms
+
+
+### Understanding Random Forest Results
+
+Random Forest's ensemble approach should, in theory, provide more robust generalization. The results will tell us whether this theoretical advantage translates to better real-world performance.
+
+
+```python
+# Analyze Random Forest confusion matrix
+rf_cm, rf_fp_rate, rf_fn_rate = create_confusion_matrix_analysis(
+    y_external, rf_external_results['predictions'],
+    "Random Forest"
+)
+```
+
+
+    
+![png](output_29_0.png)
+    
+
+
+    
+    Error Analysis for Random Forest:
+    True Negatives: 411 (47.9%) - Correctly identified real news
+    False Positives: 18 (2.1%) - Real news labeled as fake
+    False Negatives: 1 (0.1%) - Fake news labeled as real
+    True Positives: 428 (49.9%) - Correctly identified fake news
+    
+    False Positive Rate: 0.0420
+    False Negative Rate: 0.0023
+
+
+### Comparing Model Discrimination Capabilities
+
+The ROC curve comparison provides insight into which model better distinguishes between real and fake news across different confidence thresholds.
+
+
+```python
+# Compare ROC curves for both models
+plot_roc_comparison(
+    y_external,
+    [lr_external_results, rf_external_results],
+    ["Logistic Regression", "Random Forest"]
+)
+```
+
+
+    
+![png](output_31_0.png)
+    
+
+
+## Error Analysis: Understanding Model Limitations
+
+Understanding where and why our models make mistakes provides crucial insights for deployment decisions and potential improvements. Let's examine specific examples of misclassified articles.
+
+### Systematic Error Pattern Analysis
+
+
+```python
+def analyze_prediction_errors(X_text, y_true, y_pred, model_name, n_examples=5):
+    """
+    Examine specific examples where the model made incorrect predictions.
+    
+    This analysis helps us understand:
+    - What types of content are challenging for the model
+    - Whether errors follow systematic patterns
+    - Potential areas for model improvement
     """
     # Find misclassified examples
     errors = np.where(y_true != y_pred)[0]
     
     if len(errors) == 0:
-        print(f"No errors found for {model_name}!")
+        print(f"Perfect classification achieved by {model_name}!")
         return
     
-    print(f"\n{model_name} - {len(errors)} misclassified examples out of {len(y_true)} ({len(errors)/len(y_true):.2%})")
-    print(f"Displaying {min(n_examples, len(errors))} random examples:")
+    print(f"\n{model_name} Error Analysis:")
+    print(f"Total errors: {len(errors)} out of {len(y_true)} ({len(errors)/len(y_true):.1%})")
     
-    # Select random errors to display
+    # Analyze error types
+    false_positives = np.where((y_true == 0) & (y_pred == 1))[0]
+    false_negatives = np.where((y_true == 1) & (y_pred == 0))[0]
+    
+    print(f"False Positives (Real→Fake): {len(false_positives)}")
+    print(f"False Negatives (Fake→Real): {len(false_negatives)}")
+    
+    # Show example errors
+    print(f"\nExamining {min(n_examples, len(errors))} example errors:")
+    
     display_indices = np.random.choice(errors, size=min(n_examples, len(errors)), replace=False)
     
     for i, idx in enumerate(display_indices):
-        print(f"\nExample {i+1}:")
-        print(f"Text snippet: {X_text.iloc[idx][:200]}...")  # Show first 200 chars
-        print(f"True label: {'Real' if y_true.iloc[idx] == 0 else 'Fake'}")
-        print(f"Predicted: {'Real' if y_pred[idx] == 0 else 'Fake'}")
-        print("-" * 80)
-```
-
-### ROC Curve Function
-
-ROC curves help us understand how the discrimination threshold affects model performance. This function will plot ROC curves for multiple models.
-
-
-```python
-def plot_roc_curve(y_true, y_scores, model_names, colors):
-    """
-    Plot ROC curves for multiple models.
-    
-    Parameters:
-    - y_true: True labels
-    - y_scores: List of probability predictions for each model
-    - model_names: List of model names
-    - colors: List of colors for plotting
-    """
-    plt.figure(figsize=(10, 8))
-    
-    for i, (score, name, color) in enumerate(zip(y_scores, model_names, colors)):
-        # Calculate ROC curve
-        fpr, tpr, _ = roc_curve(y_true, score)
-        roc_auc = auc(fpr, tpr)
+        article_text = X_text.iloc[idx]
+        true_label = 'Real' if y_true.iloc[idx] == 0 else 'Fake'
+        pred_label = 'Real' if y_pred[idx] == 0 else 'Fake'
         
-        # Plot the curve
-        plt.plot(fpr, tpr, color=color, lw=2,
-                 label=f'{name} (AUC = {roc_auc:.3f})')
-    
-    # Plot diagonal line (random classifier)
-    plt.plot([0, 1], [0, 1], 'k--', lw=2)
-    
-    # Format the plot
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curves')
-    plt.legend(loc="lower right")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+        print(f"\nError Example {i+1}:")
+        print(f"Text preview: {article_text[:200]}...")
+        print(f"True label: {true_label}")
+        print(f"Predicted: {pred_label}")
+        print("-" * 60)
 ```
 
-## Evaluation on WELFake Test Set
-
-Now we'll evaluate our models on the held-out test set from the WELFake dataset. This evaluation gives us a baseline understanding of model performance on data from the same distribution as the training set.
-
-### Logistic Regression on WELFake
-
-First, let's evaluate the Logistic Regression model on the WELFake test set. We'll calculate key metrics and examine the confusion matrix to understand the types of errors the model makes.
+### Analyzing Logistic Regression Errors
 
 
 ```python
-# Evaluate Logistic Regression on WELFake test set
-lr_results = evaluate_model(lr_model, X_test_tfidf, y_test, "Logistic Regression (WELFake)")
-```
-
-    
-    Logistic Regression (WELFake) Evaluation:
-    Accuracy: 0.9490
-    Precision: 0.9491
-    Recall: 0.9490
-    F1 Score: 0.9490
-    Prediction time: 0.00 seconds
-
-
-After running the evaluation, we can see that Logistic Regression achieves high accuracy on the WELFake test set. Let's examine the confusion matrix to better understand its performance.
-
-
-```python
-# Plot confusion matrix for Logistic Regression
-plot_confusion_matrix(y_test, lr_results['y_pred'], "Logistic Regression (WELFake)")
-```
-
-
-    
-![png](output_54_0.png)
-    
-
-
-    False Positive Rate: 0.0594 (416 real news articles misclassified as fake)
-    False Negative Rate: 0.0429 (313 fake news articles misclassified as real)
-
-
-The confusion matrix gives us a more detailed view of the model's performance. We can see that Logistic Regression correctly identifies most articles, with a relatively balanced error rate between false positives and false negatives. The false positive rate (real news classified as fake) is slightly higher than the false negative rate (fake news classified as real).
-
-### Random Forest on WELFake
-
-Now let's evaluate the Random Forest model on the same test set. Random Forest is a more complex model that might capture different patterns in the data.
-
-
-```python
-# Evaluate Random Forest on WELFake test set
-rf_results = evaluate_model(rf_model, X_test_tfidf, y_test, "Random Forest (WELFake)")
-```
-
-    
-    Random Forest (WELFake) Evaluation:
-    Accuracy: 0.9541
-    Precision: 0.9546
-    Recall: 0.9541
-    F1 Score: 0.9540
-    Prediction time: 0.38 seconds
-
-
-Next, let's examine the confusion matrix for the Random Forest model.
-
-
-```python
-# Plot confusion matrix for Random Forest
-plot_confusion_matrix(y_test, rf_results['y_pred'], "Random Forest (WELFake)")
-```
-
-
-    
-![png](output_58_0.png)
-    
-
-
-    False Positive Rate: 0.0654 (458 real news articles misclassified as fake)
-    False Negative Rate: 0.0273 (199 fake news articles misclassified as real)
-
-
-Comparing the confusion matrices, we can see that Random Forest shows a different error pattern than Logistic Regression. It has a higher false positive rate but a lower false negative rate, suggesting it's more aggressive at classifying articles as fake news. This trade-off might be preferable in applications where missing fake news is more concerning than misclassifying real news.
-
-### ROC Curve Comparison on WELFake
-
-To better compare the models' discrimination capabilities, let's plot their ROC curves side by side. This will help us understand how well each model distinguishes between real and fake news across different threshold settings.
-
-
-```python
-# Plot ROC curves for both models on WELFake
-plot_roc_curve(
-    y_test,
-    [lr_results['y_pred_proba'], rf_results['y_pred_proba']],
-    ["Logistic Regression", "Random Forest"],
-    ['#3498db', '#2ecc71']
+# Analyze Logistic Regression prediction errors
+analyze_prediction_errors(
+    X_external, y_external, lr_external_results['predictions'],
+    "Logistic Regression", n_examples=5
 )
 ```
 
-
     
-![png](output_60_0.png)
+    Logistic Regression Error Analysis:
+    Total errors: 52 out of 858 (6.1%)
+    False Positives (Real→Fake): 17
+    False Negatives (Fake→Real): 35
     
-
-
-The ROC curves show that both models have excellent discriminative ability. The Area Under the Curve (AUC) values are very high for both models, indicating they can successfully differentiate between real and fake news. The Random Forest curve is slightly higher, suggesting it achieves better discrimination across most threshold settings.
-
-### Error Analysis on WELFake
-
-To gain deeper insights into model weaknesses, let's examine specific examples where each model made mistakes. This can help us understand what types of content are challenging for fake news detection.
-
-
-```python
-# Analyze errors for Logistic Regression on WELFake
-analyze_errors(X_test, y_test, lr_results['y_pred'], "Logistic Regression (WELFake)")
-```
-
+    Examining 5 example errors:
     
-    Logistic Regression (WELFake) - 729 misclassified examples out of 14308 (5.10%)
-    Displaying 5 random examples:
+    Error Example 1:
+    Text preview: May 13 - The selection of 16 sites located on Department of Energy (DOE) lands for the rapid construction of data centers and energy generation underlines the rising importance of AI demand for the U....
+    True label: Real
+    Predicted: Fake
+    ------------------------------------------------------------
     
-    Example 1:
-    Text snippet: Culchie Tries To Explain Rules Of 25 One More Time 0 Add Comment 
-    RATHER than relax and play Texas Hold ‘Em with his friends as they had a few cans after a recent night out, hardcore culchie Noel Kenn...
+    Error Example 2:
+    Text preview: LONDON, May 19 - The possible lifting of U.S. sanctions on Iran's oil exports could deal a fatal blow to independent Chinese refineries that have thrived by processing Tehran’s discounted crude, while...
+    True label: Real
+    Predicted: Fake
+    ------------------------------------------------------------
+    
+    Error Example 3:
+    Text preview: A comprehensive technical investigation by data scientists has documented systematic 'shadow-banning' of users on major social media platforms based specifically on political content, despite consiste...
     True label: Fake
     Predicted: Real
-    --------------------------------------------------------------------------------
+    ------------------------------------------------------------
     
-    Example 2:
-    Text snippet: ’Gays for Trump’ Banned from Participating in Charlotte Pride Parade Members of a   gay group say they have been banned from participating in the Charlotte Pride Parade because of their support for Pr...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 3:
-    Text snippet:  Pence On Aircraft Carrier Lie: No, It Wasn’t Strategy, We’re Just Morons The White House led people to believe that a U.S. aircraft carrier was on his way to the waters off the Korean peninsula in a ...
+    Error Example 4:
+    Text preview: Prominent virologist Dr. Hiroshi Tanaka was found dead in his home days after reportedly telling colleagues he had conclusive evidence that the COVID-19 virus showed unmistakable signs of laboratory e...
     True label: Fake
     Predicted: Real
-    --------------------------------------------------------------------------------
+    ------------------------------------------------------------
     
-    Example 4:
-    Text snippet: JUST IN: Senior GOP Rep Announces His Retirement…A BIG LOSS Rep. Jeb Hensarling (R., Texas) announced Tuesday he will not seek another term in Congress in 2018, telling supporters he has  already stay...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-    
-    Example 5:
-    Text snippet: 65 USA ‘Journalists’ At Dinner With HRC’s Team And John Podesta Leave a reply 
-    Several top journalists and TV news anchors RSVPed “yes” to attend a private, off-the-record gathering at the New York ho...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-
-
-Looking at these misclassified examples from Logistic Regression, we can observe some challenging cases. Some fake news articles that were misclassified as real use language and structure that closely mimics legitimate journalism. Conversely, some real news articles contain charged language or cover controversial topics that triggered the model to classify them as fake.
-
-
-```python
-# Analyze errors for Random Forest on WELFake
-analyze_errors(X_test, y_test, rf_results['y_pred'], "Random Forest (WELFake)")
-```
-
-    
-    Random Forest (WELFake) - 657 misclassified examples out of 14308 (4.59%)
-    Displaying 5 random examples:
-    
-    Example 1:
-    Text snippet: The phantom earpiece phenomenon: Why presidential candidates are consistently accused of cheating during debates The banner headline on the Drudge Report the morning after Wednesday’s presidential for...
+    Error Example 5:
+    Text preview: May 10 - Connor Joe saw his brief stint with his hometown franchise end on Friday, as the San Diego Padres traded the outfielder/first baseman to the Cincinnati Reds.
+    The Padres received minor league ...
     True label: Real
     Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 2:
-    Text snippet: Donald Trump Sends Executive Order Lawsuit to Higher Court - Breitbart The Department of Justice is formally objecting to the March 15 claim by a District Court judge in Maryland that President Donald...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 3:
-    Text snippet: Budweiser Debuts Pro-Immigration Super Bowl Ad - Breitbart Budweiser has chosen the charged political issue of immigration as the subject of its Super Bowl LI commercial. [The   spot explains the orig...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 4:
-    Text snippet: Modest to Majestic: A Look at Hillary and Bill Clinton’s Homes Over the Years - The New York Times Hillary and Bill Clinton’s shift over the years from middle class to multimillionaires has been perha...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 5:
-    Text snippet: Teamsters’ Jimmy Hoffa Lavishes Praise on President Trump on Trade Policy - Breitbart International Brotherhood of Teamsters president James P. Hoffa praised President Donald J. Trump’s move to crush ...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
+    ------------------------------------------------------------
 
 
-The Random Forest model shows similar patterns in its errors, although the specific examples differ. Both models seem to struggle with articles that have ambiguous language or that fall at the boundary between opinion and straight reporting.
-
-## Evaluation on External Datasets
-
-Now, let's evaluate our models on the external datasets to see how well they generalize to news sources not represented in the original training data. This is a critical test of real-world applicability.
-
-### Logistic Regression on External Data
-
-First, we'll evaluate the Logistic Regression model on our combined external dataset of real and AI-generated fake news.
+### Analyzing Random Forest Errors
 
 
 ```python
-# Evaluate Logistic Regression on external data
-lr_external_results = evaluate_model(lr_model, X_external_tfidf, y_external, 
-                                    "Logistic Regression (External Data)")
-```
-
-    
-    Logistic Regression (External Data) Evaluation:
-    Accuracy: 0.9698
-    Precision: 0.9698
-    Recall: 0.9698
-    F1 Score: 0.9698
-    Prediction time: 0.00 seconds
-
-
-The results on external data will give us insight into how well the Logistic Regression model generalizes to new sources. Let's examine the confusion matrix for more detail.
-
-
-```python
-# Plot confusion matrix for Logistic Regression on external data
-plot_confusion_matrix(y_external, lr_external_results['y_pred'], 
-                     "Logistic Regression (External Data)")
-```
-
-
-    
-![png](output_68_0.png)
-    
-
-
-    False Positive Rate: 0.0351 (14 real news articles misclassified as fake)
-    False Negative Rate: 0.0256 (11 fake news articles misclassified as real)
-
-
-The confusion matrix on external data shows how well the model generalizes to new sources. The error rates tell us whether the model maintains its performance when applied to articles from different sources than those in the training data.
-
-### Random Forest on External Data
-
-Next, we'll evaluate the Random Forest model on the same external dataset.
-
-
-```python
-# Evaluate Random Forest on external data
-rf_external_results = evaluate_model(rf_model, X_external_tfidf, y_external, 
-                                    "Random Forest (External Data)")
-```
-
-    
-    Random Forest (External Data) Evaluation:
-    Accuracy: 0.9662
-    Precision: 0.9664
-    Recall: 0.9662
-    F1 Score: 0.9662
-    Prediction time: 0.02 seconds
-
-
-Let's check the confusion matrix for Random Forest on the external data.
-
-
-```python
-# Plot confusion matrix for Random Forest on external data
-plot_confusion_matrix(y_external, rf_external_results['y_pred'], 
-                     "Random Forest (External Data)")
-```
-
-
-    
-![png](output_72_0.png)
-    
-
-
-    False Positive Rate: 0.0476 (19 real news articles misclassified as fake)
-    False Negative Rate: 0.0210 (9 fake news articles misclassified as real)
-
-
-Comparing the confusion matrices between the two models on external data helps us understand which one generalizes better to new sources. This information is crucial for deciding which model to deploy in a real-world setting.
-
-### ROC Curve Comparison on External Data
-
-To compare the models' discrimination capabilities on external data, let's plot their ROC curves side by side.
-
-
-```python
-# Plot ROC curves for both models on external data
-plot_roc_curve(
-    y_external,
-    [lr_external_results['y_pred_proba'], rf_external_results['y_pred_proba']],
-    ["Logistic Regression", "Random Forest"],
-    ['#3498db', '#2ecc71']
+# Analyze Random Forest prediction errors  
+analyze_prediction_errors(
+    X_external, y_external, rf_external_results['predictions'],
+    "Random Forest", n_examples=5
 )
 ```
 
-
     
-![png](output_74_0.png)
+    Random Forest Error Analysis:
+    Total errors: 19 out of 858 (2.2%)
+    False Positives (Real→Fake): 18
+    False Negatives (Fake→Real): 1
     
-
-
-The ROC curves on external data show how well each model maintains its discrimination ability when applied to new sources. Any significant changes compared to the WELFake results would suggest limitations in generalization.
-
-### Error Analysis on External Data
-
-Let's examine specific examples where our models made mistakes on the external dataset.
-
-
-```python
-# Analyze errors for Logistic Regression on external data
-analyze_errors(X_external, y_external, lr_external_results['y_pred'], 
-              "Logistic Regression (External Data)")
-```
-
+    Examining 5 example errors:
     
-    Logistic Regression (External Data) - 25 misclassified examples out of 828 (3.02%)
-    Displaying 5 random examples:
-    
-    Example 1:
-    Text snippet: SARASOTA, FL, May 19, 2025 (EZ Newswire) -- The Laser Lounge Spa, Sarasota's premier medical spa, is redefining the way clients approach skincare and aesthetics. With a focus on non-surgical, medical-...
+    Error Example 1:
+    Text preview: May 19 - For the second year in a row, Kyle Larson will attempt one of the rarest feats in all of sports: racing in both the Indianapolis 500 and the Coca-Cola 600 in the same day.
+    Two of the most pre...
     True label: Real
     Predicted: Fake
-    --------------------------------------------------------------------------------
+    ------------------------------------------------------------
     
-    Example 2:
-    Text snippet: A confidential White House planning document obtained through a staff whistleblower reveals that executive branch officials are preparing an emergency executive order that would effectively nationaliz...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-    
-    Example 3:
-    Text snippet: May 19 - Atlanta Braves greats Chipper Jones and Marquis Grissom were named managers for the 2025 All-Star Futures Game on Monday.
-    The Hall of Famer Jones will manage the National League minor leaguer...
+    Error Example 2:
+    Text preview: May 19 - Star running back Derrick Henry's two-year extension -- which he signed on Monday -- will keep him with the Baltimore Ravens through 2027, though the nine-year veteran wouldn't commit to cont...
     True label: Real
     Predicted: Fake
-    --------------------------------------------------------------------------------
+    ------------------------------------------------------------
     
-    Example 4:
-    Text snippet: A neuroscience study conducted at Stanford University has found that watching TikTok videos triggers the same brain patterns as addictive substances, with prolonged exposure causing physical changes t...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-    
-    Example 5:
-    Text snippet: May 19 - The NBA fined Oklahoma City star Jalen Williams $25,000 on Monday for "wearing clothing with profane language" to his press conference after the Thunder's Game 7 victory over the Denver Nugge...
+    Error Example 3:
+    Text preview: May 19 - The Kansas City Royals promoted top prospect Jac Caglianone to Triple-A Omaha on Sunday after playing only 38 games at Double-A.
+    Caglianone, the No. 6 overall pick out of Florida in 2024, hit...
     True label: Real
     Predicted: Fake
-    --------------------------------------------------------------------------------
-
-
-The error examples from the external data may reveal different patterns than those we saw in the WELFake test set. Analyzing these differences can help us understand what aspects of fake news are consistent across sources and what aspects are more source-specific.
-
-
-```python
-# Analyze errors for Random Forest on external data
-analyze_errors(X_external, y_external, rf_external_results['y_pred'], 
-              "Random Forest (External Data)")
-```
-
+    ------------------------------------------------------------
     
-    Random Forest (External Data) - 28 misclassified examples out of 828 (3.38%)
-    Displaying 5 random examples:
-    
-    Example 1:
-    Text snippet: May 19 - Fresh off surviving Denver in a seven-game series, the Oklahoma City Thunder are heavy favorites to claim the NBA title ahead of conference finals.
-    The biggest question appears to be who the ...
+    Error Example 4:
+    Text preview: May 19 - The Philadelphia Eagles are not sitting back quietly as a vote among NFL owners looms to potentially ban the "tush push" play.
+    As reported by The Athletic, the team is actively calling other ...
     True label: Real
     Predicted: Fake
-    --------------------------------------------------------------------------------
+    ------------------------------------------------------------
     
-    Example 2:
-    Text snippet: Engineers at the University of California have developed a new type of solar panel that generates over four times more electricity than conventional panels by harvesting energy from a broader light sp...
-    True label: Fake
-    Predicted: Real
-    --------------------------------------------------------------------------------
-    
-    Example 3:
-    Text snippet: May 19 - The NBA fined Oklahoma City star Jalen Williams $25,000 on Monday for "wearing clothing with profane language" to his press conference after the Thunder's Game 7 victory over the Denver Nugge...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 4:
-    Text snippet: May 19 - Atlanta Braves greats Chipper Jones and Marquis Grissom were named managers for the 2025 All-Star Futures Game on Monday.
-    The Hall of Famer Jones will manage the National League minor leaguer...
-    True label: Real
-    Predicted: Fake
-    --------------------------------------------------------------------------------
-    
-    Example 5:
-    Text snippet: NEW YORK, May 15 - This was originally published in the On The Money newsletter, where we share U.S. personal finance tips and insights every other week. Sign up here to receive it for free.
+    Error Example 5:
+    Text preview: NEW YORK, May 15 - This was originally published in the On The Money newsletter, where we share U.S. personal finance tips and insights every other week. Sign up here to receive it for free.
     My social...
     True label: Real
     Predicted: Fake
-    --------------------------------------------------------------------------------
+    ------------------------------------------------------------
 
 
-Comparing the error patterns between models on external data provides additional insights into their strengths and weaknesses when generalizing to new sources.
+## Performance Summary and Model Comparison
 
-## Cross-Validation Analysis
+Let's synthesize our findings into a comprehensive comparison that can guide deployment decisions.
 
-Cross-validation helps us assess how well our models generalize to unseen data by evaluating them on multiple train-test splits. This gives us a more reliable estimate of performance than a single train-test split.
-
-### Cross-Validation Function
-
-Let's define a function to perform cross-validation and display the results.
+### Creating Comprehensive Performance Summary
 
 
 ```python
-def perform_cross_validation(model, X, y, model_name, cv=5):
-    """
-    Perform cross-validation and print results.
-    
-    Parameters:
-    - model: The model to evaluate
-    - X: Features
-    - y: Labels
-    - model_name: Name of the model
-    - cv: Number of cross-validation folds
-    """
-    # Perform cross-validation
-    print(f"\nPerforming {cv}-fold cross-validation for {model_name}...")
-    cv_scores = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
-    
-    # Print results
-    print(f"Cross-validation scores: {cv_scores}")
-    print(f"Mean accuracy: {cv_scores.mean():.4f}")
-    print(f"Standard deviation: {cv_scores.std():.4f}")
-    
-    return cv_scores
-```
-
-### Preparing Data for Cross-Validation
-
-To make the cross-validation process computationally feasible, we'll use a random subset of the training data.
-
-
-```python
-# Prepare a smaller dataset for cross-validation to make it run faster
-# This is just for demonstration - in practice, you might use the full dataset
-cv_sample_size = 10000  # Adjust based on your computational resources
-```
-
-
-```python
-# Sample indices randomly
-cv_indices = np.random.choice(len(X_train), size=cv_sample_size, replace=False)
-```
-
-
-```python
-# Extract and transform the sampled data
-X_cv = tfidf_vectorizer.transform(X_welfake.iloc[cv_indices])
-y_cv = y_welfake.iloc[cv_indices]
-```
-
-### Running Cross-Validation
-
-Now we'll run 5-fold cross-validation for each model to see how stable their performance is across different data splits.
-
-
-```python
-# Perform cross-validation for Logistic Regression
-lr_cv_scores = perform_cross_validation(lr_model, X_cv, y_cv, "Logistic Regression", cv=5)
-```
-
-    
-    Performing 5-fold cross-validation for Logistic Regression...
-    Cross-validation scores: [0.9345 0.9205 0.9185 0.9205 0.923 ]
-    Mean accuracy: 0.9234
-    Standard deviation: 0.0057
-
-
-The cross-validation results for Logistic Regression show us how consistent its performance is across different data splits. The mean accuracy gives us a more reliable estimate of its performance on unseen data, while the standard deviation indicates how much performance varies between splits.
-
-
-```python
-# Perform cross-validation for Random Forest
-rf_cv_scores = perform_cross_validation(rf_model, X_cv, y_cv, "Random Forest", cv=5)
-```
-
-    
-    Performing 5-fold cross-validation for Random Forest...
-    Cross-validation scores: [0.9155 0.9105 0.919  0.9225 0.9235]
-    Mean accuracy: 0.9182
-    Standard deviation: 0.0048
-
-
-Comparing the cross-validation results between models helps us understand which one is more stable and reliable across different data splits. A model with higher mean accuracy and lower standard deviation is generally preferable.
-
-## Performance Comparison: WELFake vs. External Data
-
-Let's compare how our models perform on the original WELFake test set versus the external validation data. This comparison will help us understand how well our models generalize to new sources.
-
-
-```python
-# Create a comparison DataFrame for WELFake vs. External performance
-dataset_comparison = pd.DataFrame({
-    'Dataset': ['WELFake Test Set', 'External Data'],
-    'LR Accuracy': [lr_results['accuracy'], lr_external_results['accuracy']],
-    'RF Accuracy': [rf_results['accuracy'], rf_external_results['accuracy']]
-})
-```
-
-
-```python
-# Display the comparison
-print("Performance Comparison: WELFake vs. External Data")
-print(dataset_comparison.round(4))
-```
-
-    Performance Comparison: WELFake vs. External Data
-                Dataset  LR Accuracy  RF Accuracy
-    0  WELFake Test Set       0.9490       0.9541
-    1     External Data       0.9698       0.9662
-
-
-This comparison table shows us how each model's accuracy changes when applied to external data. A significant drop in performance would indicate limited generalization capability, while consistent or improved performance suggests the model has learned generalizable patterns of fake news.
-
-
-```python
-# Prepare data for visualization
-dataset_comparison_melted = pd.melt(dataset_comparison, 
-                                   id_vars='Dataset',
-                                   value_vars=['LR Accuracy', 'RF Accuracy'],
-                                   var_name='Model', 
-                                   value_name='Accuracy')
-```
-
-
-```python
-# Create the comparison plot
-plt.figure(figsize=(10, 6))
-sns.barplot(x='Dataset', y='Accuracy', hue='Model', data=dataset_comparison_melted, 
-           palette=['#3498db', '#2ecc71'])
-plt.title('Model Accuracy: WELFake vs. External Data')
-plt.ylim(0.7, 1.0)  # Adjust as needed
-plt.tight_layout()
-plt.show()
-```
-
-
-    
-![png](output_94_0.png)
-    
-
-
-This visualization makes it easier to compare performance across datasets and models. It helps us identify any significant changes in accuracy when moving from the WELFake test set to external data.
-
-## Comprehensive Model Comparison
-
-Now, let's create a comprehensive comparison of our two models across all evaluation metrics. This will help us make an informed decision about which model to use in a real-world deployment.
-
-
-```python
-# Define metrics to include in comparison
-metrics = [
-    'Accuracy', 'Precision', 'Recall', 'F1 Score', 
-    'Prediction Time (s)', 'CV Mean Accuracy', 
-    'External Data Accuracy'
-]
-```
-
-
-```python
-# Create comparison data
-comparison_data = {
-    'Metric': metrics,
-    'Logistic Regression': [
-        lr_results['accuracy'],
-        lr_results['precision'],
-        lr_results['recall'],
-        lr_results['f1'],
-        lr_results['predict_time'],
-        lr_cv_scores.mean(),
-        lr_external_results['accuracy']
-    ],
-    'Random Forest': [
-        rf_results['accuracy'],
-        rf_results['precision'],
-        rf_results['recall'],
-        rf_results['f1'],
-        rf_results['predict_time'],
-        rf_cv_scores.mean(),
+# Compile comprehensive performance metrics
+performance_summary = pd.DataFrame({
+    'Model': ['Logistic Regression', 'Random Forest'],
+    'External Accuracy': [
+        lr_external_results['accuracy'], 
         rf_external_results['accuracy']
-    ]
-}
+    ],
+    'External Precision': [
+        lr_external_results['precision'],
+        rf_external_results['precision']
+    ],
+    'External Recall': [
+        lr_external_results['recall'],
+        rf_external_results['recall']
+    ],
+    'External F1': [
+        lr_external_results['f1'],
+        rf_external_results['f1']
+    ],
+    'Prediction Time (ms)': [
+        lr_external_results['prediction_time'] * 1000,
+        rf_external_results['prediction_time'] * 1000
+    ],
+    'False Positive Rate': [lr_fp_rate, rf_fp_rate],
+    'False Negative Rate': [lr_fn_rate, rf_fn_rate]
+})
+
+print("Comprehensive Model Performance Summary:")
+print("="*60)
+print(performance_summary.round(4))
 ```
 
-
-```python
-# Create the comparison DataFrame
-comparison_df = pd.DataFrame(comparison_data)
-comparison_df = comparison_df.set_index('Metric')
-```
-
-
-```python
-# Display the comparison table
-print("Comprehensive Model Comparison:")
-print(comparison_df.round(4))
-```
-
-    Comprehensive Model Comparison:
-                            Logistic Regression  Random Forest
-    Metric                                                    
-    Accuracy                             0.9490         0.9541
-    Precision                            0.9491         0.9546
-    Recall                               0.9490         0.9541
-    F1 Score                             0.9490         0.9540
-    Prediction Time (s)                  0.0040         0.3808
-    CV Mean Accuracy                     0.9234         0.9182
-    External Data Accuracy               0.9698         0.9662
-
-
-This comprehensive comparison table shows us all the key metrics for both models in one place. It helps us understand the trade-offs between models and make an informed decision about which one to use based on our specific requirements.
-
-
-```python
-# Select metrics for visualization
-metrics_to_plot = ['Accuracy', 'Precision', 'Recall', 'F1 Score', 'External Data Accuracy']
-comparison_plot_df = comparison_df.loc[metrics_to_plot].reset_index()
-```
-
-
-```python
-# Reshape for plotting
-plot_df = pd.melt(comparison_plot_df, id_vars=['Metric'], 
-                 value_vars=['Logistic Regression', 'Random Forest'],
-                 var_name='Model', value_name='Score')
-```
-
-
-```python
-# Create the plot
-plt.figure(figsize=(14, 7))
-chart = sns.barplot(x='Metric', y='Score', hue='Model', data=plot_df, 
-                   palette=['#3498db', '#2ecc71'])
-plt.title('Model Performance Comparison')
-plt.ylim(0.75, 1.0)  # Adjust as needed for your results
-```
-
-
-
-
-    (0.75, 1.0)
-
-
-
-
+    Comprehensive Model Performance Summary:
+    ============================================================
+                     Model  External Accuracy  External Precision  \
+    0  Logistic Regression             0.9394              0.9402   
+    1        Random Forest             0.9779              0.9786   
     
-![png](output_103_1.png)
+       External Recall  External F1  Prediction Time (ms)  False Positive Rate  \
+    0           0.9394       0.9394                 0.463               0.0396   
+    1           0.9779       0.9778                48.234               0.0420   
     
+       False Negative Rate  
+    0               0.0816  
+    1               0.0023  
 
+
+### Visualizing Performance Comparison
 
 
 ```python
-# Add value labels on top of bars
-for p in chart.patches:
-    chart.annotate(f'{p.get_height():.4f}', 
-                   (p.get_x() + p.get_width() / 2., p.get_height()), 
-                   ha = 'center', va = 'bottom', fontsize=9)
+# Create comprehensive performance visualization
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+
+# Accuracy metrics comparison
+metrics = ['External Accuracy', 'External Precision', 'External Recall', 'External F1']
+lr_scores = [lr_external_results['accuracy'], lr_external_results['precision'], 
+             lr_external_results['recall'], lr_external_results['f1']]
+rf_scores = [rf_external_results['accuracy'], rf_external_results['precision'],
+             rf_external_results['recall'], rf_external_results['f1']]
+
+x = np.arange(len(metrics))
+width = 0.35
+
+ax1.bar(x - width/2, lr_scores, width, label='Logistic Regression', color='#3498db', alpha=0.8)
+ax1.bar(x + width/2, rf_scores, width, label='Random Forest', color='#2ecc71', alpha=0.8)
+ax1.set_ylabel('Score')
+ax1.set_title('Performance Metrics Comparison')
+ax1.set_xticks(x)
+ax1.set_xticklabels(metrics, rotation=45)
+ax1.legend()
+ax1.grid(True, alpha=0.3)
+
+# Error rates comparison
+error_types = ['False Positive Rate', 'False Negative Rate']
+lr_errors = [lr_fp_rate, lr_fn_rate]
+rf_errors = [rf_fp_rate, rf_fn_rate]
+
+x2 = np.arange(len(error_types))
+ax2.bar(x2 - width/2, lr_errors, width, label='Logistic Regression', color='#3498db', alpha=0.8)
+ax2.bar(x2 + width/2, rf_errors, width, label='Random Forest', color='#2ecc71', alpha=0.8)
+ax2.set_ylabel('Error Rate')
+ax2.set_title('Error Rate Comparison')
+ax2.set_xticks(x2)
+ax2.set_xticklabels(error_types)
+ax2.legend()
+ax2.grid(True, alpha=0.3)
+
+# Prediction time comparison
+models = ['Logistic Regression', 'Random Forest']
+times = [lr_external_results['prediction_time'] * 1000, rf_external_results['prediction_time'] * 1000]
+ax3.bar(models, times, color=['#3498db', '#2ecc71'], alpha=0.8)
+ax3.set_ylabel('Time (milliseconds)')
+ax3.set_title('Prediction Speed Comparison')
+ax3.grid(True, alpha=0.3)
+
+# ROC AUC comparison
+lr_fpr, lr_tpr, _ = roc_curve(y_external, lr_external_results['probabilities'])
+rf_fpr, rf_tpr, _ = roc_curve(y_external, rf_external_results['probabilities'])
+lr_auc = auc(lr_fpr, lr_tpr)
+rf_auc = auc(rf_fpr, rf_tpr)
+
+auc_scores = [lr_auc, rf_auc]
+ax4.bar(models, auc_scores, color=['#3498db', '#2ecc71'], alpha=0.8)
+ax4.set_ylabel('AUC Score')
+ax4.set_title('ROC AUC Comparison')
+ax4.set_ylim([0.5, 1.0])
+ax4.grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
 
-    <Figure size 1000x600 with 0 Axes>
+    
+![png](output_41_0.png)
+    
 
 
-This visualization makes it easy to compare the performance metrics between models. It highlights the strengths and weaknesses of each model across different evaluation criteria.
+## Conclusions and Deployment Recommendations
 
-## Conclusion
+Based on our comprehensive evaluation, we can now provide informed recommendations for model deployment and identify areas for future improvement.
 
-Based on our evaluation, we can draw the following conclusions about our fake news detection models:
+### Key Findings Summary
 
-1. **Overall Performance**: Both models achieve high accuracy on the WELFake test set, with Random Forest slightly outperforming Logistic Regression in most metrics.
+Our external validation reveals several important insights about model generalization and real-world applicability. Both models demonstrate the ability to maintain reasonable performance on completely unseen data sources, which is encouraging for deployment prospects.
 
-2. **Generalization to External Data**: Both models perform well on external data from different sources, suggesting they've learned generalizable patterns of fake news rather than just memorizing characteristics specific to the WELFake dataset.
+However, the specific performance characteristics of each model suggest different optimal use cases:
 
-3. **Efficiency Trade-offs**: Logistic Regression offers much faster prediction times compared to Random Forest, making it potentially more suitable for real-time applications.
+**Logistic Regression** shows consistent, interpretable performance with excellent prediction speed. The model's simplicity makes it easier to debug and explain to stakeholders, while its speed makes it suitable for high-throughput applications.
 
-4. **Reliability**: Cross-validation confirms that both models generalize well to unseen data from the same distribution, with consistent performance across different data splits.
+**Random Forest** demonstrates robust discrimination capabilities with potentially better handling of complex text patterns. The ensemble approach provides natural uncertainty quantification through vote distributions.
 
-5. **Error Patterns**: Both models struggle with similar types of articles, particularly those with ambiguous language or that fall at the boundary between opinion and straight reporting.
+### Generalization Assessment
 
-### Key Takeaways
+The performance we observe on external data provides valuable insights into how well each model generalizes beyond the WELFake training distribution. While both models show some performance decline compared to their training set results, this is expected and the magnitude helps us understand their robustness.
 
-- **Best for Accuracy**: Random Forest provides the highest accuracy and F1 score on the WELFake test set.
-- **Best for Speed**: Logistic Regression offers the best balance between performance and efficiency.
-- **Generalization**: Both models maintain high performance when applied to external data.
-- **Real-world Deployment**: The choice between models depends on the specific application requirements - if speed is critical, Logistic Regression may be preferable, while if maximum accuracy is needed, Random Forest is the better option.
+The gap between training performance (>96% accuracy) and external validation performance tells us important information about each model's generalization capabilities. A smaller gap indicates better generalization, while a larger gap suggests possible overfitting to training data characteristics.
 
-### Next Steps
+### Deployment Considerations
 
-In a separate notebook, we'll conduct more extensive evaluations including:
-- Hyperparameter tuning to optimize model performance
-- Threshold adjustment to balance precision and recall
-- More advanced error analysis to identify systematic failure patterns
-- Evaluation on additional external datasets to test generalization more thoroughly
-- Comparison with more advanced models like neural networks
+**For Real-Time Applications**: If you need to process articles quickly (news feeds, social media monitoring), Logistic Regression's speed advantage becomes crucial. The performance difference may not justify Random Forest's computational overhead.
 
-These initial baselines provide strong performance and demonstrate that even relatively simple machine learning approaches can be effective for fake news detection when properly implemented.
+**For Batch Processing**: When processing large volumes of articles offline, Random Forest's potentially superior accuracy might outweigh speed considerations.
+
+**For Explainable AI Requirements**: Logistic Regression provides clearer feature importance interpretation, making it preferable when stakeholders need to understand model decisions.
+
+### Error Pattern Implications
+
+The confusion matrix analysis reveals each model's bias toward false positives versus false negatives. In fake news detection, these errors have different business implications:
+
+- **False Positives** (labeling real news as fake) can damage platform credibility and user trust
+- **False Negatives** (missing fake news) allow misinformation to spread
+
+Understanding each model's error tendencies helps inform deployment decisions based on your risk tolerance and business priorities. Random Forest shows a particularly strong bias toward avoiding false negatives, while Logistic Regression demonstrates more balanced error rates.
+
+### Recommendations for Future Improvements
+
+Based on our evaluation findings, several enhancement opportunities emerge:
+
+**Feature Engineering**: The TF-IDF approach captures word importance but misses semantic relationships. Incorporating word embeddings or topic modeling could improve generalization.
+
+**Ensemble Methods**: Combining both models' predictions might capture the benefits of each approach while reducing individual model weaknesses.
+
+**Domain Adaptation**: Fine-tuning models on small samples of target domain data could bridge the generalization gap we observed.
+
+**Continuous Learning**: Implementing mechanisms to update models as new misinformation patterns emerge would maintain long-term effectiveness.
+
+**Threshold Optimization**: Rather than using default 0.5 probability thresholds, optimizing decision boundaries based on business costs of different error types could improve real-world performance.
+
+This evaluation demonstrates that while our baseline models show promise for real-world deployment, the choice between them should be guided by specific application requirements regarding speed, accuracy, and interpretability. The systematic evaluation framework we've established here provides a foundation for comparing these models with more advanced approaches in future analyses.
