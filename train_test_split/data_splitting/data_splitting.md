@@ -102,35 +102,44 @@ def create_splits(df, test_size=0.15, val_size=0.15, random_state=42):
     """
     Create stratified train/validation/test splits.
     
-    Returns DataFrames for train (70%), validation (15%), and test (15%).
+    Returns:
+        train_df, val_df, test_df: DataFrames for each split
+        split_indices: Dictionary containing indices used in each split
     """
     X = df['combined_text']
     y = df['label']
     
-    # First split: separate test set (15%)
+    # First split: separate test set
     X_temp, X_test, y_temp, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
     
-    # Second split: divide remaining into train/validation
-    adjusted_val_size = val_size / (1 - test_size)  # Adjust for reduced data size
+    # Second split: divide temp into train/val
+    adjusted_val_size = val_size / (1 - test_size)
     X_train, X_val, y_train, y_val = train_test_split(
         X_temp, y_temp, test_size=adjusted_val_size, 
         random_state=random_state, stratify=y_temp
     )
     
-    # Create complete DataFrames with all original columns
+    # Create DataFrames using original indices
     train_df = df.loc[X_train.index].reset_index(drop=True)
     val_df = df.loc[X_val.index].reset_index(drop=True)
     test_df = df.loc[X_test.index].reset_index(drop=True)
+
+    # Return also the raw index sets
+    index_dict = {
+        'train_idx': set(X_train.index),
+        'val_idx': set(X_val.index),
+        'test_idx': set(X_test.index)
+    }
     
-    return train_df, val_df, test_df
+    return train_df, val_df, test_df, index_dict
 ```
 
 
 ```python
 # Create the splits
-train_df, val_df, test_df = create_splits(df, random_state=RANDOM_SEED)
+train_df, val_df, test_df, split_indices = create_splits(df, random_state=RANDOM_SEED)
 
 print(f"Splits created:")
 print(f"Train: {len(train_df):,} samples ({len(train_df)/len(df)*100:.1f}%)")
@@ -196,9 +205,9 @@ plt.show()
 
 ```python
 # Verify no data leakage
-train_indices = set(train_df.index)
-val_indices = set(val_df.index)
-test_indices = set(test_df.index)
+train_indices = split_indices['train_idx']
+val_indices = split_indices['val_idx']
+test_indices = split_indices['test_idx']
 
 overlaps = [
     len(train_indices & val_indices),
@@ -210,13 +219,13 @@ if sum(overlaps) == 0:
     print("✓ No data leakage detected - all splits are properly separated")
 else:
     print("✗ WARNING: Data leakage detected!")
-    
+
 print(f"Total samples across splits: {len(train_indices | val_indices | test_indices)}")
 print(f"Original dataset size: {len(df)}")
 ```
 
-    ✗ WARNING: Data leakage detected!
-    Total samples across splits: 50075
+    ✓ No data leakage detected - all splits are properly separated
+    Total samples across splits: 71537
     Original dataset size: 71537
 
 
