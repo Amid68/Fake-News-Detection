@@ -7,3 +7,6 @@ ml_models/
 .env
 .idea/
 .ipynb_checkpoints/
+*.epub
+*.css
+*.sh
