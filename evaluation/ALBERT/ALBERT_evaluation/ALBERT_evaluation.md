@@ -45,7 +45,6 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 # Import evaluation metrics
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
 ```
 
 
@@ -209,7 +208,7 @@ print(f"Memory increase after loading: {model_memory:.2f} MB")
     ALBERT model loaded successfully
     Number of parameters: 11,685,122
     Model size: 44.58 MB
-    Memory increase after loading: 447.73 MB
+    Memory increase after loading: 440.72 MB
 
 
 ## Preparing Data for Evaluation
@@ -356,9 +355,9 @@ external_results = evaluate_model(model, external_loader, "External Datasets")
     Precision: 0.7789
     Recall: 0.6037
     F1 Score: 0.5299
-    Prediction time: 136.78 seconds for 858 samples
-    Average prediction time: 159.41 ms per sample
-    Peak memory usage during inference: 1313.48 MB
+    Prediction time: 133.43 seconds for 858 samples
+    Average prediction time: 155.52 ms per sample
+    Peak memory usage during inference: 1349.44 MB
 
 
 ### Confusion Matrix for External Data
@@ -590,12 +589,12 @@ plt.show()
     
     Batch Processing Efficiency on CPU (Parameter Sharing Performance):
        Batch Size  Total Time (ms)  Time per Sample (ms)
-    0           1           170.13                170.13
-    1           2           280.17                140.08
-    2           4           699.77                174.94
-    3           8          1296.87                162.11
-    4          16          2399.73                149.98
-    5          32          5457.70                170.55
+    0           1           161.09                161.09
+    1           2           256.19                128.10
+    2           4           679.35                169.84
+    3           8          1288.46                161.06
+    4          16          2283.62                142.73
+    5          32          5029.96                157.19
 
 
 
@@ -680,9 +679,9 @@ plt.show()
     
     Memory Usage for Different Sequence Lengths (Parameter Sharing Context):
        Sequence Length  Memory Used (MB)
-    0               64          4.687500
+    0               64          0.062500
     1              128          0.031250
-    2              256          2.734375
+    2              256          0.109375
     3              512          0.031250
 
 
@@ -750,12 +749,12 @@ print(summary.to_string(index=False))
                         Metric External Dataset Results
               Model Parameters               11,685,122
                Model Size (MB)                    44.58
-         Memory Footprint (MB)                   447.73
+         Memory Footprint (MB)                   440.72
                       Accuracy                   0.6037
                      Precision                   0.7789
                         Recall                   0.6037
                       F1 Score                   0.5299
-    Inference Time (ms/sample)                   159.41
+    Inference Time (ms/sample)                   155.52
            False Positive Rate    From confusion matrix
            False Negative Rate    From confusion matrix
             Optimal Batch Size      From batch analysis

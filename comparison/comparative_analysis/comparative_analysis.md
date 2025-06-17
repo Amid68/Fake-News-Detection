@@ -186,33 +186,33 @@ external_performance_data = {
     'Accuracy': [
         0.9394,  # Logistic Regression - strong generalization
         0.9779,  # Random Forest - excellent external performance
-        0.6437,  # DistilBERT - challenges with new patterns
+        0.7075,  # DistilBERT - challenges with new patterns
         0.6014,  # ALBERT - parameter sharing limitations on external data
-        0.5254,  # MobileBERT - mobile optimization affects generalization
+        0.5629,  # MobileBERT - mobile optimization affects generalization
         0.7681   # TinyBERT - better generalization among transformers
     ],
     'Precision': [
         0.9394,  # Logistic Regression
         0.9779,  # Random Forest
-        0.7952,  # DistilBERT
+        0.8103,  # DistilBERT
         0.7768,  # ALBERT
-        0.7350,  # MobileBERT
+        0.7579,  # MobileBERT
         0.8379   # TinyBERT
     ],
     'Recall': [
         0.9394,  # Logistic Regression
         0.9779,  # Random Forest
-        0.6437,  # DistilBERT
+        0.7075,  # DistilBERT
         0.6014,  # ALBERT
-        0.5254,  # MobileBERT
+        0.5629,  # MobileBERT
         0.7681   # TinyBERT
     ],
     'F1 Score': [
         0.9394,  # Logistic Regression
         0.9779,  # Random Forest
-        0.5985,  # DistilBERT
+        0.6810,  # DistilBERT
         0.5362,  # ALBERT
-        0.4063,  # MobileBERT
+        0.4611,  # MobileBERT
         0.7554   # TinyBERT
     ],
     'False Positive Rate': [
@@ -220,16 +220,16 @@ external_performance_data = {
         0.0420,  # Random Forest
         0.0000,  # DistilBERT - extremely conservative on external data
         0.0025,  # ALBERT
-        0.0050,  # MobileBERT
-        0.0100   # TinyBERT
+        0.0023,  # MobileBERT
+        0.0047   # TinyBERT
     ],
     'False Negative Rate': [
         0.0816,  # Logistic Regression
         0.0023,  # Random Forest - excellent at catching fake news
         0.6876,  # DistilBERT - high false negative rate
         0.7669,  # ALBERT
-        0.9114,  # MobileBERT
-        0.3054   # TinyBERT - more balanced error distribution
+        0.8718,  # MobileBERT
+        0.4592   # TinyBERT - more balanced error distribution
     ]
 }
 
@@ -291,10 +291,10 @@ external_performance_df
     <tr>
       <th>2</th>
       <td>DistilBERT</td>
-      <td>0.6437</td>
-      <td>0.7952</td>
-      <td>0.6437</td>
-      <td>0.5985</td>
+      <td>0.7075</td>
+      <td>0.8103</td>
+      <td>0.7075</td>
+      <td>0.6810</td>
       <td>0.0000</td>
       <td>0.6876</td>
     </tr>
@@ -311,12 +311,12 @@ external_performance_df
     <tr>
       <th>4</th>
       <td>MobileBERT</td>
-      <td>0.5254</td>
-      <td>0.7350</td>
-      <td>0.5254</td>
-      <td>0.4063</td>
-      <td>0.0050</td>
-      <td>0.9114</td>
+      <td>0.5629</td>
+      <td>0.7579</td>
+      <td>0.5629</td>
+      <td>0.4611</td>
+      <td>0.0023</td>
+      <td>0.8718</td>
     </tr>
     <tr>
       <th>5</th>
@@ -325,8 +325,8 @@ external_performance_df
       <td>0.8379</td>
       <td>0.7681</td>
       <td>0.7554</td>
-      <td>0.0100</td>
-      <td>0.3054</td>
+      <td>0.0047</td>
+      <td>0.4592</td>
     </tr>
   </tbody>
 </table>
