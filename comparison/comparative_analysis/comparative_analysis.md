@@ -784,41 +784,31 @@ The relationship between performance and efficiency reveals optimal deployment s
 
 
 ```python
-# Create comprehensive trade-off analysis
-trade_off_data = {
-    'Model': efficiency_df['Model'],
-    'WELFake Accuracy': performance_df['Accuracy'],
-    'External Accuracy': external_performance_df['Accuracy'],
-    'Inference Time (ms)': efficiency_df['Inference Time (ms/sample)'],
-    'Model Size (MB)': efficiency_df['Model Size (MB)'],
-    'Training Time (min)': efficiency_df['Training Time (min)']
-}
-trade_off_df = pd.DataFrame(trade_off_data)
-
-# Visualize performance vs. efficiency with model size as context
+# Performance vs. Efficiency Trade-off Plot
 plt.figure(figsize=(12, 8))
-scatter = plt.scatter(trade_off_df['Inference Time (ms)'], trade_off_df['WELFake Accuracy'], 
-                     s=trade_off_df['Model Size (MB)']*3, # Scale bubble size by model size
-                     c=range(len(trade_off_df)), cmap='viridis', alpha=0.7)
+scatter = plt.scatter(trade_off_df['Inference Time (ms)'], trade_off_df['External Accuracy'], 
+                     s=trade_off_df['Model Size (MB)']*3, c=range(len(trade_off_df)), 
+                     cmap='viridis', alpha=0.7, edgecolors='black', linewidth=1)
 
-plt.title('Performance vs. Efficiency Trade-off (WELFake Test Set)')
-plt.xscale('log')  # Use log scale for inference time
-plt.xlabel('Inference Time (ms/sample, log scale)')
-plt.ylabel('WELFake Accuracy')
-plt.ylim(0.94, 1.0)
+plt.title('Performance vs. Efficiency Trade-off (External Datasets)', fontsize=16, fontweight='bold')
+plt.xscale('log')
+plt.xlabel('Inference Time (ms/sample, log scale)', fontsize=12)
+plt.ylabel('Accuracy', fontsize=12)
+plt.ylim(0.5, 1.0)
 
-# Add model labels for easy identification
+# Add model labels
 for i, row in trade_off_df.iterrows():
-    plt.annotate(row['Model'], 
-                (row['Inference Time (ms)'], row['WELFake Accuracy']),
-                xytext=(5, 5), textcoords='offset points', fontsize=9)
+    plt.annotate(row['Model'], (row['Inference Time (ms)'], row['External Accuracy']),
+                xytext=(5, 5), textcoords='offset points', fontsize=9,
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
 
 # Add legend for bubble sizes
-sizes = [20, 50, 100, 200]
-labels = ['20 MB', '50 MB', '100 MB', '200 MB']
-legend_elements = [plt.scatter([], [], s=s*3, c='gray', alpha=0.6) for s in sizes]
-plt.legend(legend_elements, labels, title="Model Size", loc='lower right')
+sizes = [8, 25, 50, 100, 200]
+labels = ['8 MB', '25 MB', '50 MB', '100 MB', '200 MB']
+legend_elements = [plt.scatter([], [], s=s*3, c='gray', alpha=0.6, edgecolors='black') for s in sizes]
+plt.legend(legend_elements, labels, title="Model Size (MB)", loc='lower right')
 
+plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 ```
