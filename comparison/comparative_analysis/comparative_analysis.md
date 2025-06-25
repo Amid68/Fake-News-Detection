@@ -336,8 +336,6 @@ external_performance_df
 
 
 ```python
-# Create a DataFrame for comparing model efficiency metrics
-# Efficiency analysis reveals practical deployment considerations
 efficiency_data = {
     'Model': [
         'Logistic Regression', 
@@ -348,28 +346,20 @@ efficiency_data = {
         'TinyBERT'
     ],
     'Parameter Count': [
-        np.nan,      # Logistic Regression (not directly comparable)
-        np.nan,      # Random Forest (not directly comparable)
+        10001,       # Logistic Regression
+        1392006,     # Random Forest (nodes, not parameters but comparable complexity measure)
         66955010,    # DistilBERT
         11685122,    # ALBERT - dramatic reduction through parameter sharing
         24582914,    # MobileBERT
         14350874     # TinyBERT - efficient through knowledge distillation
     ],
     'Model Size (MB)': [
-        8.0,         # Logistic Regression (including vectorizer)
-        25.0,        # Random Forest (including vectorizer)
+        8.00,        # Logistic Regression (including vectorizer)
+        25.00,       # Random Forest (including vectorizer)
         255.41,      # DistilBERT
         44.58,       # ALBERT - smallest among transformers due to parameter sharing
         93.78,       # MobileBERT
         54.74        # TinyBERT
-    ],
-    'Memory Footprint (MB)': [
-        np.nan,      # Logistic Regression (lightweight)
-        np.nan,      # Random Forest (lightweight)
-        407.66,      # DistilBERT
-        298.48,      # ALBERT
-        381.98,      # MobileBERT
-        438.77       # TinyBERT
     ],
     'Inference Time (ms/sample)': [
         0.463,       # Logistic Regression - ultra-fast traditional approach
@@ -381,122 +371,16 @@ efficiency_data = {
     ],
     'Training Time (min)': [
         0.14,        # Logistic Regression
-        41.5,        # Random Forest
+        41.50,       # Random Forest
         98.83,       # DistilBERT
         230.91,      # ALBERT - longer due to parameter sharing convergence
         129.33,      # MobileBERT
         14.87        # TinyBERT - fastest among transformers
-    ],
-    'Optimal Batch Size': [
-        np.nan,      # Logistic Regression (not applicable)
-        np.nan,      # Random Forest (not applicable)
-        16,          # DistilBERT
-        16,          # ALBERT
-        16,          # MobileBERT
-        16           # TinyBERT
     ]
 }
 
 efficiency_df = pd.DataFrame(efficiency_data)
-efficiency_df
 ```
-
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Model</th>
-      <th>Parameter Count</th>
-      <th>Model Size (MB)</th>
-      <th>Memory Footprint (MB)</th>
-      <th>Inference Time (ms/sample)</th>
-      <th>Training Time (min)</th>
-      <th>Optimal Batch Size</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>Logistic Regression</td>
-      <td>NaN</td>
-      <td>8.00</td>
-      <td>NaN</td>
-      <td>0.463</td>
-      <td>0.14</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>Random Forest</td>
-      <td>NaN</td>
-      <td>25.00</td>
-      <td>NaN</td>
-      <td>48.234</td>
-      <td>41.50</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>DistilBERT</td>
-      <td>66955010.0</td>
-      <td>255.41</td>
-      <td>407.66</td>
-      <td>9.200</td>
-      <td>98.83</td>
-      <td>16.0</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>ALBERT</td>
-      <td>11685122.0</td>
-      <td>44.58</td>
-      <td>298.48</td>
-      <td>17.650</td>
-      <td>230.91</td>
-      <td>16.0</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>MobileBERT</td>
-      <td>24582914.0</td>
-      <td>93.78</td>
-      <td>381.98</td>
-      <td>8.970</td>
-      <td>129.33</td>
-      <td>16.0</td>
-    </tr>
-    <tr>
-      <th>5</th>
-      <td>TinyBERT</td>
-      <td>14350874.0</td>
-      <td>54.74</td>
-      <td>438.77</td>
-      <td>14.490</td>
-      <td>14.87</td>
-      <td>16.0</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
 
 ## 3. Performance Analysis on WELFake Test Set
 
@@ -512,21 +396,25 @@ performance_melted = pd.melt(performance_df,
                              value_name='Score')
 
 # Plot performance metrics with clear visual hierarchy
-plt.figure(figsize=(14, 8))
-chart = sns.barplot(x='Model', y='Score', hue='Metric', data=performance_melted, palette='viridis')
+fig, ax = plt.subplots(figsize=(14, 8))
 
-# Add value labels on top of bars for precise reading
+chart = sns.barplot(x='Model', y='Score', hue='Metric', data=performance_melted, palette='viridis', ax=ax)
+
+# Set y-axis limits and break
+ax.set_ylim(0.94, 1.0)
+ax.set_yticks([0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0])
+
+# Add value labels rotated for readability
 for p in chart.patches:
-    chart.annotate(f'{p.get_height():.3f}', 
-                  (p.get_x() + p.get_width() / 2., p.get_height()), 
-                  ha = 'center', va = 'bottom', 
-                  fontsize=8, rotation=90)
+    height = p.get_height()
+    chart.annotate(f'{height:.3f}', 
+                   (p.get_x() + p.get_width() / 2., height), 
+                   ha='center', va='bottom', fontsize=8, rotation=90)
 
-plt.title('Performance Comparison on WELFake Test Set')
+plt.title('Performance Comparison on WELFake Test Set', fontsize=16)
 plt.xlabel('Model')
 plt.ylabel('Score')
-plt.ylim(0.94, 1.0)  # Focus on performance differences
-plt.xticks(rotation=45, ha='right')
+plt.xticks(rotation=30, ha='right')
 plt.legend(title='Metric')
 plt.tight_layout()
 plt.show()
@@ -536,6 +424,100 @@ plt.show()
     
 ![png](output_6_0.png)
     
+
+
+
+```python
+# Create a melted DataFrame for easier plotting - External Dataset
+external_performance_melted = pd.melt(external_performance_df, 
+                                     id_vars=['Model'], 
+                                     value_vars=['Accuracy', 'Precision', 'Recall', 'F1 Score'],
+                                     var_name='Metric', 
+                                     value_name='Score')
+
+# Plot external dataset performance metrics with clear visual hierarchy
+fig, ax = plt.subplots(figsize=(14, 8))
+
+chart = sns.barplot(x='Model', y='Score', hue='Metric', data=external_performance_melted, 
+                   palette='viridis', ax=ax)
+
+# Adjust y-axis limits for external dataset (lower performance range)
+ax.set_ylim(0.4, 1.0)  # Broader range to accommodate lower transformer performance
+ax.set_yticks([0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+
+# Add value labels rotated for readability
+for p in chart.patches:
+    height = p.get_height()
+    chart.annotate(f'{height:.3f}', 
+                   (p.get_x() + p.get_width() / 2., height), 
+                   ha='center', va='bottom', fontsize=8, rotation=90)
+
+plt.title('Performance Comparison on External Dataset', fontsize=16)
+plt.xlabel('Model')
+plt.ylabel('Score')
+plt.xticks(rotation=30, ha='right')
+plt.legend(title='Metric')
+plt.tight_layout()
+plt.show()
+
+# Optional: Create a side-by-side comparison showing the performance drop
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
+
+# WELFake performance (you'd use your original performance_df here)
+# Assuming you have the original performance_df for WELFake
+performance_melted_welfake = pd.melt(performance_df, 
+                                   id_vars=['Model'], 
+                                   value_vars=['Accuracy', 'Precision', 'Recall', 'F1 Score'],
+                                   var_name='Metric', 
+                                   value_name='Score')
+
+sns.barplot(x='Model', y='Score', hue='Metric', data=performance_melted_welfake, 
+           palette='viridis', ax=ax1)
+ax1.set_ylim(0.94, 1.0)
+ax1.set_title('Performance on WELFake Test Set', fontsize=14)
+ax1.set_xticklabels(ax1.get_xticklabels(), rotation=30, ha='right')
+
+# External dataset performance
+sns.barplot(x='Model', y='Score', hue='Metric', data=external_performance_melted, 
+           palette='viridis', ax=ax2)
+ax2.set_ylim(0.4, 1.0)
+ax2.set_title('Performance on External Dataset', fontsize=14)
+ax2.set_xticklabels(ax2.get_xticklabels(), rotation=30, ha='right')
+
+plt.tight_layout()
+plt.show()
+
+# Performance drop analysis
+print("Performance Drop Analysis:")
+print("="*50)
+for model in external_performance_df['Model']:
+    welfake_acc = performance_df[performance_df['Model'] == model]['Accuracy'].iloc[0]
+    external_acc = external_performance_df[external_performance_df['Model'] == model]['Accuracy'].iloc[0]
+    drop = welfake_acc - external_acc
+    drop_pct = (drop / welfake_acc) * 100
+    print(f"{model:20}: {drop:.3f} ({drop_pct:.1f}% drop)")
+```
+
+
+    
+![png](output_7_0.png)
+    
+
+
+
+    
+![png](output_7_1.png)
+    
+
+
+    Performance Drop Analysis:
+    ==================================================
+    Logistic Regression : 0.020 (2.1% drop)
+    Random Forest       : -0.022 (-2.3% drop)
+    DistilBERT          : 0.289 (29.0% drop)
+    ALBERT              : 0.395 (39.7% drop)
+    MobileBERT          : 0.433 (43.5% drop)
+    TinyBERT            : 0.225 (22.6% drop)
 
 
 
@@ -563,7 +545,7 @@ for i, row in performance_summary.iterrows():
 
 
     
-![png](output_7_0.png)
+![png](output_8_0.png)
     
 
 
@@ -635,7 +617,7 @@ plt.show()
 
 
     
-![png](output_9_1.png)
+![png](output_10_1.png)
     
 
 
@@ -680,7 +662,7 @@ plt.show()
 
 
     
-![png](output_11_1.png)
+![png](output_12_1.png)
     
 
 
@@ -719,7 +701,7 @@ for i, (idx, row) in enumerate(inference_df.iterrows()):
 
 
     
-![png](output_13_0.png)
+![png](output_14_0.png)
     
 
 
@@ -763,7 +745,7 @@ for i, (idx, row) in enumerate(training_df.iterrows()):
 
 
     
-![png](output_15_0.png)
+![png](output_16_0.png)
     
 
 
@@ -774,6 +756,230 @@ for i, (idx, row) in enumerate(training_df.iterrows()):
     4. DistilBERT: 98.8 minutes
     5. MobileBERT: 129.3 minutes
     6. ALBERT: 230.9 minutes
+
+
+
+```python
+# Create comprehensive efficiency visualizations
+fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+
+# Define colors for consistent model representation
+model_colors = {
+    'Logistic Regression': 'lightcoral',
+    'Random Forest': 'gold', 
+    'DistilBERT': 'lightblue',
+    'ALBERT': 'lightgreen',
+    'MobileBERT': 'plum',
+    'TinyBERT': 'lightsteelblue'
+}
+
+# 1. Model Size Comparison (sorted smallest to largest)
+ax1 = axes[0, 0]
+size_sorted = efficiency_df.sort_values('Model Size (MB)')
+colors1 = [model_colors[model] for model in size_sorted['Model']]
+bars1 = ax1.bar(range(len(size_sorted)), size_sorted['Model Size (MB)'], color=colors1)
+ax1.set_title('Model Size Comparison (Smallest to Largest)', fontsize=14, fontweight='bold')
+ax1.set_ylabel('Size (MB)')
+ax1.set_xticks(range(len(size_sorted)))
+ax1.set_xticklabels(size_sorted['Model'], rotation=45, ha='right')
+
+# Add value labels on bars
+for i, (bar, value) in enumerate(zip(bars1, size_sorted['Model Size (MB)'])):
+    height = bar.get_height()
+    ax1.text(i, height + 5, f'{value:.1f} MB', ha='center', va='bottom', fontsize=9)
+
+# 2. Inference Time Comparison (sorted fastest to slowest)
+ax2 = axes[0, 1]
+inference_sorted = efficiency_df.sort_values('Inference Time (ms/sample)')
+colors2 = [model_colors[model] for model in inference_sorted['Model']]
+bars2 = ax2.bar(range(len(inference_sorted)), inference_sorted['Inference Time (ms/sample)'], color=colors2)
+ax2.set_title('Inference Time Comparison (Fastest to Slowest)', fontsize=14, fontweight='bold')
+ax2.set_ylabel('Time (ms/sample)')
+ax2.set_xticks(range(len(inference_sorted)))
+ax2.set_xticklabels(inference_sorted['Model'], rotation=45, ha='right')
+ax2.set_yscale('log')
+
+# Add value labels on bars
+for i, (bar, value) in enumerate(zip(bars2, inference_sorted['Inference Time (ms/sample)'])):
+    height = bar.get_height()
+    ax2.text(i, height * 1.2, f'{value:.2f}', ha='center', va='bottom', fontsize=9)
+
+# 3. Training Time Comparison (sorted fastest to slowest)
+ax3 = axes[1, 0]
+training_sorted = efficiency_df.sort_values('Training Time (min)')
+colors3 = [model_colors[model] for model in training_sorted['Model']]
+bars3 = ax3.bar(range(len(training_sorted)), training_sorted['Training Time (min)'], color=colors3)
+ax3.set_title('Training Time Comparison (Fastest to Slowest)', fontsize=14, fontweight='bold')
+ax3.set_ylabel('Time (minutes)')
+ax3.set_xticks(range(len(training_sorted)))
+ax3.set_xticklabels(training_sorted['Model'], rotation=45, ha='right')
+ax3.set_yscale('log')
+
+# Add value labels on bars
+for i, (bar, value) in enumerate(zip(bars3, training_sorted['Training Time (min)'])):
+    height = bar.get_height()
+    ax3.text(i, height * 1.2, f'{value:.1f}', ha='center', va='bottom', fontsize=9)
+
+# 4. Parameter Count Comparison (sorted fewest to most)
+ax4 = axes[1, 1]
+param_sorted = efficiency_df.sort_values('Parameter Count')
+colors4 = [model_colors[model] for model in param_sorted['Model']]
+bars4 = ax4.bar(range(len(param_sorted)), param_sorted['Parameter Count'], color=colors4)
+ax4.set_title('Parameter/Complexity Comparison (Fewest to Most)', fontsize=14, fontweight='bold')
+ax4.set_ylabel('Count')
+ax4.set_xticks(range(len(param_sorted)))
+ax4.set_xticklabels(param_sorted['Model'], rotation=45, ha='right')
+ax4.set_yscale('log')
+
+# Add value labels on bars
+for i, (bar, value) in enumerate(zip(bars4, param_sorted['Parameter Count'])):
+    height = bar.get_height()
+    if value >= 1e6:
+        label = f'{value/1e6:.1f}M'
+    elif value >= 1e3:
+        label = f'{value/1e3:.0f}K'
+    else:
+        label = f'{value:.0f}'
+    ax4.text(i, height * 1.2, label, ha='center', va='bottom', fontsize=9)
+
+plt.tight_layout()
+plt.show()
+
+# Create efficiency ranking tables
+print("COMPUTATIONAL EFFICIENCY RANKINGS")
+print("=" * 50)
+
+# Inference Speed Ranking (Lower is better)
+inference_ranking = efficiency_df.sort_values('Inference Time (ms/sample)')
+print("\n1. Inference Speed (fastest to slowest):")
+for i, (_, row) in enumerate(inference_ranking.iterrows()):
+    print(f"   {i+1}. {row['Model']:20}: {row['Inference Time (ms/sample)']:8.3f} ms/sample")
+
+# Training Speed Ranking (Lower is better)
+training_ranking = efficiency_df.sort_values('Training Time (min)')
+print("\n2. Training Speed (fastest to slowest):")
+for i, (_, row) in enumerate(training_ranking.iterrows()):
+    print(f"   {i+1}. {row['Model']:20}: {row['Training Time (min)']:8.1f} minutes")
+
+# Model Size Ranking (Lower is better)
+size_ranking = efficiency_df.sort_values('Model Size (MB)')
+print("\n3. Model Size (smallest to largest):")
+for i, (_, row) in enumerate(size_ranking.iterrows()):
+    print(f"   {i+1}. {row['Model']:20}: {row['Model Size (MB)']:8.1f} MB")
+
+# Parameter Count Ranking (Lower is better for efficiency)
+param_ranking = efficiency_df.sort_values('Parameter Count')
+print("\n4. Parameter Count (fewest to most):")
+for i, (_, row) in enumerate(param_ranking.iterrows()):
+    if row['Parameter Count'] >= 1e6:
+        param_str = f"{row['Parameter Count']/1e6:.1f}M"
+    elif row['Parameter Count'] >= 1e3:
+        param_str = f"{row['Parameter Count']/1e3:.0f}K"
+    else:
+        param_str = f"{row['Parameter Count']:.0f}"
+    print(f"   {i+1}. {row['Model']:20}: {param_str:>8}")
+
+# Create a comprehensive efficiency scatter plot
+fig, ax = plt.subplots(figsize=(12, 8))
+
+# Create scatter plot: Model Size vs Inference Time, with bubble size representing Training Time
+scatter = ax.scatter(efficiency_df['Model Size (MB)'], 
+                    efficiency_df['Inference Time (ms/sample)'],
+                    s=efficiency_df['Training Time (min)'] * 2,  # Scale bubble size
+                    c=range(len(efficiency_df)), 
+                    cmap='viridis', 
+                    alpha=0.7, 
+                    edgecolors='black', 
+                    linewidth=1)
+
+# Add model labels
+for i, row in efficiency_df.iterrows():
+    ax.annotate(row['Model'], 
+                (row['Model Size (MB)'], row['Inference Time (ms/sample)']),
+                xytext=(5, 5), textcoords='offset points',
+                fontsize=10, ha='left')
+
+ax.set_xlabel('Model Size (MB)')
+ax.set_ylabel('Inference Time (ms/sample)')
+ax.set_title('Efficiency Trade-offs: Size vs Speed\n(Bubble size represents training time)')
+ax.set_yscale('log')
+ax.set_xscale('log')
+ax.grid(True, alpha=0.3)
+
+# Add colorbar
+cbar = plt.colorbar(scatter)
+cbar.set_label('Model Index', rotation=270, labelpad=15)
+
+plt.tight_layout()
+plt.show()
+
+print("\nEFFICIENCY INSIGHTS:")
+print("=" * 30)
+print("• Logistic Regression: Ultra-fast inference (0.46ms) and training (0.14min)")
+print("• Random Forest: Moderate size (25MB) but slower inference (48ms)")  
+print("• MobileBERT: Best transformer for inference speed (8.97ms)")
+print("• TinyBERT: Fastest transformer training (14.87min)")
+print("• ALBERT: Most parameter-efficient transformer (11.7M params)")
+print("• DistilBERT: Largest model but competitive inference speed (9.20ms)")
+```
+
+
+    
+![png](output_17_0.png)
+    
+
+
+    COMPUTATIONAL EFFICIENCY RANKINGS
+    ==================================================
+    
+    1. Inference Speed (fastest to slowest):
+       1. Logistic Regression :    0.463 ms/sample
+       2. MobileBERT          :    8.970 ms/sample
+       3. DistilBERT          :    9.200 ms/sample
+       4. TinyBERT            :   14.490 ms/sample
+       5. ALBERT              :   17.650 ms/sample
+       6. Random Forest       :   48.234 ms/sample
+    
+    2. Training Speed (fastest to slowest):
+       1. Logistic Regression :      0.1 minutes
+       2. TinyBERT            :     14.9 minutes
+       3. Random Forest       :     41.5 minutes
+       4. DistilBERT          :     98.8 minutes
+       5. MobileBERT          :    129.3 minutes
+       6. ALBERT              :    230.9 minutes
+    
+    3. Model Size (smallest to largest):
+       1. Logistic Regression :      8.0 MB
+       2. Random Forest       :     25.0 MB
+       3. ALBERT              :     44.6 MB
+       4. TinyBERT            :     54.7 MB
+       5. MobileBERT          :     93.8 MB
+       6. DistilBERT          :    255.4 MB
+    
+    4. Parameter Count (fewest to most):
+       1. Logistic Regression :      10K
+       2. Random Forest       :     1.4M
+       3. ALBERT              :    11.7M
+       4. TinyBERT            :    14.4M
+       5. MobileBERT          :    24.6M
+       6. DistilBERT          :    67.0M
+
+
+
+    
+![png](output_17_2.png)
+    
+
+
+    
+    EFFICIENCY INSIGHTS:
+    ==============================
+    • Logistic Regression: Ultra-fast inference (0.46ms) and training (0.14min)
+    • Random Forest: Moderate size (25MB) but slower inference (48ms)
+    • MobileBERT: Best transformer for inference speed (8.97ms)
+    • TinyBERT: Fastest transformer training (14.87min)
+    • ALBERT: Most parameter-efficient transformer (11.7M params)
+    • DistilBERT: Largest model but competitive inference speed (9.20ms)
 
 
 Training efficiency varies dramatically across architectures. TinyBERT emerges as particularly attractive for rapid experimentation, requiring less than 15 minutes to achieve strong performance. This efficiency enables iterative development and testing that would be impractical with slower-training models.
@@ -815,7 +1021,7 @@ plt.show()
 
 
     
-![png](output_17_0.png)
+![png](output_19_0.png)
     
 
 
